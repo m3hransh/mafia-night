@@ -1,16 +1,19 @@
 # Bazel configuration for NixOS
 
-# Use system bash instead of /bin/bash
-build --action_env=PATH=/run/current-system/sw/bin:/usr/bin:/bin
+# Inherit PATH from environment (includes nix paths)
+build --action_env=PATH
 
-# Alternative: Disable strict sandboxing for NixOS compatibility
+# Inherit CC from environment (if set)
+build --action_env=CC
+
+# Use local strategy (less sandboxing) for NixOS compatibility
 build --spawn_strategy=local
-
-# Or use a less strict sandbox
-# build --experimental_use_hermetic_linux_sandbox=false
 
 # Show detailed error messages
 build --verbose_failures
 
 # Test output options
 test --test_output=errors
+
+# Try to import user-specific config (optional, not committed)
+try-import %workspace%/.bazelrc.local

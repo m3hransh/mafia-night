@@ -1,6 +1,7 @@
 # Bazel
 bazel-*
 .bazelrc.user
+.bazelrc.local
 
 # Go
 *.exe

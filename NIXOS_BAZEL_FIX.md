@@ -1,26 +1,51 @@
 # Fixing Bazel on NixOS 🔧
 
-## The Problem
+## The Problems
 
-Bazel expects `/bin/bash` to exist, but on NixOS:
+Bazel has **TWO** issues on NixOS:
+
+### Problem 1: Missing `/bin/bash`
 - Bash is located at `/run/current-system/sw/bin/bash` (managed by Nix)
 - `/bin/bash` doesn't exist (NixOS doesn't use FHS - Filesystem Hierarchy Standard)
-- Bazel's sandboxed builds fail with: `execvp(/bin/bash, ...): No such file or directory`
+- Error: `execvp(/bin/bash, ...): No such file or directory`
 
-## Solutions (Choose One)
+### Problem 2: Cannot Find `gcc`
+- gcc is in Nix paths, not standard locations like `/usr/bin/gcc`
+- Error: `Auto-Configuration Error: Cannot find gcc or CC`
+- Bazel's C/C++ toolchain detection fails
 
-### ✅ **Solution 1: Create /bin/bash Symlink (Recommended)**
+## Solutions
 
-This is the simplest and most compatible solution.
+### ✅ **Complete Fix (Both Issues)**
+
+#### Step 1: Fix gcc Detection (Already Done ✅)
+
+We've updated `.bazelrc`:
+```bash
+# Inherit PATH from environment (includes Nix paths)
+build --action_env=PATH
+
+# Inherit CC from environment
+build --action_env=CC
+```
+
+#### Step 2: Create /bin/bash Symlink (Required)
+
+This is the simplest and most compatible solution for the bash issue.
 
 #### Quick Method:
 ```bash
 sudo ln -s $(which bash) /bin/bash
 ```
 
-Then test Bazel:
+Then test Bazel (with CC set):
 ```bash
-bazel test //backend/cmd/api:api_test
+CC=$(which gcc) bazel test //backend/cmd/api:api_test
+```
+
+Or use the wrapper script:
+```bash
+./scripts/bazel-nix.sh test //backend/cmd/api:api_test
 ```
 
 #### Automated Method:
