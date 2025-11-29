@@ -166,3 +166,25 @@ nix-update:
 # Check flake
 nix-check:
   nix flake check
+
+# Ent commands
+# ===========
+
+# Generate Ent code from schema
+ent-generate:
+  cd backend && go generate ./ent
+
+# Create database schema (auto-migration)
+db-migrate:
+  cd backend && go run ./cmd/migrate
+
+# Seed database with default roles
+db-seed:
+  cd backend && go run ./cmd/seed
+
+# Reset database (drop + create + seed)
+db-reset: db-drop db-migrate db-seed
+
+# Drop all tables
+db-drop:
+  docker-compose exec postgres psql -U mafia_user -d mafia_night -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
