@@ -16,7 +16,7 @@ A web application for managing physical Mafia games with:
 ### Tasks:
 - [x] Initialize Go backend project structure with modules
 - [x] Set up Next.js frontend project with TypeScript
-- [ ] Configure testing frameworks (Go: testing package + testify, Next.js: Jest + React Testing Library)
+- [x] Configure testing frameworks (Go: testing package + testify, Next.js: Jest + React Testing Library)
 - [ ] Set up Docker configuration for local development
 - [ ] Create initial database schema design (PostgreSQL)
 - [ ] Set up CI/CD pipeline configuration
