@@ -76,6 +76,9 @@ mafia-night/
 - **Go** 1.23+ (for local development)
 - **Node.js** 22+ (for local development)
 
+> **📝 NixOS Users**: Bazel requires `/bin/bash`. Run: `sudo ln -s $(which bash) /bin/bash`  
+> Or use `go test` directly. See [NIXOS_BAZEL_FIX.md](NIXOS_BAZEL_FIX.md) for details.
+
 ### Installation
 
 1. **Clone the repository**

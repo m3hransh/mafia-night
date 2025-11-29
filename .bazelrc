@@ -1,1 +1,16 @@
-# Bazel configuration
+# Bazel configuration for NixOS
+
+# Use system bash instead of /bin/bash
+build --action_env=PATH=/run/current-system/sw/bin:/usr/bin:/bin
+
+# Alternative: Disable strict sandboxing for NixOS compatibility
+build --spawn_strategy=local
+
+# Or use a less strict sandbox
+# build --experimental_use_hermetic_linux_sandbox=false
+
+# Show detailed error messages
+build --verbose_failures
+
+# Test output options
+test --test_output=errors
