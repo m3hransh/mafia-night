@@ -71,13 +71,9 @@ mafia-night/
 
 ### Prerequisites
 
-- **Bazel** 8.4.2 (automatically managed by Bazelisk)
-- **Docker** and Docker Compose
-- **Go** 1.23+ (for local development)
-- **Node.js** 22+ (for local development)
-
-> **📝 NixOS Users**: Bazel requires `/bin/bash`. Run: `sudo ln -s $(which bash) /bin/bash`  
-> Or use `go test` directly. See [NIXOS_BAZEL_FIX.md](NIXOS_BAZEL_FIX.md) for details.
+- **Nix** with flakes enabled (install from [nixos.org](https://nixos.org))
+- **direnv** (optional but recommended for auto-loading)
+- **Docker** and Docker Compose (for full stack development)
 
 ### Installation
 
@@ -87,35 +83,52 @@ mafia-night/
    cd mafia-night
    ```
 
-2. **Install Bazelisk** (if not already installed)
+2. **Enable direnv** (recommended for automatic environment)
    ```bash
-   npm install -g @bazel/bazelisk
-   # or download binary from: https://github.com/bazelbuild/bazelisk/releases
+   # Add to ~/.bashrc or ~/.zshrc
+   eval "$(direnv hook bash)"  # or zsh
+   
+   # Allow direnv in this project
+   direnv allow
+   
+   # Environment loads automatically! ✨
    ```
 
-### Running with Docker (Recommended)
+3. **Or use nix develop** (manual)
+   ```bash
+   nix develop
+   ```
+
+### Running with Just (Recommended)
 
 ```bash
-# Start all services (database, backend, frontend)
-docker-compose up --build
+# See all available commands
+just
+
+# Run all tests
+just test
+
+# Start all services (Docker)
+just up
 
 # Backend API: http://localhost:8080
 # Frontend: http://localhost:3000
 # PostgreSQL: localhost:5432
 ```
 
-### Running with Bazel (Alternative)
+### Running with Nix (Alternative)
 
 #### Backend
 ```bash
 # Run backend tests
-bazel test //backend/cmd/api:api_test
+just test-backend
+# or: nix develop --command bash -c "cd backend && go test ./..."
 
-# Build backend binary
-bazel build //backend/cmd/api:api
+# Build backend with Nix
+nix build
 
-# Run backend server
-bazel run //backend/cmd/api:api
+# Run backend
+nix run
 ```
 
 #### Frontend
