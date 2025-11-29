@@ -2,6 +2,32 @@
 
 A web application for managing physical Mafia games with real-time role distribution via Telegram bot.
 
+> **🎉 Now using Nix Flakes!** Pure, reproducible development environment with automatic loading via direnv. No more Bazel complexity!
+
+## Quick Start
+
+```bash
+# 1. Install Nix (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+
+# 2. Clone and enter directory
+git clone <repository-url>
+cd mafia-night
+
+# 3. Enable automatic environment (recommended)
+direnv allow
+
+# 4. Run tests
+just test
+
+# 5. Start development
+just dev
+```
+
+**That's it!** Environment loads automatically with direnv. 🚀
+
+---
+
 ## Features
 
 - 🎮 Create and manage Mafia games
@@ -14,8 +40,8 @@ A web application for managing physical Mafia games with real-time role distribu
 ## Tech Stack
 
 ### Backend
-- **Language:** Go 1.23
-- **Build System:** Bazel
+- **Language:** Go 1.25.4
+- **Build System:** Nix Flakes
 - **Database:** PostgreSQL 16
 - **Testing:** Go testing package + testify
 
@@ -26,7 +52,9 @@ A web application for managing physical Mafia games with real-time role distribu
 - **Testing:** Jest + React Testing Library
 
 ### DevOps
-- **Build:** Bazel (for both backend and frontend)
+- **Build:** Nix Flakes (pure, reproducible builds)
+- **Task Runner:** Just (modern command runner)
+- **Auto-load:** direnv (automatic environment)
 - **Containerization:** Docker + Docker Compose
 - **CI/CD:** GitHub Actions (coming soon)
 
@@ -155,16 +183,16 @@ npm run build
 
 #### Backend (Go)
 ```bash
-# Run all backend tests with Bazel
-bazel test //...
-
-# Run specific package tests
-bazel test //backend/cmd/api:api_test
+# Run all backend tests
+just test-backend
 
 # Or using Go directly
 cd backend
 go test ./...
 go test -v ./cmd/api
+
+# With coverage
+just test-backend-coverage
 ```
 
 #### Frontend (Next.js)
@@ -194,7 +222,8 @@ This project follows **Test-Driven Development (TDD)**:
 
 2. **Run Test (Should Fail)** ❌
    ```bash
-   bazel test //backend/internal/service:service_test
+   just test-backend
+   # or: cd backend && go test ./internal/service
    ```
 
 3. **Write Implementation** ✍️
@@ -205,7 +234,7 @@ This project follows **Test-Driven Development (TDD)**:
 
 4. **Run Test (Should Pass)** ✅
    ```bash
-   bazel test //backend/internal/service:service_test
+   just test-backend
    ```
 
 5. **Refactor** ♻️
