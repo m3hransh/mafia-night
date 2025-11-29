@@ -45,14 +45,6 @@ mafia-night/
 - ✅ `NIX_FLAKES_GUIDE.md` → `docs/guides/NIX_FLAKES_GUIDE.md`
 - ✅ `SHELL_NIX_EXPLAINED.md` → `docs/guides/SHELL_NIX_EXPLAINED.md`
 
-#### To `docs/setup/`
-- ✅ `README_NIXOS.md` → `docs/setup/README_NIXOS.md`
-
-#### To `docs/archive/`
-- ❌ `BAZEL_NIXOS_COMPLETE.md` → `docs/archive/BAZEL_NIXOS_COMPLETE.md`
-  - Added ⚠️ OBSOLETE warning at top
-  - Kept for historical reference
-
 ---
 
 ## What Stays in Root
@@ -153,12 +145,6 @@ When adding new docs:
 - How-to tutorials
 - In-depth explanations
 - Best practices
-
-### Setup Instructions
-→ `docs/setup/`
-- Installation guides
-- Configuration steps
-- Platform-specific setup
 
 ### Obsolete Docs
 → `docs/archive/`

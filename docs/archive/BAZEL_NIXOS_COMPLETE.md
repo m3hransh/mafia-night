@@ -1,5 +1,11 @@
 # Complete Guide: Bazel on NixOS
 
+> **⚠️ OBSOLETE:** Bazel has been removed from this project.  
+> This document is kept for historical reference only.  
+> See [NIX_FLAKES_GUIDE.md](../guides/NIX_FLAKES_GUIDE.md) for current setup.
+
+---
+
 ## Two NixOS-Specific Issues
 
 ### Issue 1: Missing `/bin/bash` ❌

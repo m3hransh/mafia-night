@@ -1,5 +1,11 @@
 # Fixing Bazel on NixOS 🔧
 
+> **⚠️ OBSOLETE:** Bazel has been removed from this project.  
+> This document is kept for historical reference only.  
+> See [MIGRATION_TO_NIX_FLAKES.md](../../MIGRATION_TO_NIX_FLAKES.md) for current setup.
+
+---
+
 ## The Problems
 
 Bazel has **TWO** issues on NixOS:
