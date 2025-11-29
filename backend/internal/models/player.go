@@ -11,12 +11,12 @@ type Player struct {
 	ID         uuid.UUID `json:"id" db:"id"`
 	Name       string    `json:"name" db:"name"`
 	TelegramID string    `json:"telegram_id" db:"telegram_id"`
-	GameID     uuid.UUID `json:"game_id" db:"game_id"`
+	GameID     string    `json:"game_id" db:"game_id"`
 	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 }
 
 // NewPlayer creates a new Player instance
-func NewPlayer(name, telegramID string, gameID uuid.UUID) *Player {
+func NewPlayer(name, telegramID string, gameID string) *Player {
 	return &Player{
 		ID:         uuid.New(),
 		Name:       name,
@@ -37,7 +37,7 @@ func (p *Player) IsValid() bool {
 	if p.TelegramID == "" {
 		return false
 	}
-	if p.GameID == uuid.Nil {
+	if p.GameID == "" {
 		return false
 	}
 	return true

@@ -2,8 +2,113 @@
 
 package ent
 
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/game"
+	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/player"
+	"github.com/mafia-night/backend/ent/role"
+	"github.com/mafia-night/backend/ent/schema"
+)
+
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	gameFields := schema.Game{}.Fields()
+	_ = gameFields
+	// gameDescModeratorID is the schema descriptor for moderator_id field.
+	gameDescModeratorID := gameFields[2].Descriptor()
+	// game.ModeratorIDValidator is a validator for the "moderator_id" field. It is called by the builders before save.
+	game.ModeratorIDValidator = gameDescModeratorID.Validators[0].(func(string) error)
+	// gameDescCreatedAt is the schema descriptor for created_at field.
+	gameDescCreatedAt := gameFields[3].Descriptor()
+	// game.DefaultCreatedAt holds the default value on creation for the created_at field.
+	game.DefaultCreatedAt = gameDescCreatedAt.Default.(func() time.Time)
+	// gameDescID is the schema descriptor for id field.
+	gameDescID := gameFields[0].Descriptor()
+	// game.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	game.IDValidator = func() func(string) error {
+		validators := gameDescID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(id string) error {
+			for _, fn := range fns {
+				if err := fn(id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	gameroleFields := schema.GameRole{}.Fields()
+	_ = gameroleFields
+	// gameroleDescGameID is the schema descriptor for game_id field.
+	gameroleDescGameID := gameroleFields[0].Descriptor()
+	// gamerole.GameIDValidator is a validator for the "game_id" field. It is called by the builders before save.
+	gamerole.GameIDValidator = func() func(string) error {
+		validators := gameroleDescGameID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(game string) error {
+			for _, fn := range fns {
+				if err := fn(game); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// gameroleDescAssignedAt is the schema descriptor for assigned_at field.
+	gameroleDescAssignedAt := gameroleFields[3].Descriptor()
+	// gamerole.DefaultAssignedAt holds the default value on creation for the assigned_at field.
+	gamerole.DefaultAssignedAt = gameroleDescAssignedAt.Default.(func() time.Time)
+	playerFields := schema.Player{}.Fields()
+	_ = playerFields
+	// playerDescName is the schema descriptor for name field.
+	playerDescName := playerFields[1].Descriptor()
+	// player.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	player.NameValidator = playerDescName.Validators[0].(func(string) error)
+	// playerDescGameID is the schema descriptor for game_id field.
+	playerDescGameID := playerFields[3].Descriptor()
+	// player.GameIDValidator is a validator for the "game_id" field. It is called by the builders before save.
+	player.GameIDValidator = playerDescGameID.Validators[0].(func(string) error)
+	// playerDescCreatedAt is the schema descriptor for created_at field.
+	playerDescCreatedAt := playerFields[4].Descriptor()
+	// player.DefaultCreatedAt holds the default value on creation for the created_at field.
+	player.DefaultCreatedAt = playerDescCreatedAt.Default.(func() time.Time)
+	// playerDescID is the schema descriptor for id field.
+	playerDescID := playerFields[0].Descriptor()
+	// player.DefaultID holds the default value on creation for the id field.
+	player.DefaultID = playerDescID.Default.(func() uuid.UUID)
+	roleFields := schema.Role{}.Fields()
+	_ = roleFields
+	// roleDescName is the schema descriptor for name field.
+	roleDescName := roleFields[1].Descriptor()
+	// role.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	role.NameValidator = func() func(string) error {
+		validators := roleDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// roleDescID is the schema descriptor for id field.
+	roleDescID := roleFields[0].Descriptor()
+	// role.DefaultID holds the default value on creation for the id field.
+	role.DefaultID = roleDescID.Default.(func() uuid.UUID)
 }

@@ -10,8 +10,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/predicate"
+	"github.com/mafia-night/backend/ent/role"
 )
 
 // GameRoleUpdate is the builder for updating GameRole entities.
@@ -27,9 +31,84 @@ func (_u *GameRoleUpdate) Where(ps ...predicate.GameRole) *GameRoleUpdate {
 	return _u
 }
 
+// SetGameID sets the "game_id" field.
+func (_u *GameRoleUpdate) SetGameID(v string) *GameRoleUpdate {
+	_u.mutation.SetGameID(v)
+	return _u
+}
+
+// SetNillableGameID sets the "game_id" field if the given value is not nil.
+func (_u *GameRoleUpdate) SetNillableGameID(v *string) *GameRoleUpdate {
+	if v != nil {
+		_u.SetGameID(*v)
+	}
+	return _u
+}
+
+// SetPlayerID sets the "player_id" field.
+func (_u *GameRoleUpdate) SetPlayerID(v uuid.UUID) *GameRoleUpdate {
+	_u.mutation.SetPlayerID(v)
+	return _u
+}
+
+// SetNillablePlayerID sets the "player_id" field if the given value is not nil.
+func (_u *GameRoleUpdate) SetNillablePlayerID(v *uuid.UUID) *GameRoleUpdate {
+	if v != nil {
+		_u.SetPlayerID(*v)
+	}
+	return _u
+}
+
+// SetRoleID sets the "role_id" field.
+func (_u *GameRoleUpdate) SetRoleID(v uuid.UUID) *GameRoleUpdate {
+	_u.mutation.SetRoleID(v)
+	return _u
+}
+
+// SetNillableRoleID sets the "role_id" field if the given value is not nil.
+func (_u *GameRoleUpdate) SetNillableRoleID(v *uuid.UUID) *GameRoleUpdate {
+	if v != nil {
+		_u.SetRoleID(*v)
+	}
+	return _u
+}
+
+// SetGame sets the "game" edge to the Game entity.
+func (_u *GameRoleUpdate) SetGame(v *Game) *GameRoleUpdate {
+	return _u.SetGameID(v.ID)
+}
+
+// SetPlayer sets the "player" edge to the Player entity.
+func (_u *GameRoleUpdate) SetPlayer(v *Player) *GameRoleUpdate {
+	return _u.SetPlayerID(v.ID)
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (_u *GameRoleUpdate) SetRole(v *Role) *GameRoleUpdate {
+	return _u.SetRoleID(v.ID)
+}
+
 // Mutation returns the GameRoleMutation object of the builder.
 func (_u *GameRoleUpdate) Mutation() *GameRoleMutation {
 	return _u.mutation
+}
+
+// ClearGame clears the "game" edge to the Game entity.
+func (_u *GameRoleUpdate) ClearGame() *GameRoleUpdate {
+	_u.mutation.ClearGame()
+	return _u
+}
+
+// ClearPlayer clears the "player" edge to the Player entity.
+func (_u *GameRoleUpdate) ClearPlayer() *GameRoleUpdate {
+	_u.mutation.ClearPlayer()
+	return _u
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (_u *GameRoleUpdate) ClearRole() *GameRoleUpdate {
+	_u.mutation.ClearRole()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -59,7 +138,29 @@ func (_u *GameRoleUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *GameRoleUpdate) check() error {
+	if v, ok := _u.mutation.GameID(); ok {
+		if err := gamerole.GameIDValidator(v); err != nil {
+			return &ValidationError{Name: "game_id", err: fmt.Errorf(`ent: validator failed for field "GameRole.game_id": %w`, err)}
+		}
+	}
+	if _u.mutation.GameCleared() && len(_u.mutation.GameIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "GameRole.game"`)
+	}
+	if _u.mutation.PlayerCleared() && len(_u.mutation.PlayerIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "GameRole.player"`)
+	}
+	if _u.mutation.RoleCleared() && len(_u.mutation.RoleIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "GameRole.role"`)
+	}
+	return nil
+}
+
 func (_u *GameRoleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(gamerole.Table, gamerole.Columns, sqlgraph.NewFieldSpec(gamerole.FieldID, field.TypeInt))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -67,6 +168,93 @@ func (_u *GameRoleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if _u.mutation.GameCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   gamerole.GameTable,
+			Columns: []string{gamerole.GameColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GameIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   gamerole.GameTable,
+			Columns: []string{gamerole.GameColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PlayerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   gamerole.PlayerTable,
+			Columns: []string{gamerole.PlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   gamerole.PlayerTable,
+			Columns: []string{gamerole.PlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   gamerole.RoleTable,
+			Columns: []string{gamerole.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   gamerole.RoleTable,
+			Columns: []string{gamerole.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -88,9 +276,84 @@ type GameRoleUpdateOne struct {
 	mutation *GameRoleMutation
 }
 
+// SetGameID sets the "game_id" field.
+func (_u *GameRoleUpdateOne) SetGameID(v string) *GameRoleUpdateOne {
+	_u.mutation.SetGameID(v)
+	return _u
+}
+
+// SetNillableGameID sets the "game_id" field if the given value is not nil.
+func (_u *GameRoleUpdateOne) SetNillableGameID(v *string) *GameRoleUpdateOne {
+	if v != nil {
+		_u.SetGameID(*v)
+	}
+	return _u
+}
+
+// SetPlayerID sets the "player_id" field.
+func (_u *GameRoleUpdateOne) SetPlayerID(v uuid.UUID) *GameRoleUpdateOne {
+	_u.mutation.SetPlayerID(v)
+	return _u
+}
+
+// SetNillablePlayerID sets the "player_id" field if the given value is not nil.
+func (_u *GameRoleUpdateOne) SetNillablePlayerID(v *uuid.UUID) *GameRoleUpdateOne {
+	if v != nil {
+		_u.SetPlayerID(*v)
+	}
+	return _u
+}
+
+// SetRoleID sets the "role_id" field.
+func (_u *GameRoleUpdateOne) SetRoleID(v uuid.UUID) *GameRoleUpdateOne {
+	_u.mutation.SetRoleID(v)
+	return _u
+}
+
+// SetNillableRoleID sets the "role_id" field if the given value is not nil.
+func (_u *GameRoleUpdateOne) SetNillableRoleID(v *uuid.UUID) *GameRoleUpdateOne {
+	if v != nil {
+		_u.SetRoleID(*v)
+	}
+	return _u
+}
+
+// SetGame sets the "game" edge to the Game entity.
+func (_u *GameRoleUpdateOne) SetGame(v *Game) *GameRoleUpdateOne {
+	return _u.SetGameID(v.ID)
+}
+
+// SetPlayer sets the "player" edge to the Player entity.
+func (_u *GameRoleUpdateOne) SetPlayer(v *Player) *GameRoleUpdateOne {
+	return _u.SetPlayerID(v.ID)
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (_u *GameRoleUpdateOne) SetRole(v *Role) *GameRoleUpdateOne {
+	return _u.SetRoleID(v.ID)
+}
+
 // Mutation returns the GameRoleMutation object of the builder.
 func (_u *GameRoleUpdateOne) Mutation() *GameRoleMutation {
 	return _u.mutation
+}
+
+// ClearGame clears the "game" edge to the Game entity.
+func (_u *GameRoleUpdateOne) ClearGame() *GameRoleUpdateOne {
+	_u.mutation.ClearGame()
+	return _u
+}
+
+// ClearPlayer clears the "player" edge to the Player entity.
+func (_u *GameRoleUpdateOne) ClearPlayer() *GameRoleUpdateOne {
+	_u.mutation.ClearPlayer()
+	return _u
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (_u *GameRoleUpdateOne) ClearRole() *GameRoleUpdateOne {
+	_u.mutation.ClearRole()
+	return _u
 }
 
 // Where appends a list predicates to the GameRoleUpdate builder.
@@ -133,7 +396,29 @@ func (_u *GameRoleUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *GameRoleUpdateOne) check() error {
+	if v, ok := _u.mutation.GameID(); ok {
+		if err := gamerole.GameIDValidator(v); err != nil {
+			return &ValidationError{Name: "game_id", err: fmt.Errorf(`ent: validator failed for field "GameRole.game_id": %w`, err)}
+		}
+	}
+	if _u.mutation.GameCleared() && len(_u.mutation.GameIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "GameRole.game"`)
+	}
+	if _u.mutation.PlayerCleared() && len(_u.mutation.PlayerIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "GameRole.player"`)
+	}
+	if _u.mutation.RoleCleared() && len(_u.mutation.RoleIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "GameRole.role"`)
+	}
+	return nil
+}
+
 func (_u *GameRoleUpdateOne) sqlSave(ctx context.Context) (_node *GameRole, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(gamerole.Table, gamerole.Columns, sqlgraph.NewFieldSpec(gamerole.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
@@ -158,6 +443,93 @@ func (_u *GameRoleUpdateOne) sqlSave(ctx context.Context) (_node *GameRole, err 
 				ps[i](selector)
 			}
 		}
+	}
+	if _u.mutation.GameCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   gamerole.GameTable,
+			Columns: []string{gamerole.GameColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GameIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   gamerole.GameTable,
+			Columns: []string{gamerole.GameColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PlayerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   gamerole.PlayerTable,
+			Columns: []string{gamerole.PlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   gamerole.PlayerTable,
+			Columns: []string{gamerole.PlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   gamerole.RoleTable,
+			Columns: []string{gamerole.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   gamerole.RoleTable,
+			Columns: []string{gamerole.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &GameRole{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -17,7 +17,7 @@ A web application for managing physical Mafia games with:
 - [x] Initialize Go backend project structure with modules
 - [x] Set up Next.js frontend project with TypeScript
 - [x] Configure testing frameworks (Go: testing package + testify, Next.js: Jest + React Testing Library)
-- [ ] Set up Docker configuration for local development
+- [x] Set up Docker configuration for local development
 - [ ] Create initial database schema design (PostgreSQL)
 - [ ] Set up CI/CD pipeline configuration
 - [ ] Create README with setup instructions
@@ -34,13 +34,13 @@ A web application for managing physical Mafia games with:
 **Goal:** Implement core data models and database operations with tests
 
 ### Backend Tests & Implementation:
-- [ ] Test: Game model (ID, status, created_at, moderator_id)
-- [ ] Test: Player model (ID, name, telegram_id, game_id)
-- [ ] Test: Role model (ID, name, team, abilities)
-- [ ] Test: GameRole model (game_id, player_id, role_id, assigned_at)
-- [ ] Implement: Database migrations
-- [ ] Implement: Repository pattern for CRUD operations
-- [ ] Test: Database connection and basic queries
+- [x] Test: Game model (ID, status, created_at, moderator_id)
+- [x] Test: Player model (ID, name, telegram_id, game_id)
+- [x] Test: Role model (ID, name, team, abilities)
+- [x] Test: GameRole model (game_id, player_id, role_id, assigned_at)
+- [x] Implement: Database migrations (Ent ORM Auto-migration)
+- [ ] Implement: Repository pattern for CRUD operations (Game Repo ✅, others pending)
+- [x] Test: Database connection and basic queries
 
 ### Deliverables:
 - Complete database schema

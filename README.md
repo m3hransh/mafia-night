@@ -43,6 +43,7 @@ just dev
 - **Language:** Go 1.25.4
 - **Build System:** Nix Flakes
 - **Database:** PostgreSQL 16
+- **ORM:** Ent (Type-safe ORM)
 - **Testing:** Go testing package + testify
 
 ### Frontend
@@ -71,6 +72,9 @@ mafia-night/
 ├── backend/                 # Go backend
 │   ├── BUILD.bazel
 │   ├── go.mod
+│   ├── ent/                # Generated Ent ORM code
+│   │   ├── schema/         # Database schema definitions
+│   │   └── ...
 │   ├── cmd/api/            # Main application
 │   │   ├── main.go
 │   │   ├── main_test.go
@@ -83,16 +87,6 @@ mafia-night/
 │   └── pkg/                # Public packages
 │
 └── frontend/               # Next.js frontend
-    ├── package.json
-    ├── tsconfig.json
-    ├── jest.config.js
-    ├── tailwind.config.js
-    ├── app/                # Next.js app router
-    │   ├── layout.tsx
-    │   ├── page.tsx
-    │   └── globals.css
-    ├── components/         # React components
-    └── __tests__/          # Test files
 ```
 
 ## Getting Started
@@ -245,8 +239,8 @@ This project follows **Test-Driven Development (TDD)**:
 ## Database Migrations
 
 ```bash
-# Coming in Phase 2
-# Will use golang-migrate
+# Uses Ent ORM Auto-Migration
+just db-migrate
 ```
 
 ## API Documentation
@@ -257,7 +251,7 @@ API documentation will be available at `/api/docs` (Swagger UI) once implemented
 
 See [PROJECT_PHASES.md](./PROJECT_PHASES.md) for detailed development roadmap.
 
-**Current Phase:** ✅ Phase 1 - Project Setup & Infrastructure
+**Current Phase:** 🚧 Phase 2 - Core Domain Models & Database Layer (In Progress)
 
 ## Environment Variables
 

@@ -11,8 +11,8 @@ func TestNewGame(t *testing.T) {
 	
 	game := NewGame(moderatorID)
 	
-	// Test: Game should have a valid UUID
-	if game.ID == uuid.Nil {
+	// Test: Game should have a valid ID
+	if game.ID == "" {
 		t.Error("Expected game to have a valid ID")
 	}
 	
@@ -49,9 +49,9 @@ func TestGameIsValid(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "invalid game - nil ID",
+			name: "invalid game - empty ID",
 			game: &Game{
-				ID:          uuid.Nil,
+				ID:          "",
 				Status:      GameStatusPending,
 				ModeratorID: uuid.New(),
 			},
@@ -60,7 +60,7 @@ func TestGameIsValid(t *testing.T) {
 		{
 			name: "invalid game - nil moderator",
 			game: &Game{
-				ID:          uuid.New(),
+				ID:          uuid.New().String()[:8],
 				Status:      GameStatusPending,
 				ModeratorID: uuid.Nil,
 			},
@@ -69,7 +69,7 @@ func TestGameIsValid(t *testing.T) {
 		{
 			name: "invalid game - invalid status",
 			game: &Game{
-				ID:          uuid.New(),
+				ID:          uuid.New().String()[:8],
 				Status:      GameStatus("invalid"),
 				ModeratorID: uuid.New(),
 			},

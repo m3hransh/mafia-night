@@ -3,53 +3,247 @@
 package game
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/mafia-night/backend/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.Game {
+func ID(id string) predicate.Game {
 	return predicate.Game(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.Game {
+func IDEQ(id string) predicate.Game {
 	return predicate.Game(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.Game {
+func IDNEQ(id string) predicate.Game {
 	return predicate.Game(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.Game {
+func IDIn(ids ...string) predicate.Game {
 	return predicate.Game(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.Game {
+func IDNotIn(ids ...string) predicate.Game {
 	return predicate.Game(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.Game {
+func IDGT(id string) predicate.Game {
 	return predicate.Game(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.Game {
+func IDGTE(id string) predicate.Game {
 	return predicate.Game(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.Game {
+func IDLT(id string) predicate.Game {
 	return predicate.Game(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.Game {
+func IDLTE(id string) predicate.Game {
 	return predicate.Game(sql.FieldLTE(FieldID, id))
+}
+
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.Game {
+	return predicate.Game(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.Game {
+	return predicate.Game(sql.FieldContainsFold(FieldID, id))
+}
+
+// ModeratorID applies equality check predicate on the "moderator_id" field. It's identical to ModeratorIDEQ.
+func ModeratorID(v string) predicate.Game {
+	return predicate.Game(sql.FieldEQ(FieldModeratorID, v))
+}
+
+// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
+func CreatedAt(v time.Time) predicate.Game {
+	return predicate.Game(sql.FieldEQ(FieldCreatedAt, v))
+}
+
+// StatusEQ applies the EQ predicate on the "status" field.
+func StatusEQ(v Status) predicate.Game {
+	return predicate.Game(sql.FieldEQ(FieldStatus, v))
+}
+
+// StatusNEQ applies the NEQ predicate on the "status" field.
+func StatusNEQ(v Status) predicate.Game {
+	return predicate.Game(sql.FieldNEQ(FieldStatus, v))
+}
+
+// StatusIn applies the In predicate on the "status" field.
+func StatusIn(vs ...Status) predicate.Game {
+	return predicate.Game(sql.FieldIn(FieldStatus, vs...))
+}
+
+// StatusNotIn applies the NotIn predicate on the "status" field.
+func StatusNotIn(vs ...Status) predicate.Game {
+	return predicate.Game(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// ModeratorIDEQ applies the EQ predicate on the "moderator_id" field.
+func ModeratorIDEQ(v string) predicate.Game {
+	return predicate.Game(sql.FieldEQ(FieldModeratorID, v))
+}
+
+// ModeratorIDNEQ applies the NEQ predicate on the "moderator_id" field.
+func ModeratorIDNEQ(v string) predicate.Game {
+	return predicate.Game(sql.FieldNEQ(FieldModeratorID, v))
+}
+
+// ModeratorIDIn applies the In predicate on the "moderator_id" field.
+func ModeratorIDIn(vs ...string) predicate.Game {
+	return predicate.Game(sql.FieldIn(FieldModeratorID, vs...))
+}
+
+// ModeratorIDNotIn applies the NotIn predicate on the "moderator_id" field.
+func ModeratorIDNotIn(vs ...string) predicate.Game {
+	return predicate.Game(sql.FieldNotIn(FieldModeratorID, vs...))
+}
+
+// ModeratorIDGT applies the GT predicate on the "moderator_id" field.
+func ModeratorIDGT(v string) predicate.Game {
+	return predicate.Game(sql.FieldGT(FieldModeratorID, v))
+}
+
+// ModeratorIDGTE applies the GTE predicate on the "moderator_id" field.
+func ModeratorIDGTE(v string) predicate.Game {
+	return predicate.Game(sql.FieldGTE(FieldModeratorID, v))
+}
+
+// ModeratorIDLT applies the LT predicate on the "moderator_id" field.
+func ModeratorIDLT(v string) predicate.Game {
+	return predicate.Game(sql.FieldLT(FieldModeratorID, v))
+}
+
+// ModeratorIDLTE applies the LTE predicate on the "moderator_id" field.
+func ModeratorIDLTE(v string) predicate.Game {
+	return predicate.Game(sql.FieldLTE(FieldModeratorID, v))
+}
+
+// ModeratorIDContains applies the Contains predicate on the "moderator_id" field.
+func ModeratorIDContains(v string) predicate.Game {
+	return predicate.Game(sql.FieldContains(FieldModeratorID, v))
+}
+
+// ModeratorIDHasPrefix applies the HasPrefix predicate on the "moderator_id" field.
+func ModeratorIDHasPrefix(v string) predicate.Game {
+	return predicate.Game(sql.FieldHasPrefix(FieldModeratorID, v))
+}
+
+// ModeratorIDHasSuffix applies the HasSuffix predicate on the "moderator_id" field.
+func ModeratorIDHasSuffix(v string) predicate.Game {
+	return predicate.Game(sql.FieldHasSuffix(FieldModeratorID, v))
+}
+
+// ModeratorIDEqualFold applies the EqualFold predicate on the "moderator_id" field.
+func ModeratorIDEqualFold(v string) predicate.Game {
+	return predicate.Game(sql.FieldEqualFold(FieldModeratorID, v))
+}
+
+// ModeratorIDContainsFold applies the ContainsFold predicate on the "moderator_id" field.
+func ModeratorIDContainsFold(v string) predicate.Game {
+	return predicate.Game(sql.FieldContainsFold(FieldModeratorID, v))
+}
+
+// CreatedAtEQ applies the EQ predicate on the "created_at" field.
+func CreatedAtEQ(v time.Time) predicate.Game {
+	return predicate.Game(sql.FieldEQ(FieldCreatedAt, v))
+}
+
+// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
+func CreatedAtNEQ(v time.Time) predicate.Game {
+	return predicate.Game(sql.FieldNEQ(FieldCreatedAt, v))
+}
+
+// CreatedAtIn applies the In predicate on the "created_at" field.
+func CreatedAtIn(vs ...time.Time) predicate.Game {
+	return predicate.Game(sql.FieldIn(FieldCreatedAt, vs...))
+}
+
+// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
+func CreatedAtNotIn(vs ...time.Time) predicate.Game {
+	return predicate.Game(sql.FieldNotIn(FieldCreatedAt, vs...))
+}
+
+// CreatedAtGT applies the GT predicate on the "created_at" field.
+func CreatedAtGT(v time.Time) predicate.Game {
+	return predicate.Game(sql.FieldGT(FieldCreatedAt, v))
+}
+
+// CreatedAtGTE applies the GTE predicate on the "created_at" field.
+func CreatedAtGTE(v time.Time) predicate.Game {
+	return predicate.Game(sql.FieldGTE(FieldCreatedAt, v))
+}
+
+// CreatedAtLT applies the LT predicate on the "created_at" field.
+func CreatedAtLT(v time.Time) predicate.Game {
+	return predicate.Game(sql.FieldLT(FieldCreatedAt, v))
+}
+
+// CreatedAtLTE applies the LTE predicate on the "created_at" field.
+func CreatedAtLTE(v time.Time) predicate.Game {
+	return predicate.Game(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// HasPlayers applies the HasEdge predicate on the "players" edge.
+func HasPlayers() predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PlayersTable, PlayersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPlayersWith applies the HasEdge predicate on the "players" edge with a given conditions (other predicates).
+func HasPlayersWith(preds ...predicate.Player) predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := newPlayersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGameRoles applies the HasEdge predicate on the "game_roles" edge.
+func HasGameRoles() predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GameRolesTable, GameRolesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGameRolesWith applies the HasEdge predicate on the "game_roles" edge with a given conditions (other predicates).
+func HasGameRolesWith(preds ...predicate.GameRole) predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := newGameRolesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

@@ -8,15 +8,43 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent/role"
 )
 
 // Role is the model entity for the Role schema.
 type Role struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
-	ID           int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
+	// Team holds the value of the "team" field.
+	Team role.Team `json:"team,omitempty"`
+	// Abilities holds the value of the "abilities" field.
+	Abilities string `json:"abilities,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the RoleQuery when eager-loading is set.
+	Edges        RoleEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// RoleEdges holds the relations/edges for other nodes in the graph.
+type RoleEdges struct {
+	// GameRoles holds the value of the game_roles edge.
+	GameRoles []*GameRole `json:"game_roles,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// GameRolesOrErr returns the GameRoles value or an error if the edge
+// was not loaded in eager-loading.
+func (e RoleEdges) GameRolesOrErr() ([]*GameRole, error) {
+	if e.loadedTypes[0] {
+		return e.GameRoles, nil
+	}
+	return nil, &NotLoadedError{edge: "game_roles"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -24,8 +52,10 @@ func (*Role) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case role.FieldName, role.FieldTeam, role.FieldAbilities:
+			values[i] = new(sql.NullString)
 		case role.FieldID:
-			values[i] = new(sql.NullInt64)
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -42,11 +72,29 @@ func (_m *Role) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case role.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.ID = *value
 			}
-			_m.ID = int(value.Int64)
+		case role.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				_m.Name = value.String
+			}
+		case role.FieldTeam:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field team", values[i])
+			} else if value.Valid {
+				_m.Team = role.Team(value.String)
+			}
+		case role.FieldAbilities:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field abilities", values[i])
+			} else if value.Valid {
+				_m.Abilities = value.String
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -58,6 +106,11 @@ func (_m *Role) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Role) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryGameRoles queries the "game_roles" edge of the Role entity.
+func (_m *Role) QueryGameRoles() *GameRoleQuery {
+	return NewRoleClient(_m.config).QueryGameRoles(_m)
 }
 
 // Update returns a builder for updating this Role.
@@ -82,7 +135,15 @@ func (_m *Role) Unwrap() *Role {
 func (_m *Role) String() string {
 	var builder strings.Builder
 	builder.WriteString("Role(")
-	builder.WriteString(fmt.Sprintf("id=%v", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString("name=")
+	builder.WriteString(_m.Name)
+	builder.WriteString(", ")
+	builder.WriteString("team=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Team))
+	builder.WriteString(", ")
+	builder.WriteString("abilities=")
+	builder.WriteString(_m.Abilities)
 	builder.WriteByte(')')
 	return builder.String()
 }

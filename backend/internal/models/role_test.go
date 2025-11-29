@@ -88,16 +88,11 @@ func TestRoleIsValid(t *testing.T) {
 }
 
 func TestGameRoleCreation(t *testing.T) {
-	gameID := uuid.New()
+	gameID := "ABC1234"
 	playerID := uuid.New()
 	roleID := uuid.New()
 	
 	gameRole := NewGameRole(gameID, playerID, roleID)
-	
-	// Test: GameRole should have a valid UUID
-	if gameRole.ID == uuid.Nil {
-		t.Error("Expected game_role to have a valid ID")
-	}
 	
 	// Test: GameRole should have correct game ID
 	if gameRole.GameID != gameID {

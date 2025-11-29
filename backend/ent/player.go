@@ -5,18 +5,66 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/game"
+	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
 )
 
 // Player is the model entity for the Player schema.
 type Player struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
-	ID           int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
+	// TelegramID holds the value of the "telegram_id" field.
+	TelegramID string `json:"telegram_id,omitempty"`
+	// GameID holds the value of the "game_id" field.
+	GameID string `json:"game_id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the PlayerQuery when eager-loading is set.
+	Edges        PlayerEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// PlayerEdges holds the relations/edges for other nodes in the graph.
+type PlayerEdges struct {
+	// Game holds the value of the game edge.
+	Game *Game `json:"game,omitempty"`
+	// GameRole holds the value of the game_role edge.
+	GameRole *GameRole `json:"game_role,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+}
+
+// GameOrErr returns the Game value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PlayerEdges) GameOrErr() (*Game, error) {
+	if e.Game != nil {
+		return e.Game, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: game.Label}
+	}
+	return nil, &NotLoadedError{edge: "game"}
+}
+
+// GameRoleOrErr returns the GameRole value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PlayerEdges) GameRoleOrErr() (*GameRole, error) {
+	if e.GameRole != nil {
+		return e.GameRole, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: gamerole.Label}
+	}
+	return nil, &NotLoadedError{edge: "game_role"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -24,8 +72,12 @@ func (*Player) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case player.FieldName, player.FieldTelegramID, player.FieldGameID:
+			values[i] = new(sql.NullString)
+		case player.FieldCreatedAt:
+			values[i] = new(sql.NullTime)
 		case player.FieldID:
-			values[i] = new(sql.NullInt64)
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -42,11 +94,35 @@ func (_m *Player) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case player.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.ID = *value
 			}
-			_m.ID = int(value.Int64)
+		case player.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				_m.Name = value.String
+			}
+		case player.FieldTelegramID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field telegram_id", values[i])
+			} else if value.Valid {
+				_m.TelegramID = value.String
+			}
+		case player.FieldGameID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field game_id", values[i])
+			} else if value.Valid {
+				_m.GameID = value.String
+			}
+		case player.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				_m.CreatedAt = value.Time
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -58,6 +134,16 @@ func (_m *Player) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Player) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryGame queries the "game" edge of the Player entity.
+func (_m *Player) QueryGame() *GameQuery {
+	return NewPlayerClient(_m.config).QueryGame(_m)
+}
+
+// QueryGameRole queries the "game_role" edge of the Player entity.
+func (_m *Player) QueryGameRole() *GameRoleQuery {
+	return NewPlayerClient(_m.config).QueryGameRole(_m)
 }
 
 // Update returns a builder for updating this Player.
@@ -82,7 +168,18 @@ func (_m *Player) Unwrap() *Player {
 func (_m *Player) String() string {
 	var builder strings.Builder
 	builder.WriteString("Player(")
-	builder.WriteString(fmt.Sprintf("id=%v", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString("name=")
+	builder.WriteString(_m.Name)
+	builder.WriteString(", ")
+	builder.WriteString("telegram_id=")
+	builder.WriteString(_m.TelegramID)
+	builder.WriteString(", ")
+	builder.WriteString("game_id=")
+	builder.WriteString(_m.GameID)
+	builder.WriteString(", ")
+	builder.WriteString("created_at=")
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

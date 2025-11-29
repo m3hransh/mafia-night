@@ -10,43 +10,118 @@ import (
 var (
 	// GamesColumns holds the columns for the "games" table.
 	GamesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "id", Type: field.TypeString, Unique: true, Size: 12},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "active", "completed"}, Default: "pending"},
+		{Name: "moderator_id", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
 	}
 	// GamesTable holds the schema information for the "games" table.
 	GamesTable = &schema.Table{
 		Name:       "games",
 		Columns:    GamesColumns,
 		PrimaryKey: []*schema.Column{GamesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "game_status",
+				Unique:  false,
+				Columns: []*schema.Column{GamesColumns[1]},
+			},
+			{
+				Name:    "game_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GamesColumns[3]},
+			},
+		},
 	}
 	// GameRolesColumns holds the columns for the "game_roles" table.
 	GameRolesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "assigned_at", Type: field.TypeTime},
+		{Name: "game_id", Type: field.TypeString, Size: 12},
+		{Name: "player_id", Type: field.TypeUUID, Unique: true},
+		{Name: "role_id", Type: field.TypeUUID},
 	}
 	// GameRolesTable holds the schema information for the "game_roles" table.
 	GameRolesTable = &schema.Table{
 		Name:       "game_roles",
 		Columns:    GameRolesColumns,
 		PrimaryKey: []*schema.Column{GameRolesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "game_roles_games_game_roles",
+				Columns:    []*schema.Column{GameRolesColumns[2]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "game_roles_players_game_role",
+				Columns:    []*schema.Column{GameRolesColumns[3]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "game_roles_roles_game_roles",
+				Columns:    []*schema.Column{GameRolesColumns[4]},
+				RefColumns: []*schema.Column{RolesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "gamerole_game_id_player_id",
+				Unique:  true,
+				Columns: []*schema.Column{GameRolesColumns[2], GameRolesColumns[3]},
+			},
+		},
 	}
 	// PlayersColumns holds the columns for the "players" table.
 	PlayersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString},
+		{Name: "telegram_id", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "game_id", Type: field.TypeString, Size: 12},
 	}
 	// PlayersTable holds the schema information for the "players" table.
 	PlayersTable = &schema.Table{
 		Name:       "players",
 		Columns:    PlayersColumns,
 		PrimaryKey: []*schema.Column{PlayersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "players_games_players",
+				Columns:    []*schema.Column{PlayersColumns[4]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "player_game_id_name",
+				Unique:  true,
+				Columns: []*schema.Column{PlayersColumns[4], PlayersColumns[1]},
+			},
+		},
 	}
 	// RolesColumns holds the columns for the "roles" table.
 	RolesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString, Unique: true, Size: 50},
+		{Name: "team", Type: field.TypeEnum, Enums: []string{"mafia", "village"}},
+		{Name: "abilities", Type: field.TypeString, Nullable: true, Size: 2147483647},
 	}
 	// RolesTable holds the schema information for the "roles" table.
 	RolesTable = &schema.Table{
 		Name:       "roles",
 		Columns:    RolesColumns,
 		PrimaryKey: []*schema.Column{RolesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "role_team",
+				Unique:  false,
+				Columns: []*schema.Column{RolesColumns[2]},
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
@@ -58,4 +133,8 @@ var (
 )
 
 func init() {
+	GameRolesTable.ForeignKeys[0].RefTable = GamesTable
+	GameRolesTable.ForeignKeys[1].RefTable = PlayersTable
+	GameRolesTable.ForeignKeys[2].RefTable = RolesTable
+	PlayersTable.ForeignKeys[0].RefTable = GamesTable
 }

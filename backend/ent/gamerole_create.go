@@ -4,11 +4,17 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/player"
+	"github.com/mafia-night/backend/ent/role"
 )
 
 // GameRoleCreate is the builder for creating a GameRole entity.
@@ -18,6 +24,53 @@ type GameRoleCreate struct {
 	hooks    []Hook
 }
 
+// SetGameID sets the "game_id" field.
+func (_c *GameRoleCreate) SetGameID(v string) *GameRoleCreate {
+	_c.mutation.SetGameID(v)
+	return _c
+}
+
+// SetPlayerID sets the "player_id" field.
+func (_c *GameRoleCreate) SetPlayerID(v uuid.UUID) *GameRoleCreate {
+	_c.mutation.SetPlayerID(v)
+	return _c
+}
+
+// SetRoleID sets the "role_id" field.
+func (_c *GameRoleCreate) SetRoleID(v uuid.UUID) *GameRoleCreate {
+	_c.mutation.SetRoleID(v)
+	return _c
+}
+
+// SetAssignedAt sets the "assigned_at" field.
+func (_c *GameRoleCreate) SetAssignedAt(v time.Time) *GameRoleCreate {
+	_c.mutation.SetAssignedAt(v)
+	return _c
+}
+
+// SetNillableAssignedAt sets the "assigned_at" field if the given value is not nil.
+func (_c *GameRoleCreate) SetNillableAssignedAt(v *time.Time) *GameRoleCreate {
+	if v != nil {
+		_c.SetAssignedAt(*v)
+	}
+	return _c
+}
+
+// SetGame sets the "game" edge to the Game entity.
+func (_c *GameRoleCreate) SetGame(v *Game) *GameRoleCreate {
+	return _c.SetGameID(v.ID)
+}
+
+// SetPlayer sets the "player" edge to the Player entity.
+func (_c *GameRoleCreate) SetPlayer(v *Player) *GameRoleCreate {
+	return _c.SetPlayerID(v.ID)
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (_c *GameRoleCreate) SetRole(v *Role) *GameRoleCreate {
+	return _c.SetRoleID(v.ID)
+}
+
 // Mutation returns the GameRoleMutation object of the builder.
 func (_c *GameRoleCreate) Mutation() *GameRoleMutation {
 	return _c.mutation
@@ -25,6 +78,7 @@ func (_c *GameRoleCreate) Mutation() *GameRoleMutation {
 
 // Save creates the GameRole in the database.
 func (_c *GameRoleCreate) Save(ctx context.Context) (*GameRole, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -50,8 +104,42 @@ func (_c *GameRoleCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *GameRoleCreate) defaults() {
+	if _, ok := _c.mutation.AssignedAt(); !ok {
+		v := gamerole.DefaultAssignedAt()
+		_c.mutation.SetAssignedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *GameRoleCreate) check() error {
+	if _, ok := _c.mutation.GameID(); !ok {
+		return &ValidationError{Name: "game_id", err: errors.New(`ent: missing required field "GameRole.game_id"`)}
+	}
+	if v, ok := _c.mutation.GameID(); ok {
+		if err := gamerole.GameIDValidator(v); err != nil {
+			return &ValidationError{Name: "game_id", err: fmt.Errorf(`ent: validator failed for field "GameRole.game_id": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.PlayerID(); !ok {
+		return &ValidationError{Name: "player_id", err: errors.New(`ent: missing required field "GameRole.player_id"`)}
+	}
+	if _, ok := _c.mutation.RoleID(); !ok {
+		return &ValidationError{Name: "role_id", err: errors.New(`ent: missing required field "GameRole.role_id"`)}
+	}
+	if _, ok := _c.mutation.AssignedAt(); !ok {
+		return &ValidationError{Name: "assigned_at", err: errors.New(`ent: missing required field "GameRole.assigned_at"`)}
+	}
+	if len(_c.mutation.GameIDs()) == 0 {
+		return &ValidationError{Name: "game", err: errors.New(`ent: missing required edge "GameRole.game"`)}
+	}
+	if len(_c.mutation.PlayerIDs()) == 0 {
+		return &ValidationError{Name: "player", err: errors.New(`ent: missing required edge "GameRole.player"`)}
+	}
+	if len(_c.mutation.RoleIDs()) == 0 {
+		return &ValidationError{Name: "role", err: errors.New(`ent: missing required edge "GameRole.role"`)}
+	}
 	return nil
 }
 
@@ -78,6 +166,61 @@ func (_c *GameRoleCreate) createSpec() (*GameRole, *sqlgraph.CreateSpec) {
 		_node = &GameRole{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(gamerole.Table, sqlgraph.NewFieldSpec(gamerole.FieldID, field.TypeInt))
 	)
+	if value, ok := _c.mutation.AssignedAt(); ok {
+		_spec.SetField(gamerole.FieldAssignedAt, field.TypeTime, value)
+		_node.AssignedAt = value
+	}
+	if nodes := _c.mutation.GameIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   gamerole.GameTable,
+			Columns: []string{gamerole.GameColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.GameID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   gamerole.PlayerTable,
+			Columns: []string{gamerole.PlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.PlayerID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   gamerole.RoleTable,
+			Columns: []string{gamerole.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.RoleID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -99,6 +242,7 @@ func (_c *GameRoleCreateBulk) Save(ctx context.Context) ([]*GameRole, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*GameRoleMutation)
 				if !ok {

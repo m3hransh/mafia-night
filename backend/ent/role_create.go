@@ -4,10 +4,13 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/role"
 )
 
@@ -18,6 +21,61 @@ type RoleCreate struct {
 	hooks    []Hook
 }
 
+// SetName sets the "name" field.
+func (_c *RoleCreate) SetName(v string) *RoleCreate {
+	_c.mutation.SetName(v)
+	return _c
+}
+
+// SetTeam sets the "team" field.
+func (_c *RoleCreate) SetTeam(v role.Team) *RoleCreate {
+	_c.mutation.SetTeam(v)
+	return _c
+}
+
+// SetAbilities sets the "abilities" field.
+func (_c *RoleCreate) SetAbilities(v string) *RoleCreate {
+	_c.mutation.SetAbilities(v)
+	return _c
+}
+
+// SetNillableAbilities sets the "abilities" field if the given value is not nil.
+func (_c *RoleCreate) SetNillableAbilities(v *string) *RoleCreate {
+	if v != nil {
+		_c.SetAbilities(*v)
+	}
+	return _c
+}
+
+// SetID sets the "id" field.
+func (_c *RoleCreate) SetID(v uuid.UUID) *RoleCreate {
+	_c.mutation.SetID(v)
+	return _c
+}
+
+// SetNillableID sets the "id" field if the given value is not nil.
+func (_c *RoleCreate) SetNillableID(v *uuid.UUID) *RoleCreate {
+	if v != nil {
+		_c.SetID(*v)
+	}
+	return _c
+}
+
+// AddGameRoleIDs adds the "game_roles" edge to the GameRole entity by IDs.
+func (_c *RoleCreate) AddGameRoleIDs(ids ...int) *RoleCreate {
+	_c.mutation.AddGameRoleIDs(ids...)
+	return _c
+}
+
+// AddGameRoles adds the "game_roles" edges to the GameRole entity.
+func (_c *RoleCreate) AddGameRoles(v ...*GameRole) *RoleCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddGameRoleIDs(ids...)
+}
+
 // Mutation returns the RoleMutation object of the builder.
 func (_c *RoleCreate) Mutation() *RoleMutation {
 	return _c.mutation
@@ -25,6 +83,7 @@ func (_c *RoleCreate) Mutation() *RoleMutation {
 
 // Save creates the Role in the database.
 func (_c *RoleCreate) Save(ctx context.Context) (*Role, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -50,8 +109,32 @@ func (_c *RoleCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *RoleCreate) defaults() {
+	if _, ok := _c.mutation.ID(); !ok {
+		v := role.DefaultID()
+		_c.mutation.SetID(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *RoleCreate) check() error {
+	if _, ok := _c.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Role.name"`)}
+	}
+	if v, ok := _c.mutation.Name(); ok {
+		if err := role.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Role.name": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Team(); !ok {
+		return &ValidationError{Name: "team", err: errors.New(`ent: missing required field "Role.team"`)}
+	}
+	if v, ok := _c.mutation.Team(); ok {
+		if err := role.TeamValidator(v); err != nil {
+			return &ValidationError{Name: "team", err: fmt.Errorf(`ent: validator failed for field "Role.team": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -66,8 +149,13 @@ func (_c *RoleCreate) sqlSave(ctx context.Context) (*Role, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	_c.mutation.id = &_node.ID
 	_c.mutation.done = true
 	return _node, nil
@@ -76,8 +164,40 @@ func (_c *RoleCreate) sqlSave(ctx context.Context) (*Role, error) {
 func (_c *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Role{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(role.Table, sqlgraph.NewFieldSpec(role.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(role.Table, sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID))
 	)
+	if id, ok := _c.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
+	if value, ok := _c.mutation.Name(); ok {
+		_spec.SetField(role.FieldName, field.TypeString, value)
+		_node.Name = value
+	}
+	if value, ok := _c.mutation.Team(); ok {
+		_spec.SetField(role.FieldTeam, field.TypeEnum, value)
+		_node.Team = value
+	}
+	if value, ok := _c.mutation.Abilities(); ok {
+		_spec.SetField(role.FieldAbilities, field.TypeString, value)
+		_node.Abilities = value
+	}
+	if nodes := _c.mutation.GameRolesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   role.GameRolesTable,
+			Columns: []string{role.GameRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(gamerole.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -99,6 +219,7 @@ func (_c *RoleCreateBulk) Save(ctx context.Context) ([]*Role, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*RoleMutation)
 				if !ok {
@@ -125,10 +246,6 @@ func (_c *RoleCreateBulk) Save(ctx context.Context) ([]*Role, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})

@@ -3,7 +3,10 @@
 package gamerole
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -11,13 +14,52 @@ const (
 	Label = "game_role"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldGameID holds the string denoting the game_id field in the database.
+	FieldGameID = "game_id"
+	// FieldPlayerID holds the string denoting the player_id field in the database.
+	FieldPlayerID = "player_id"
+	// FieldRoleID holds the string denoting the role_id field in the database.
+	FieldRoleID = "role_id"
+	// FieldAssignedAt holds the string denoting the assigned_at field in the database.
+	FieldAssignedAt = "assigned_at"
+	// EdgeGame holds the string denoting the game edge name in mutations.
+	EdgeGame = "game"
+	// EdgePlayer holds the string denoting the player edge name in mutations.
+	EdgePlayer = "player"
+	// EdgeRole holds the string denoting the role edge name in mutations.
+	EdgeRole = "role"
 	// Table holds the table name of the gamerole in the database.
 	Table = "game_roles"
+	// GameTable is the table that holds the game relation/edge.
+	GameTable = "game_roles"
+	// GameInverseTable is the table name for the Game entity.
+	// It exists in this package in order to avoid circular dependency with the "game" package.
+	GameInverseTable = "games"
+	// GameColumn is the table column denoting the game relation/edge.
+	GameColumn = "game_id"
+	// PlayerTable is the table that holds the player relation/edge.
+	PlayerTable = "game_roles"
+	// PlayerInverseTable is the table name for the Player entity.
+	// It exists in this package in order to avoid circular dependency with the "player" package.
+	PlayerInverseTable = "players"
+	// PlayerColumn is the table column denoting the player relation/edge.
+	PlayerColumn = "player_id"
+	// RoleTable is the table that holds the role relation/edge.
+	RoleTable = "game_roles"
+	// RoleInverseTable is the table name for the Role entity.
+	// It exists in this package in order to avoid circular dependency with the "role" package.
+	RoleInverseTable = "roles"
+	// RoleColumn is the table column denoting the role relation/edge.
+	RoleColumn = "role_id"
 )
 
 // Columns holds all SQL columns for gamerole fields.
 var Columns = []string{
 	FieldID,
+	FieldGameID,
+	FieldPlayerID,
+	FieldRoleID,
+	FieldAssignedAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -30,10 +72,79 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// GameIDValidator is a validator for the "game_id" field. It is called by the builders before save.
+	GameIDValidator func(string) error
+	// DefaultAssignedAt holds the default value on creation for the "assigned_at" field.
+	DefaultAssignedAt func() time.Time
+)
+
 // OrderOption defines the ordering options for the GameRole queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByGameID orders the results by the game_id field.
+func ByGameID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGameID, opts...).ToFunc()
+}
+
+// ByPlayerID orders the results by the player_id field.
+func ByPlayerID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPlayerID, opts...).ToFunc()
+}
+
+// ByRoleID orders the results by the role_id field.
+func ByRoleID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRoleID, opts...).ToFunc()
+}
+
+// ByAssignedAt orders the results by the assigned_at field.
+func ByAssignedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAssignedAt, opts...).ToFunc()
+}
+
+// ByGameField orders the results by game field.
+func ByGameField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGameStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByPlayerField orders the results by player field.
+func ByPlayerField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPlayerStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByRoleField orders the results by role field.
+func ByRoleField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRoleStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newGameStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GameInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, GameTable, GameColumn),
+	)
+}
+func newPlayerStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PlayerInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, PlayerTable, PlayerColumn),
+	)
+}
+func newRoleStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RoleInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, RoleTable, RoleColumn),
+	)
 }

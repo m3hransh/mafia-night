@@ -17,7 +17,7 @@ const (
 
 // Game represents a Mafia game session
 type Game struct {
-	ID          uuid.UUID  `json:"id" db:"id"`
+	ID          string     `json:"id" db:"id"`
 	Status      GameStatus `json:"status" db:"status"`
 	ModeratorID uuid.UUID  `json:"moderator_id" db:"moderator_id"`
 	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
@@ -28,7 +28,7 @@ type Game struct {
 func NewGame(moderatorID uuid.UUID) *Game {
 	now := time.Now()
 	return &Game{
-		ID:          uuid.New(),
+		ID:          uuid.New().String()[:8],
 		Status:      GameStatusPending,
 		ModeratorID: moderatorID,
 		CreatedAt:   now,
@@ -38,7 +38,7 @@ func NewGame(moderatorID uuid.UUID) *Game {
 
 // IsValid validates the game instance
 func (g *Game) IsValid() bool {
-	if g.ID == uuid.Nil {
+	if g.ID == "" {
 		return false
 	}
 	if g.ModeratorID == uuid.Nil {

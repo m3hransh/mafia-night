@@ -9,7 +9,7 @@ import (
 func TestNewPlayer(t *testing.T) {
 	name := "Alice"
 	telegramID := "telegram123"
-	gameID := uuid.New()
+	gameID := "ABC1234"
 	
 	player := NewPlayer(name, telegramID, gameID)
 	
@@ -47,7 +47,7 @@ func TestPlayerIsValid(t *testing.T) {
 	}{
 		{
 			name:   "valid player",
-			player: NewPlayer("Alice", "tg123", uuid.New()),
+			player: NewPlayer("Alice", "tg123", "ABC1234"),
 			want:   true,
 		},
 		{
@@ -56,7 +56,7 @@ func TestPlayerIsValid(t *testing.T) {
 				ID:         uuid.Nil,
 				Name:       "Alice",
 				TelegramID: "tg123",
-				GameID:     uuid.New(),
+				GameID:     "ABC1234",
 			},
 			want: false,
 		},
@@ -66,7 +66,7 @@ func TestPlayerIsValid(t *testing.T) {
 				ID:         uuid.New(),
 				Name:       "",
 				TelegramID: "tg123",
-				GameID:     uuid.New(),
+				GameID:     "ABC1234",
 			},
 			want: false,
 		},
@@ -76,17 +76,17 @@ func TestPlayerIsValid(t *testing.T) {
 				ID:         uuid.New(),
 				Name:       "Alice",
 				TelegramID: "",
-				GameID:     uuid.New(),
+				GameID:     "ABC1234",
 			},
 			want: false,
 		},
 		{
-			name: "invalid player - nil game ID",
+			name: "invalid player - empty game ID",
 			player: &Player{
 				ID:         uuid.New(),
 				Name:       "Alice",
 				TelegramID: "tg123",
-				GameID:     uuid.Nil,
+				GameID:     "",
 			},
 			want: false,
 		},

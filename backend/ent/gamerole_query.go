@@ -11,8 +11,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/predicate"
+	"github.com/mafia-night/backend/ent/role"
 )
 
 // GameRoleQuery is the builder for querying GameRole entities.
@@ -22,6 +26,9 @@ type GameRoleQuery struct {
 	order      []gamerole.OrderOption
 	inters     []Interceptor
 	predicates []predicate.GameRole
+	withGame   *GameQuery
+	withPlayer *PlayerQuery
+	withRole   *RoleQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -56,6 +63,72 @@ func (_q *GameRoleQuery) Unique(unique bool) *GameRoleQuery {
 func (_q *GameRoleQuery) Order(o ...gamerole.OrderOption) *GameRoleQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryGame chains the current query on the "game" edge.
+func (_q *GameRoleQuery) QueryGame() *GameQuery {
+	query := (&GameClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gamerole.Table, gamerole.FieldID, selector),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, gamerole.GameTable, gamerole.GameColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPlayer chains the current query on the "player" edge.
+func (_q *GameRoleQuery) QueryPlayer() *PlayerQuery {
+	query := (&PlayerClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gamerole.Table, gamerole.FieldID, selector),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, gamerole.PlayerTable, gamerole.PlayerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRole chains the current query on the "role" edge.
+func (_q *GameRoleQuery) QueryRole() *RoleQuery {
+	query := (&RoleClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gamerole.Table, gamerole.FieldID, selector),
+			sqlgraph.To(role.Table, role.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, gamerole.RoleTable, gamerole.RoleColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first GameRole entity from the query.
@@ -250,14 +323,62 @@ func (_q *GameRoleQuery) Clone() *GameRoleQuery {
 		order:      append([]gamerole.OrderOption{}, _q.order...),
 		inters:     append([]Interceptor{}, _q.inters...),
 		predicates: append([]predicate.GameRole{}, _q.predicates...),
+		withGame:   _q.withGame.Clone(),
+		withPlayer: _q.withPlayer.Clone(),
+		withRole:   _q.withRole.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
 }
 
+// WithGame tells the query-builder to eager-load the nodes that are connected to
+// the "game" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GameRoleQuery) WithGame(opts ...func(*GameQuery)) *GameRoleQuery {
+	query := (&GameClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGame = query
+	return _q
+}
+
+// WithPlayer tells the query-builder to eager-load the nodes that are connected to
+// the "player" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GameRoleQuery) WithPlayer(opts ...func(*PlayerQuery)) *GameRoleQuery {
+	query := (&PlayerClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPlayer = query
+	return _q
+}
+
+// WithRole tells the query-builder to eager-load the nodes that are connected to
+// the "role" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GameRoleQuery) WithRole(opts ...func(*RoleQuery)) *GameRoleQuery {
+	query := (&RoleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRole = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		GameID string `json:"game_id,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.GameRole.Query().
+//		GroupBy(gamerole.FieldGameID).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (_q *GameRoleQuery) GroupBy(field string, fields ...string) *GameRoleGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &GameRoleGroupBy{build: _q}
@@ -269,6 +390,16 @@ func (_q *GameRoleQuery) GroupBy(field string, fields ...string) *GameRoleGroupB
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		GameID string `json:"game_id,omitempty"`
+//	}
+//
+//	client.GameRole.Query().
+//		Select(gamerole.FieldGameID).
+//		Scan(ctx, &v)
 func (_q *GameRoleQuery) Select(fields ...string) *GameRoleSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
 	sbuild := &GameRoleSelect{GameRoleQuery: _q}
@@ -310,8 +441,13 @@ func (_q *GameRoleQuery) prepareQuery(ctx context.Context) error {
 
 func (_q *GameRoleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*GameRole, error) {
 	var (
-		nodes = []*GameRole{}
-		_spec = _q.querySpec()
+		nodes       = []*GameRole{}
+		_spec       = _q.querySpec()
+		loadedTypes = [3]bool{
+			_q.withGame != nil,
+			_q.withPlayer != nil,
+			_q.withRole != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*GameRole).scanValues(nil, columns)
@@ -319,6 +455,7 @@ func (_q *GameRoleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Gam
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &GameRole{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -330,7 +467,113 @@ func (_q *GameRoleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Gam
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withGame; query != nil {
+		if err := _q.loadGame(ctx, query, nodes, nil,
+			func(n *GameRole, e *Game) { n.Edges.Game = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPlayer; query != nil {
+		if err := _q.loadPlayer(ctx, query, nodes, nil,
+			func(n *GameRole, e *Player) { n.Edges.Player = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRole; query != nil {
+		if err := _q.loadRole(ctx, query, nodes, nil,
+			func(n *GameRole, e *Role) { n.Edges.Role = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (_q *GameRoleQuery) loadGame(ctx context.Context, query *GameQuery, nodes []*GameRole, init func(*GameRole), assign func(*GameRole, *Game)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*GameRole)
+	for i := range nodes {
+		fk := nodes[i].GameID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(game.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "game_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *GameRoleQuery) loadPlayer(ctx context.Context, query *PlayerQuery, nodes []*GameRole, init func(*GameRole), assign func(*GameRole, *Player)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*GameRole)
+	for i := range nodes {
+		fk := nodes[i].PlayerID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(player.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "player_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *GameRoleQuery) loadRole(ctx context.Context, query *RoleQuery, nodes []*GameRole, init func(*GameRole), assign func(*GameRole, *Role)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*GameRole)
+	for i := range nodes {
+		fk := nodes[i].RoleID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(role.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "role_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
 }
 
 func (_q *GameRoleQuery) sqlCount(ctx context.Context) (int, error) {
@@ -357,6 +600,15 @@ func (_q *GameRoleQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != gamerole.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withGame != nil {
+			_spec.Node.AddColumnOnce(gamerole.FieldGameID)
+		}
+		if _q.withPlayer != nil {
+			_spec.Node.AddColumnOnce(gamerole.FieldPlayerID)
+		}
+		if _q.withRole != nil {
+			_spec.Node.AddColumnOnce(gamerole.FieldRoleID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

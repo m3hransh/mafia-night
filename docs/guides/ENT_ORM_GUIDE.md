@@ -67,6 +67,7 @@ backend/
 package schema
 
 import (
+    "time"
     "entgo.io/ent"
     "entgo.io/ent/schema/field"
     "entgo.io/ent/schema/edge"
@@ -79,11 +80,10 @@ type Game struct {
 // Fields defines the database columns
 func (Game) Fields() []ent.Field {
     return []ent.Field{
-        field.UUID("id", uuid.UUID{}).Default(uuid.New),
-        field.Enum("status").Values("pending", "in_progress", "completed"),
-        field.UUID("moderator_id", uuid.UUID{}),
-        field.Time("created_at").Default(time.Now),
-        field.Time("updated_at").UpdateDefault(time.Now),
+        field.String("id").MaxLen(12).NotEmpty().Unique().Immutable(),
+        field.Enum("status").Values("pending", "active", "completed").Default("pending"),
+        field.String("moderator_id").NotEmpty(),
+        field.Time("created_at").Default(time.Now).Immutable(),
     }
 }
 
@@ -145,26 +145,25 @@ err = client.Game.DeleteOneID(gameID).Exec(ctx)
 ```go
 func (Game) Fields() []ent.Field {
     return []ent.Field{
-        // UUID field with auto-generation
-        field.UUID("id", uuid.UUID{}).
-            Default(uuid.New).
-            Immutable(),  // Can't be changed after creation
+        // String ID (for Game Code)
+        field.String("id").
+            MaxLen(12).
+            NotEmpty().
+            Unique().
+            Immutable(),
         
         // Enum with specific values
         field.Enum("status").
-            Values("pending", "in_progress", "completed").
+            Values("pending", "active", "completed").
             Default("pending"),
         
-        // Required UUID (no default)
-        field.UUID("moderator_id", uuid.UUID{}),
+        // Moderator ID (String representation of UUID)
+        field.String("moderator_id").NotEmpty(),
         
         // Timestamps
         field.Time("created_at").
             Default(time.Now).
             Immutable(),
-        field.Time("updated_at").
-            Default(time.Now).
-            UpdateDefault(time.Now),  // Auto-updates on save
     }
 }
 ```
@@ -259,12 +258,13 @@ if err := client.Schema.Create(ctx); err != nil {
 ```go
 // Simple create
 game, err := client.Game.Create().
+    SetID("ABC1234").
     SetModeratorID(moderatorID).
     Save(ctx)
 
 // Create with all fields
 game, err := client.Game.Create().
-    SetID(uuid.New()).
+    SetID("GAME123").
     SetStatus("pending").
     SetModeratorID(moderatorID).
     SetCreatedAt(time.Now()).

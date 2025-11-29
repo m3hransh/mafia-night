@@ -9,11 +9,13 @@ import (
 	"log"
 	"reflect"
 
+	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent/migrate"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
@@ -287,7 +289,7 @@ func (c *GameClient) UpdateOne(_m *Game) *GameUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *GameClient) UpdateOneID(id int) *GameUpdateOne {
+func (c *GameClient) UpdateOneID(id string) *GameUpdateOne {
 	mutation := newGameMutation(c.config, OpUpdateOne, withGameID(id))
 	return &GameUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -304,7 +306,7 @@ func (c *GameClient) DeleteOne(_m *Game) *GameDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *GameClient) DeleteOneID(id int) *GameDeleteOne {
+func (c *GameClient) DeleteOneID(id string) *GameDeleteOne {
 	builder := c.Delete().Where(game.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -321,17 +323,49 @@ func (c *GameClient) Query() *GameQuery {
 }
 
 // Get returns a Game entity by its id.
-func (c *GameClient) Get(ctx context.Context, id int) (*Game, error) {
+func (c *GameClient) Get(ctx context.Context, id string) (*Game, error) {
 	return c.Query().Where(game.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *GameClient) GetX(ctx context.Context, id int) *Game {
+func (c *GameClient) GetX(ctx context.Context, id string) *Game {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryPlayers queries the players edge of a Game.
+func (c *GameClient) QueryPlayers(_m *Game) *PlayerQuery {
+	query := (&PlayerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.PlayersTable, game.PlayersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGameRoles queries the game_roles edge of a Game.
+func (c *GameClient) QueryGameRoles(_m *Game) *GameRoleQuery {
+	query := (&GameRoleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, id),
+			sqlgraph.To(gamerole.Table, gamerole.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.GameRolesTable, game.GameRolesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
@@ -467,6 +501,54 @@ func (c *GameRoleClient) GetX(ctx context.Context, id int) *GameRole {
 	return obj
 }
 
+// QueryGame queries the game edge of a GameRole.
+func (c *GameRoleClient) QueryGame(_m *GameRole) *GameQuery {
+	query := (&GameClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gamerole.Table, gamerole.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, gamerole.GameTable, gamerole.GameColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPlayer queries the player edge of a GameRole.
+func (c *GameRoleClient) QueryPlayer(_m *GameRole) *PlayerQuery {
+	query := (&PlayerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gamerole.Table, gamerole.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, gamerole.PlayerTable, gamerole.PlayerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRole queries the role edge of a GameRole.
+func (c *GameRoleClient) QueryRole(_m *GameRole) *RoleQuery {
+	query := (&RoleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gamerole.Table, gamerole.FieldID, id),
+			sqlgraph.To(role.Table, role.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, gamerole.RoleTable, gamerole.RoleColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *GameRoleClient) Hooks() []Hook {
 	return c.hooks.GameRole
@@ -553,7 +635,7 @@ func (c *PlayerClient) UpdateOne(_m *Player) *PlayerUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *PlayerClient) UpdateOneID(id int) *PlayerUpdateOne {
+func (c *PlayerClient) UpdateOneID(id uuid.UUID) *PlayerUpdateOne {
 	mutation := newPlayerMutation(c.config, OpUpdateOne, withPlayerID(id))
 	return &PlayerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -570,7 +652,7 @@ func (c *PlayerClient) DeleteOne(_m *Player) *PlayerDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *PlayerClient) DeleteOneID(id int) *PlayerDeleteOne {
+func (c *PlayerClient) DeleteOneID(id uuid.UUID) *PlayerDeleteOne {
 	builder := c.Delete().Where(player.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -587,17 +669,49 @@ func (c *PlayerClient) Query() *PlayerQuery {
 }
 
 // Get returns a Player entity by its id.
-func (c *PlayerClient) Get(ctx context.Context, id int) (*Player, error) {
+func (c *PlayerClient) Get(ctx context.Context, id uuid.UUID) (*Player, error) {
 	return c.Query().Where(player.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *PlayerClient) GetX(ctx context.Context, id int) *Player {
+func (c *PlayerClient) GetX(ctx context.Context, id uuid.UUID) *Player {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryGame queries the game edge of a Player.
+func (c *PlayerClient) QueryGame(_m *Player) *GameQuery {
+	query := (&GameClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, player.GameTable, player.GameColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGameRole queries the game_role edge of a Player.
+func (c *PlayerClient) QueryGameRole(_m *Player) *GameRoleQuery {
+	query := (&GameRoleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(gamerole.Table, gamerole.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, player.GameRoleTable, player.GameRoleColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
@@ -686,7 +800,7 @@ func (c *RoleClient) UpdateOne(_m *Role) *RoleUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *RoleClient) UpdateOneID(id int) *RoleUpdateOne {
+func (c *RoleClient) UpdateOneID(id uuid.UUID) *RoleUpdateOne {
 	mutation := newRoleMutation(c.config, OpUpdateOne, withRoleID(id))
 	return &RoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -703,7 +817,7 @@ func (c *RoleClient) DeleteOne(_m *Role) *RoleDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *RoleClient) DeleteOneID(id int) *RoleDeleteOne {
+func (c *RoleClient) DeleteOneID(id uuid.UUID) *RoleDeleteOne {
 	builder := c.Delete().Where(role.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -720,17 +834,33 @@ func (c *RoleClient) Query() *RoleQuery {
 }
 
 // Get returns a Role entity by its id.
-func (c *RoleClient) Get(ctx context.Context, id int) (*Role, error) {
+func (c *RoleClient) Get(ctx context.Context, id uuid.UUID) (*Role, error) {
 	return c.Query().Where(role.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *RoleClient) GetX(ctx context.Context, id int) *Role {
+func (c *RoleClient) GetX(ctx context.Context, id uuid.UUID) *Role {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryGameRoles queries the game_roles edge of a Role.
+func (c *RoleClient) QueryGameRoles(_m *Role) *GameRoleQuery {
+	query := (&GameRoleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(role.Table, role.FieldID, id),
+			sqlgraph.To(gamerole.Table, gamerole.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, role.GameRolesTable, role.GameRolesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

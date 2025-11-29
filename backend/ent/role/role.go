@@ -3,7 +3,11 @@
 package role
 
 import (
+	"fmt"
+
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 )
 
 const (
@@ -11,13 +15,31 @@ const (
 	Label = "role"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldTeam holds the string denoting the team field in the database.
+	FieldTeam = "team"
+	// FieldAbilities holds the string denoting the abilities field in the database.
+	FieldAbilities = "abilities"
+	// EdgeGameRoles holds the string denoting the game_roles edge name in mutations.
+	EdgeGameRoles = "game_roles"
 	// Table holds the table name of the role in the database.
 	Table = "roles"
+	// GameRolesTable is the table that holds the game_roles relation/edge.
+	GameRolesTable = "game_roles"
+	// GameRolesInverseTable is the table name for the GameRole entity.
+	// It exists in this package in order to avoid circular dependency with the "gamerole" package.
+	GameRolesInverseTable = "game_roles"
+	// GameRolesColumn is the table column denoting the game_roles relation/edge.
+	GameRolesColumn = "role_id"
 )
 
 // Columns holds all SQL columns for role fields.
 var Columns = []string{
 	FieldID,
+	FieldName,
+	FieldTeam,
+	FieldAbilities,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -30,10 +52,76 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// NameValidator is a validator for the "name" field. It is called by the builders before save.
+	NameValidator func(string) error
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() uuid.UUID
+)
+
+// Team defines the type for the "team" enum field.
+type Team string
+
+// Team values.
+const (
+	TeamMafia   Team = "mafia"
+	TeamVillage Team = "village"
+)
+
+func (t Team) String() string {
+	return string(t)
+}
+
+// TeamValidator is a validator for the "team" field enum values. It is called by the builders before save.
+func TeamValidator(t Team) error {
+	switch t {
+	case TeamMafia, TeamVillage:
+		return nil
+	default:
+		return fmt.Errorf("role: invalid enum value for team field: %q", t)
+	}
+}
+
 // OrderOption defines the ordering options for the Role queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByTeam orders the results by the team field.
+func ByTeam(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTeam, opts...).ToFunc()
+}
+
+// ByAbilities orders the results by the abilities field.
+func ByAbilities(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAbilities, opts...).ToFunc()
+}
+
+// ByGameRolesCount orders the results by game_roles count.
+func ByGameRolesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGameRolesStep(), opts...)
+	}
+}
+
+// ByGameRoles orders the results by game_roles terms.
+func ByGameRoles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGameRolesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newGameRolesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GameRolesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GameRolesTable, GameRolesColumn),
+	)
 }

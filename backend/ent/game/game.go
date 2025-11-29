@@ -3,7 +3,11 @@
 package game
 
 import (
+	"fmt"
+	"time"
+
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -11,13 +15,40 @@ const (
 	Label = "game"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldModeratorID holds the string denoting the moderator_id field in the database.
+	FieldModeratorID = "moderator_id"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
+	// EdgePlayers holds the string denoting the players edge name in mutations.
+	EdgePlayers = "players"
+	// EdgeGameRoles holds the string denoting the game_roles edge name in mutations.
+	EdgeGameRoles = "game_roles"
 	// Table holds the table name of the game in the database.
 	Table = "games"
+	// PlayersTable is the table that holds the players relation/edge.
+	PlayersTable = "players"
+	// PlayersInverseTable is the table name for the Player entity.
+	// It exists in this package in order to avoid circular dependency with the "player" package.
+	PlayersInverseTable = "players"
+	// PlayersColumn is the table column denoting the players relation/edge.
+	PlayersColumn = "game_id"
+	// GameRolesTable is the table that holds the game_roles relation/edge.
+	GameRolesTable = "game_roles"
+	// GameRolesInverseTable is the table name for the GameRole entity.
+	// It exists in this package in order to avoid circular dependency with the "gamerole" package.
+	GameRolesInverseTable = "game_roles"
+	// GameRolesColumn is the table column denoting the game_roles relation/edge.
+	GameRolesColumn = "game_id"
 )
 
 // Columns holds all SQL columns for game fields.
 var Columns = []string{
 	FieldID,
+	FieldStatus,
+	FieldModeratorID,
+	FieldCreatedAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -30,10 +61,103 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// ModeratorIDValidator is a validator for the "moderator_id" field. It is called by the builders before save.
+	ModeratorIDValidator func(string) error
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+	// IDValidator is a validator for the "id" field. It is called by the builders before save.
+	IDValidator func(string) error
+)
+
+// Status defines the type for the "status" enum field.
+type Status string
+
+// StatusPending is the default value of the Status enum.
+const DefaultStatus = StatusPending
+
+// Status values.
+const (
+	StatusPending   Status = "pending"
+	StatusActive    Status = "active"
+	StatusCompleted Status = "completed"
+)
+
+func (s Status) String() string {
+	return string(s)
+}
+
+// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
+func StatusValidator(s Status) error {
+	switch s {
+	case StatusPending, StatusActive, StatusCompleted:
+		return nil
+	default:
+		return fmt.Errorf("game: invalid enum value for status field: %q", s)
+	}
+}
+
 // OrderOption defines the ordering options for the Game queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByModeratorID orders the results by the moderator_id field.
+func ByModeratorID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldModeratorID, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByPlayersCount orders the results by players count.
+func ByPlayersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPlayersStep(), opts...)
+	}
+}
+
+// ByPlayers orders the results by players terms.
+func ByPlayers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPlayersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGameRolesCount orders the results by game_roles count.
+func ByGameRolesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGameRolesStep(), opts...)
+	}
+}
+
+// ByGameRoles orders the results by game_roles terms.
+func ByGameRoles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGameRolesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newPlayersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PlayersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PlayersTable, PlayersColumn),
+	)
+}
+func newGameRolesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GameRolesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GameRolesTable, GameRolesColumn),
+	)
 }

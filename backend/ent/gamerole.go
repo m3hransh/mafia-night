@@ -5,18 +5,80 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/player"
+	"github.com/mafia-night/backend/ent/role"
 )
 
 // GameRole is the model entity for the GameRole schema.
 type GameRole struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
-	ID           int `json:"id,omitempty"`
+	ID int `json:"id,omitempty"`
+	// GameID holds the value of the "game_id" field.
+	GameID string `json:"game_id,omitempty"`
+	// PlayerID holds the value of the "player_id" field.
+	PlayerID uuid.UUID `json:"player_id,omitempty"`
+	// RoleID holds the value of the "role_id" field.
+	RoleID uuid.UUID `json:"role_id,omitempty"`
+	// AssignedAt holds the value of the "assigned_at" field.
+	AssignedAt time.Time `json:"assigned_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the GameRoleQuery when eager-loading is set.
+	Edges        GameRoleEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// GameRoleEdges holds the relations/edges for other nodes in the graph.
+type GameRoleEdges struct {
+	// Game holds the value of the game edge.
+	Game *Game `json:"game,omitempty"`
+	// Player holds the value of the player edge.
+	Player *Player `json:"player,omitempty"`
+	// Role holds the value of the role edge.
+	Role *Role `json:"role,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [3]bool
+}
+
+// GameOrErr returns the Game value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e GameRoleEdges) GameOrErr() (*Game, error) {
+	if e.Game != nil {
+		return e.Game, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: game.Label}
+	}
+	return nil, &NotLoadedError{edge: "game"}
+}
+
+// PlayerOrErr returns the Player value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e GameRoleEdges) PlayerOrErr() (*Player, error) {
+	if e.Player != nil {
+		return e.Player, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: player.Label}
+	}
+	return nil, &NotLoadedError{edge: "player"}
+}
+
+// RoleOrErr returns the Role value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e GameRoleEdges) RoleOrErr() (*Role, error) {
+	if e.Role != nil {
+		return e.Role, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: role.Label}
+	}
+	return nil, &NotLoadedError{edge: "role"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -26,6 +88,12 @@ func (*GameRole) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case gamerole.FieldID:
 			values[i] = new(sql.NullInt64)
+		case gamerole.FieldGameID:
+			values[i] = new(sql.NullString)
+		case gamerole.FieldAssignedAt:
+			values[i] = new(sql.NullTime)
+		case gamerole.FieldPlayerID, gamerole.FieldRoleID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -47,6 +115,30 @@ func (_m *GameRole) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int(value.Int64)
+		case gamerole.FieldGameID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field game_id", values[i])
+			} else if value.Valid {
+				_m.GameID = value.String
+			}
+		case gamerole.FieldPlayerID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field player_id", values[i])
+			} else if value != nil {
+				_m.PlayerID = *value
+			}
+		case gamerole.FieldRoleID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field role_id", values[i])
+			} else if value != nil {
+				_m.RoleID = *value
+			}
+		case gamerole.FieldAssignedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field assigned_at", values[i])
+			} else if value.Valid {
+				_m.AssignedAt = value.Time
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -58,6 +150,21 @@ func (_m *GameRole) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *GameRole) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryGame queries the "game" edge of the GameRole entity.
+func (_m *GameRole) QueryGame() *GameQuery {
+	return NewGameRoleClient(_m.config).QueryGame(_m)
+}
+
+// QueryPlayer queries the "player" edge of the GameRole entity.
+func (_m *GameRole) QueryPlayer() *PlayerQuery {
+	return NewGameRoleClient(_m.config).QueryPlayer(_m)
+}
+
+// QueryRole queries the "role" edge of the GameRole entity.
+func (_m *GameRole) QueryRole() *RoleQuery {
+	return NewGameRoleClient(_m.config).QueryRole(_m)
 }
 
 // Update returns a builder for updating this GameRole.
@@ -82,7 +189,18 @@ func (_m *GameRole) Unwrap() *GameRole {
 func (_m *GameRole) String() string {
 	var builder strings.Builder
 	builder.WriteString("GameRole(")
-	builder.WriteString(fmt.Sprintf("id=%v", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString("game_id=")
+	builder.WriteString(_m.GameID)
+	builder.WriteString(", ")
+	builder.WriteString("player_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.PlayerID))
+	builder.WriteString(", ")
+	builder.WriteString("role_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RoleID))
+	builder.WriteString(", ")
+	builder.WriteString("assigned_at=")
+	builder.WriteString(_m.AssignedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

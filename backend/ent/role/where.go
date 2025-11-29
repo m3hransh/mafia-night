@@ -4,52 +4,247 @@ package role
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.Role {
+func ID(id uuid.UUID) predicate.Role {
 	return predicate.Role(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.Role {
+func IDEQ(id uuid.UUID) predicate.Role {
 	return predicate.Role(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.Role {
+func IDNEQ(id uuid.UUID) predicate.Role {
 	return predicate.Role(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.Role {
+func IDIn(ids ...uuid.UUID) predicate.Role {
 	return predicate.Role(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.Role {
+func IDNotIn(ids ...uuid.UUID) predicate.Role {
 	return predicate.Role(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.Role {
+func IDGT(id uuid.UUID) predicate.Role {
 	return predicate.Role(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.Role {
+func IDGTE(id uuid.UUID) predicate.Role {
 	return predicate.Role(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.Role {
+func IDLT(id uuid.UUID) predicate.Role {
 	return predicate.Role(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.Role {
+func IDLTE(id uuid.UUID) predicate.Role {
 	return predicate.Role(sql.FieldLTE(FieldID, id))
+}
+
+// Name applies equality check predicate on the "name" field. It's identical to NameEQ.
+func Name(v string) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldName, v))
+}
+
+// Abilities applies equality check predicate on the "abilities" field. It's identical to AbilitiesEQ.
+func Abilities(v string) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldAbilities, v))
+}
+
+// NameEQ applies the EQ predicate on the "name" field.
+func NameEQ(v string) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldName, v))
+}
+
+// NameNEQ applies the NEQ predicate on the "name" field.
+func NameNEQ(v string) predicate.Role {
+	return predicate.Role(sql.FieldNEQ(FieldName, v))
+}
+
+// NameIn applies the In predicate on the "name" field.
+func NameIn(vs ...string) predicate.Role {
+	return predicate.Role(sql.FieldIn(FieldName, vs...))
+}
+
+// NameNotIn applies the NotIn predicate on the "name" field.
+func NameNotIn(vs ...string) predicate.Role {
+	return predicate.Role(sql.FieldNotIn(FieldName, vs...))
+}
+
+// NameGT applies the GT predicate on the "name" field.
+func NameGT(v string) predicate.Role {
+	return predicate.Role(sql.FieldGT(FieldName, v))
+}
+
+// NameGTE applies the GTE predicate on the "name" field.
+func NameGTE(v string) predicate.Role {
+	return predicate.Role(sql.FieldGTE(FieldName, v))
+}
+
+// NameLT applies the LT predicate on the "name" field.
+func NameLT(v string) predicate.Role {
+	return predicate.Role(sql.FieldLT(FieldName, v))
+}
+
+// NameLTE applies the LTE predicate on the "name" field.
+func NameLTE(v string) predicate.Role {
+	return predicate.Role(sql.FieldLTE(FieldName, v))
+}
+
+// NameContains applies the Contains predicate on the "name" field.
+func NameContains(v string) predicate.Role {
+	return predicate.Role(sql.FieldContains(FieldName, v))
+}
+
+// NameHasPrefix applies the HasPrefix predicate on the "name" field.
+func NameHasPrefix(v string) predicate.Role {
+	return predicate.Role(sql.FieldHasPrefix(FieldName, v))
+}
+
+// NameHasSuffix applies the HasSuffix predicate on the "name" field.
+func NameHasSuffix(v string) predicate.Role {
+	return predicate.Role(sql.FieldHasSuffix(FieldName, v))
+}
+
+// NameEqualFold applies the EqualFold predicate on the "name" field.
+func NameEqualFold(v string) predicate.Role {
+	return predicate.Role(sql.FieldEqualFold(FieldName, v))
+}
+
+// NameContainsFold applies the ContainsFold predicate on the "name" field.
+func NameContainsFold(v string) predicate.Role {
+	return predicate.Role(sql.FieldContainsFold(FieldName, v))
+}
+
+// TeamEQ applies the EQ predicate on the "team" field.
+func TeamEQ(v Team) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldTeam, v))
+}
+
+// TeamNEQ applies the NEQ predicate on the "team" field.
+func TeamNEQ(v Team) predicate.Role {
+	return predicate.Role(sql.FieldNEQ(FieldTeam, v))
+}
+
+// TeamIn applies the In predicate on the "team" field.
+func TeamIn(vs ...Team) predicate.Role {
+	return predicate.Role(sql.FieldIn(FieldTeam, vs...))
+}
+
+// TeamNotIn applies the NotIn predicate on the "team" field.
+func TeamNotIn(vs ...Team) predicate.Role {
+	return predicate.Role(sql.FieldNotIn(FieldTeam, vs...))
+}
+
+// AbilitiesEQ applies the EQ predicate on the "abilities" field.
+func AbilitiesEQ(v string) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldAbilities, v))
+}
+
+// AbilitiesNEQ applies the NEQ predicate on the "abilities" field.
+func AbilitiesNEQ(v string) predicate.Role {
+	return predicate.Role(sql.FieldNEQ(FieldAbilities, v))
+}
+
+// AbilitiesIn applies the In predicate on the "abilities" field.
+func AbilitiesIn(vs ...string) predicate.Role {
+	return predicate.Role(sql.FieldIn(FieldAbilities, vs...))
+}
+
+// AbilitiesNotIn applies the NotIn predicate on the "abilities" field.
+func AbilitiesNotIn(vs ...string) predicate.Role {
+	return predicate.Role(sql.FieldNotIn(FieldAbilities, vs...))
+}
+
+// AbilitiesGT applies the GT predicate on the "abilities" field.
+func AbilitiesGT(v string) predicate.Role {
+	return predicate.Role(sql.FieldGT(FieldAbilities, v))
+}
+
+// AbilitiesGTE applies the GTE predicate on the "abilities" field.
+func AbilitiesGTE(v string) predicate.Role {
+	return predicate.Role(sql.FieldGTE(FieldAbilities, v))
+}
+
+// AbilitiesLT applies the LT predicate on the "abilities" field.
+func AbilitiesLT(v string) predicate.Role {
+	return predicate.Role(sql.FieldLT(FieldAbilities, v))
+}
+
+// AbilitiesLTE applies the LTE predicate on the "abilities" field.
+func AbilitiesLTE(v string) predicate.Role {
+	return predicate.Role(sql.FieldLTE(FieldAbilities, v))
+}
+
+// AbilitiesContains applies the Contains predicate on the "abilities" field.
+func AbilitiesContains(v string) predicate.Role {
+	return predicate.Role(sql.FieldContains(FieldAbilities, v))
+}
+
+// AbilitiesHasPrefix applies the HasPrefix predicate on the "abilities" field.
+func AbilitiesHasPrefix(v string) predicate.Role {
+	return predicate.Role(sql.FieldHasPrefix(FieldAbilities, v))
+}
+
+// AbilitiesHasSuffix applies the HasSuffix predicate on the "abilities" field.
+func AbilitiesHasSuffix(v string) predicate.Role {
+	return predicate.Role(sql.FieldHasSuffix(FieldAbilities, v))
+}
+
+// AbilitiesIsNil applies the IsNil predicate on the "abilities" field.
+func AbilitiesIsNil() predicate.Role {
+	return predicate.Role(sql.FieldIsNull(FieldAbilities))
+}
+
+// AbilitiesNotNil applies the NotNil predicate on the "abilities" field.
+func AbilitiesNotNil() predicate.Role {
+	return predicate.Role(sql.FieldNotNull(FieldAbilities))
+}
+
+// AbilitiesEqualFold applies the EqualFold predicate on the "abilities" field.
+func AbilitiesEqualFold(v string) predicate.Role {
+	return predicate.Role(sql.FieldEqualFold(FieldAbilities, v))
+}
+
+// AbilitiesContainsFold applies the ContainsFold predicate on the "abilities" field.
+func AbilitiesContainsFold(v string) predicate.Role {
+	return predicate.Role(sql.FieldContainsFold(FieldAbilities, v))
+}
+
+// HasGameRoles applies the HasEdge predicate on the "game_roles" edge.
+func HasGameRoles() predicate.Role {
+	return predicate.Role(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GameRolesTable, GameRolesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGameRolesWith applies the HasEdge predicate on the "game_roles" edge with a given conditions (other predicates).
+func HasGameRolesWith(preds ...predicate.GameRole) predicate.Role {
+	return predicate.Role(func(s *sql.Selector) {
+		step := newGameRolesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

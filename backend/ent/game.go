@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -13,10 +14,48 @@ import (
 
 // Game is the model entity for the Game schema.
 type Game struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
-	ID           int `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
+	// Status holds the value of the "status" field.
+	Status game.Status `json:"status,omitempty"`
+	// ModeratorID holds the value of the "moderator_id" field.
+	ModeratorID string `json:"moderator_id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the GameQuery when eager-loading is set.
+	Edges        GameEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// GameEdges holds the relations/edges for other nodes in the graph.
+type GameEdges struct {
+	// Players holds the value of the players edge.
+	Players []*Player `json:"players,omitempty"`
+	// GameRoles holds the value of the game_roles edge.
+	GameRoles []*GameRole `json:"game_roles,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+}
+
+// PlayersOrErr returns the Players value or an error if the edge
+// was not loaded in eager-loading.
+func (e GameEdges) PlayersOrErr() ([]*Player, error) {
+	if e.loadedTypes[0] {
+		return e.Players, nil
+	}
+	return nil, &NotLoadedError{edge: "players"}
+}
+
+// GameRolesOrErr returns the GameRoles value or an error if the edge
+// was not loaded in eager-loading.
+func (e GameEdges) GameRolesOrErr() ([]*GameRole, error) {
+	if e.loadedTypes[1] {
+		return e.GameRoles, nil
+	}
+	return nil, &NotLoadedError{edge: "game_roles"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -24,8 +63,10 @@ func (*Game) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case game.FieldID:
-			values[i] = new(sql.NullInt64)
+		case game.FieldID, game.FieldStatus, game.FieldModeratorID:
+			values[i] = new(sql.NullString)
+		case game.FieldCreatedAt:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -42,11 +83,29 @@ func (_m *Game) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case game.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value.Valid {
+				_m.ID = value.String
 			}
-			_m.ID = int(value.Int64)
+		case game.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				_m.Status = game.Status(value.String)
+			}
+		case game.FieldModeratorID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field moderator_id", values[i])
+			} else if value.Valid {
+				_m.ModeratorID = value.String
+			}
+		case game.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				_m.CreatedAt = value.Time
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -58,6 +117,16 @@ func (_m *Game) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Game) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryPlayers queries the "players" edge of the Game entity.
+func (_m *Game) QueryPlayers() *PlayerQuery {
+	return NewGameClient(_m.config).QueryPlayers(_m)
+}
+
+// QueryGameRoles queries the "game_roles" edge of the Game entity.
+func (_m *Game) QueryGameRoles() *GameRoleQuery {
+	return NewGameClient(_m.config).QueryGameRoles(_m)
 }
 
 // Update returns a builder for updating this Game.
@@ -82,7 +151,15 @@ func (_m *Game) Unwrap() *Game {
 func (_m *Game) String() string {
 	var builder strings.Builder
 	builder.WriteString("Game(")
-	builder.WriteString(fmt.Sprintf("id=%v", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString("status=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Status))
+	builder.WriteString(", ")
+	builder.WriteString("moderator_id=")
+	builder.WriteString(_m.ModeratorID)
+	builder.WriteString(", ")
+	builder.WriteString("created_at=")
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

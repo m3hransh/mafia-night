@@ -3,7 +3,11 @@
 package player
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 )
 
 const (
@@ -11,13 +15,43 @@ const (
 	Label = "player"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldTelegramID holds the string denoting the telegram_id field in the database.
+	FieldTelegramID = "telegram_id"
+	// FieldGameID holds the string denoting the game_id field in the database.
+	FieldGameID = "game_id"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
+	// EdgeGame holds the string denoting the game edge name in mutations.
+	EdgeGame = "game"
+	// EdgeGameRole holds the string denoting the game_role edge name in mutations.
+	EdgeGameRole = "game_role"
 	// Table holds the table name of the player in the database.
 	Table = "players"
+	// GameTable is the table that holds the game relation/edge.
+	GameTable = "players"
+	// GameInverseTable is the table name for the Game entity.
+	// It exists in this package in order to avoid circular dependency with the "game" package.
+	GameInverseTable = "games"
+	// GameColumn is the table column denoting the game relation/edge.
+	GameColumn = "game_id"
+	// GameRoleTable is the table that holds the game_role relation/edge.
+	GameRoleTable = "game_roles"
+	// GameRoleInverseTable is the table name for the GameRole entity.
+	// It exists in this package in order to avoid circular dependency with the "gamerole" package.
+	GameRoleInverseTable = "game_roles"
+	// GameRoleColumn is the table column denoting the game_role relation/edge.
+	GameRoleColumn = "player_id"
 )
 
 // Columns holds all SQL columns for player fields.
 var Columns = []string{
 	FieldID,
+	FieldName,
+	FieldTelegramID,
+	FieldGameID,
+	FieldCreatedAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -30,10 +64,69 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// NameValidator is a validator for the "name" field. It is called by the builders before save.
+	NameValidator func(string) error
+	// GameIDValidator is a validator for the "game_id" field. It is called by the builders before save.
+	GameIDValidator func(string) error
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() uuid.UUID
+)
+
 // OrderOption defines the ordering options for the Player queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByTelegramID orders the results by the telegram_id field.
+func ByTelegramID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTelegramID, opts...).ToFunc()
+}
+
+// ByGameID orders the results by the game_id field.
+func ByGameID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGameID, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByGameField orders the results by game field.
+func ByGameField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGameStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByGameRoleField orders the results by game_role field.
+func ByGameRoleField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGameRoleStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newGameStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GameInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, GameTable, GameColumn),
+	)
+}
+func newGameRoleStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GameRoleInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, GameRoleTable, GameRoleColumn),
+	)
 }

@@ -46,23 +46,3 @@ func (r *Role) IsValid() bool {
 	}
 	return true
 }
-
-// GameRole represents the assignment of a role to a player in a specific game
-type GameRole struct {
-	ID         uuid.UUID `json:"id" db:"id"`
-	GameID     uuid.UUID `json:"game_id" db:"game_id"`
-	PlayerID   uuid.UUID `json:"player_id" db:"player_id"`
-	RoleID     uuid.UUID `json:"role_id" db:"role_id"`
-	AssignedAt time.Time `json:"assigned_at" db:"assigned_at"`
-}
-
-// NewGameRole creates a new GameRole instance
-func NewGameRole(gameID, playerID, roleID uuid.UUID) *GameRole {
-	return &GameRole{
-		ID:         uuid.New(),
-		GameID:     gameID,
-		PlayerID:   playerID,
-		RoleID:     roleID,
-		AssignedAt: time.Now(),
-	}
-}
