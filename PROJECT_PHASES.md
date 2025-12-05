@@ -18,7 +18,7 @@ A web application for managing physical Mafia games with:
 - [x] Set up Next.js frontend project with TypeScript
 - [x] Configure testing frameworks (Go: testing package + testify, Next.js: Jest + React Testing Library)
 - [x] Set up Docker configuration for local development
-- [ ] Create initial database schema design (PostgreSQL)
+- [x] Create initial database schema design (PostgreSQL)
 - [ ] Set up CI/CD pipeline configuration
 - [ ] Create README with setup instructions
 
