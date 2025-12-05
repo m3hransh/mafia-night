@@ -22,7 +22,7 @@ func NewGameRepository(client *ent.Client) GameRepository {
 func (r *PostgresGameRepository) Create(ctx context.Context, g *models.Game) error {
 	created, err := r.client.Game.
 		Create().
-		SetID(g.ID).
+		SetID(g.ID.String()).
 		SetStatus(game.Status(g.Status)).
 		SetModeratorID(g.ModeratorID.String()).
 		Save(ctx)
@@ -48,7 +48,7 @@ func (r *PostgresGameRepository) GetByID(ctx context.Context, id string) (*model
 
 func (r *PostgresGameRepository) Update(ctx context.Context, g *models.Game) error {
 	_, err := r.client.Game.
-		UpdateOneID(g.ID).
+		UpdateOneID(g.ID.String()).
 		SetStatus(game.Status(g.Status)).
 		Save(ctx)
 	if err != nil {
@@ -92,7 +92,7 @@ func mapEntGameToModel(eg *ent.Game) (*models.Game, error) {
 	}
 	
 	return &models.Game{
-		ID:          eg.ID,
+		ID:          models.GameID(eg.ID),
 		Status:      models.GameStatus(eg.Status),
 		ModeratorID: modID,
 		CreatedAt:   eg.CreatedAt,

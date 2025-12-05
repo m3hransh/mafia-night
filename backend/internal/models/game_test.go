@@ -9,7 +9,10 @@ import (
 func TestNewGame(t *testing.T) {
 	moderatorID := uuid.New()
 	
-	game := NewGame(moderatorID)
+	game, err := NewGame(moderatorID)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
 	
 	// Test: Game should have a valid ID
 	if game.ID == "" {
@@ -37,50 +40,29 @@ func TestNewGame(t *testing.T) {
 	}
 }
 
-func TestGameIsValid(t *testing.T) {
+func TestNewGame_Validation(t *testing.T) {
 	tests := []struct {
-		name    string
-		game    *Game
-		want    bool
+		name        string
+		moderatorID uuid.UUID
+		wantErr     bool
 	}{
 		{
-			name: "valid game",
-			game: NewGame(uuid.New()),
-			want: true,
+			name:        "valid game",
+			moderatorID: uuid.New(),
+			wantErr:     false,
 		},
 		{
-			name: "invalid game - empty ID",
-			game: &Game{
-				ID:          "",
-				Status:      GameStatusPending,
-				ModeratorID: uuid.New(),
-			},
-			want: false,
-		},
-		{
-			name: "invalid game - nil moderator",
-			game: &Game{
-				ID:          uuid.New().String()[:8],
-				Status:      GameStatusPending,
-				ModeratorID: uuid.Nil,
-			},
-			want: false,
-		},
-		{
-			name: "invalid game - invalid status",
-			game: &Game{
-				ID:          uuid.New().String()[:8],
-				Status:      GameStatus("invalid"),
-				ModeratorID: uuid.New(),
-			},
-			want: false,
+			name:        "invalid game - nil moderator",
+			moderatorID: uuid.Nil,
+			wantErr:     true,
 		},
 	}
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.game.IsValid(); got != tt.want {
-				t.Errorf("IsValid() = %v, want %v", got, tt.want)
+			_, err := NewGame(tt.moderatorID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewGame() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -111,7 +93,7 @@ func TestGameCanJoin(t *testing.T) {
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			game := NewGame(uuid.New())
+			game, _ := NewGame(uuid.New())
 			game.Status = tt.status
 			
 			if got := game.CanJoin(); got != tt.want {
@@ -123,7 +105,7 @@ func TestGameCanJoin(t *testing.T) {
 
 func TestGameStart(t *testing.T) {
 	t.Run("can start pending game", func(t *testing.T) {
-		game := NewGame(uuid.New())
+		game, _ := NewGame(uuid.New())
 		
 		err := game.Start()
 		
@@ -137,7 +119,7 @@ func TestGameStart(t *testing.T) {
 	})
 	
 	t.Run("cannot start already started game", func(t *testing.T) {
-		game := NewGame(uuid.New())
+		game, _ := NewGame(uuid.New())
 		game.Status = GameStatusInProgress
 		
 		err := game.Start()
@@ -148,7 +130,7 @@ func TestGameStart(t *testing.T) {
 	})
 	
 	t.Run("cannot start completed game", func(t *testing.T) {
-		game := NewGame(uuid.New())
+		game, _ := NewGame(uuid.New())
 		game.Status = GameStatusCompleted
 		
 		err := game.Start()
@@ -161,7 +143,7 @@ func TestGameStart(t *testing.T) {
 
 func TestGameComplete(t *testing.T) {
 	t.Run("can complete in-progress game", func(t *testing.T) {
-		game := NewGame(uuid.New())
+		game, _ := NewGame(uuid.New())
 		game.Status = GameStatusInProgress
 		
 		err := game.Complete()
@@ -176,7 +158,7 @@ func TestGameComplete(t *testing.T) {
 	})
 	
 	t.Run("cannot complete pending game", func(t *testing.T) {
-		game := NewGame(uuid.New())
+		game, _ := NewGame(uuid.New())
 		
 		err := game.Complete()
 		
@@ -186,7 +168,7 @@ func TestGameComplete(t *testing.T) {
 	})
 	
 	t.Run("cannot complete already completed game", func(t *testing.T) {
-		game := NewGame(uuid.New())
+		game, _ := NewGame(uuid.New())
 		game.Status = GameStatusCompleted
 		
 		err := game.Complete()

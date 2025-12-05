@@ -9,93 +9,77 @@ import (
 func TestNewPlayer(t *testing.T) {
 	name := "Alice"
 	telegramID := "telegram123"
-	gameID := "ABC1234"
-	
-	player := NewPlayer(name, telegramID, gameID)
-	
+	gameID := GameID("ABC1234")
+
+	player, err := NewPlayer(name, telegramID, gameID)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
 	// Test: Player should have a valid UUID
 	if player.ID == uuid.Nil {
 		t.Error("Expected player to have a valid ID")
 	}
-	
+
 	// Test: Player should have correct name
 	if player.Name != name {
 		t.Errorf("Expected name to be %s, got %s", name, player.Name)
 	}
-	
+
 	// Test: Player should have correct telegram ID
 	if player.TelegramID != telegramID {
 		t.Errorf("Expected telegram_id to be %s, got %s", telegramID, player.TelegramID)
 	}
-	
+
 	// Test: Player should have correct game ID
 	if player.GameID != gameID {
 		t.Errorf("Expected game_id to be %s, got %s", gameID, player.GameID)
 	}
-	
+
 	// Test: CreatedAt should be set
 	if player.CreatedAt.IsZero() {
 		t.Error("Expected CreatedAt to be set")
 	}
 }
 
-func TestPlayerIsValid(t *testing.T) {
+func TestNewPlayer_Validation(t *testing.T) {
 	tests := []struct {
-		name    string
-		player  *Player
-		want    bool
+		name       string
+		telegramID string
+		gameID     GameID
+		wantErr    bool
 	}{
 		{
-			name:   "valid player",
-			player: NewPlayer("Alice", "tg123", "ABC1234"),
-			want:   true,
+			name:       "valid player",
+			telegramID: "tg123",
+			gameID:     GameID("ABC1234"),
+			wantErr:    false,
 		},
 		{
-			name: "invalid player - nil ID",
-			player: &Player{
-				ID:         uuid.Nil,
-				Name:       "Alice",
-				TelegramID: "tg123",
-				GameID:     "ABC1234",
-			},
-			want: false,
+			name:       "",
+			telegramID: "tg123",
+			gameID:     GameID("ABC1234"),
+			wantErr:    true,
 		},
 		{
-			name: "invalid player - empty name",
-			player: &Player{
-				ID:         uuid.New(),
-				Name:       "",
-				TelegramID: "tg123",
-				GameID:     "ABC1234",
-			},
-			want: false,
+			name:       "invalid player - empty telegram ID",
+			telegramID: "",
+			gameID:     GameID("ABC1234"),
+			wantErr:    true,
 		},
 		{
-			name: "invalid player - empty telegram ID",
-			player: &Player{
-				ID:         uuid.New(),
-				Name:       "Alice",
-				TelegramID: "",
-				GameID:     "ABC1234",
-			},
-			want: false,
-		},
-		{
-			name: "invalid player - empty game ID",
-			player: &Player{
-				ID:         uuid.New(),
-				Name:       "Alice",
-				TelegramID: "tg123",
-				GameID:     "",
-			},
-			want: false,
+			name:       "invalid player - empty game ID",
+			telegramID: "tg123",
+			gameID:     "",
+			wantErr:    true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.player.IsValid(); got != tt.want {
-				t.Errorf("IsValid() = %v, want %v", got, tt.want)
+			_, err := NewPlayer(tt.name, tt.telegramID, tt.gameID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewPlayer() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

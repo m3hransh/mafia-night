@@ -1,10 +1,18 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// GameID represents a unique game identifier code
+type GameID string
+
+func (id GameID) String() string {
+	return string(id)
+}
 
 // GameStatus represents the current state of a game
 type GameStatus string
@@ -17,7 +25,7 @@ const (
 
 // Game represents a Mafia game session
 type Game struct {
-	ID          string     `json:"id" db:"id"`
+	ID          GameID     `json:"id" db:"id"`
 	Status      GameStatus `json:"status" db:"status"`
 	ModeratorID uuid.UUID  `json:"moderator_id" db:"moderator_id"`
 	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
@@ -25,31 +33,23 @@ type Game struct {
 }
 
 // NewGame creates a new Game instance with default values
-func NewGame(moderatorID uuid.UUID) *Game {
+func NewGame(moderatorID uuid.UUID) (*Game, error) {
+	if moderatorID == uuid.Nil {
+		return nil, errors.New("moderator ID is required")
+	}
+
 	now := time.Now()
+	// Generate a random 8-character ID
+	// Note: In production, ensure uniqueness collision check
+	id := uuid.New().String()[:8]
+
 	return &Game{
-		ID:          uuid.New().String()[:8],
+		ID:          GameID(id),
 		Status:      GameStatusPending,
 		ModeratorID: moderatorID,
 		CreatedAt:   now,
 		UpdatedAt:   now,
-	}
-}
-
-// IsValid validates the game instance
-func (g *Game) IsValid() bool {
-	if g.ID == "" {
-		return false
-	}
-	if g.ModeratorID == uuid.Nil {
-		return false
-	}
-	if g.Status != GameStatusPending && 
-	   g.Status != GameStatusInProgress && 
-	   g.Status != GameStatusCompleted {
-		return false
-	}
-	return true
+	}, nil
 }
 
 // CanJoin checks if players can join the game

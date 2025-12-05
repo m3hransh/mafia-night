@@ -79,6 +79,7 @@
             gofumpt
             golangci-lint
             nixpkgs-fmt
+            pgcli
           ];
 
           shellHook = ''

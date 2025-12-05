@@ -20,6 +20,10 @@ test-backend-verbose:
 test-backend-coverage:
   cd backend && go test -cover ./...
 
+# Run backend tests in watch mode
+test-backend-watch:
+  cd backend && ../scripts/test-watch.sh
+
 # Run backend server
 run-backend:
   cd backend && go run ./cmd/api

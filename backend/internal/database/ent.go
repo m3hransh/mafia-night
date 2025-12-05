@@ -10,6 +10,16 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// Config holds database configuration
+type Config struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+	DBName   string
+	SSLMode  string
+}
+
 // NewEntClient creates a new Ent client connected to PostgreSQL
 func NewEntClient(cfg Config) (*ent.Client, error) {
 	dsn := fmt.Sprintf(
