@@ -80,25 +80,17 @@
             golangci-lint
             nixpkgs-fmt
             pgcli
-            
-            # Go test tools
-            (pkgs.buildGoModule rec {
-              pname = "gotestsum";
-              version = "1.12.0";
-              src = pkgs.fetchFromGitHub {
-                owner = "gotestyourself";
-                repo = "gotestsum";
-                rev = "v${version}";
-                hash = "sha256-0VfoQ437qC1O2MtM5s4xZ/5ORXGNOCxEe3VCsCKPwUk=";
-              };
-              vendorHash = "sha256-GU7bQKxhTwWEQY/kUWUCPfNYlF7cxJ/+KdrmARTUqsg=";
-              doCheck = false;
-            })
           ];
 
           shellHook = ''
             export GOPATH="$HOME/go"
             export PATH="$GOPATH/bin:$PATH"
+            
+            # Install gotestsum if not present
+            if ! command -v gotestsum &> /dev/null; then
+              echo "📦 Installing gotestsum..."
+              go install gotest.tools/gotestsum@latest 2>/dev/null
+            fi
             
             echo ""
             echo "🎭 Mafia Night Development Environment"
