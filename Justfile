@@ -10,15 +10,33 @@ default:
 
 # Run all backend tests
 test-backend:
-  cd backend && go test ./...
+  #!/usr/bin/env bash
+  cd backend
+  if command -v gotestsum &> /dev/null; then
+    gotestsum --format testname
+  else
+    go test ./...
+  fi
 
 # Run backend tests with verbose output
 test-backend-verbose:
-  cd backend && go test -v ./...
+  #!/usr/bin/env bash
+  cd backend
+  if command -v gotestsum &> /dev/null; then
+    gotestsum --format standard-verbose
+  else
+    go test -v ./...
+  fi
 
 # Run backend tests with coverage
 test-backend-coverage:
-  cd backend && go test -cover ./...
+  #!/usr/bin/env bash
+  cd backend
+  if command -v gotestsum &> /dev/null; then
+    gotestsum --format testname -- -cover ./...
+  else
+    go test -cover ./...
+  fi
 
 # Run backend tests in watch mode
 test-backend-watch:

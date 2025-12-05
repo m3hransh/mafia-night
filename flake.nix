@@ -80,6 +80,20 @@
             golangci-lint
             nixpkgs-fmt
             pgcli
+            
+            # Go test tools
+            (pkgs.buildGoModule rec {
+              pname = "gotestsum";
+              version = "1.12.0";
+              src = pkgs.fetchFromGitHub {
+                owner = "gotestyourself";
+                repo = "gotestsum";
+                rev = "v${version}";
+                hash = "sha256-0VfoQ437qC1O2MtM5s4xZ/5ORXGNOCxEe3VCsCKPwUk=";
+              };
+              vendorHash = "sha256-GU7bQKxhTwWEQY/kUWUCPfNYlF7cxJ/+KdrmARTUqsg=";
+              doCheck = false;
+            })
           ];
 
           shellHook = ''
@@ -99,7 +113,7 @@
             echo "  frontend/  → Next.js app"
             echo ""
             echo "🚀 Quick commands:"
-            echo "  cd backend && go test ./...       # Test backend"
+            echo "  just test-backend                 # Test backend"
             echo "  cd frontend && npm test           # Test frontend"
             echo "  docker-compose up                 # Start all services"
             echo ""

@@ -44,7 +44,7 @@ just dev
 - **Build System:** Nix Flakes
 - **Database:** PostgreSQL 16
 - **ORM:** Ent (Type-safe ORM)
-- **Testing:** Go testing package + testify
+- **Testing:** Go testing package + testify + gotestsum
 
 ### Frontend
 - **Framework:** Next.js 15 (App Router)
