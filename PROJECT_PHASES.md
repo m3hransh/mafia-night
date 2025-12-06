@@ -52,19 +52,19 @@ A web application for managing physical Mafia games with:
 **Goal:** Build API endpoints for moderators to create and manage games
 
 ### Backend Tests & Implementation:
-- [ ] Test: POST /api/games - Create new game
-- [ ] Test: GET /api/games/:id - Get game details
-- [ ] Test: PATCH /api/games/:id - Update game status
-- [ ] Test: DELETE /api/games/:id - Delete game
-- [ ] Test: Game ID generation (unique, shareable)
-- [ ] Test: Moderator authentication/authorization
-- [ ] Implement: Game service layer
-- [ ] Implement: API handlers with validation
+- [x] Test: POST /api/games - Create new game
+- [x] Test: GET /api/games/:id - Get game details
+- [x] Test: PATCH /api/games/:id - Update game status
+- [x] Test: DELETE /api/games/:id - Delete game
+- [x] Test: Game ID generation (unique, shareable)
+- [x] Test: Moderator authentication/authorization
+- [x] Implement: Game service layer
+- [x] Implement: API handlers with validation
 
 ### Deliverables:
-- REST API for game management
-- Tested service layer
-- API documentation (Swagger/OpenAPI)
+- ✅ REST API for game management
+- ✅ Tested service layer
+- ⚠️ API documentation (Swagger/OpenAPI) - Can be added later
 
 ---
 

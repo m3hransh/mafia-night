@@ -53,6 +53,7 @@
             gopls
             gotools
             go-tools
+            delve
             
             # Node.js
             nodejs_22

@@ -68,7 +68,7 @@ func TestNewPlayer_Validation(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name:       "invalid player - empty game ID",
+			name:       "invalid player 2 - empty game ID",
 			telegramID: "tg123",
 			gameID:     "",
 			wantErr:    true,
