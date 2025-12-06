@@ -43,7 +43,7 @@ jobs:
     - name: Run tests
       working-directory: ./backend
       env:
-        DATABASE_URL: postgres://mafia_user:mafia_pass@localhost:5432/mafia_night?sslmode=disable
+        TEST_DATABASE_URL: postgres://mafia_user:mafia_pass@localhost:5432/mafia_night_test?sslmode=disable
       run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
     - name: Lint
