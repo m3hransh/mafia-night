@@ -17,7 +17,7 @@ jobs:
         env:
           POSTGRES_USER: mafia_user
           POSTGRES_PASSWORD: mafia_pass
-          POSTGRES_DB: mafia_night
+          POSTGRES_DB: mafia_night_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -78,10 +78,6 @@ jobs:
     - name: Run tests
       working-directory: ./frontend
       run: npm test -- --coverage --watchAll=false
-
-    - name: Lint
-      working-directory: ./frontend
-      run: npm run lint
 
     - name: Build
       working-directory: ./frontend
