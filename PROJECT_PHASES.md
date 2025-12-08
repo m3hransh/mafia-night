@@ -73,12 +73,12 @@ A web application for managing physical Mafia games with:
 
 ### Backend Tests & Implementation:
 - [x] Test: POST /api/games/:id/join - Player joins game
-- [ ] Test: GET /api/games/:id/players - List players in game
-- [ ] Test: DELETE /api/games/:id/players/:player_id - Remove player
-- [ ] Test: Duplicate name validation within a game
-- [ ] Test: Join validation (game exists, game not started)
-- [ ] Implement: Player service layer
-- [ ] Implement: Join API handlers
+- [x] Test: GET /api/games/:id/players - List players in game
+- [x] Test: DELETE /api/games/:id/players/:player_id - Remove player
+- [x] Test: Duplicate name validation within a game
+- [x] Test: Join validation (game exists, game not started)
+- [x] Implement: Player service layer
+- [x] Implement: Join API handlers
 
 ### Frontend Tests & Implementation:
 - [ ] Test: Join game form component
