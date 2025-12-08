@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent"
 	"github.com/mafia-night/backend/ent/game"
+	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/pkg/gameid"
 )
 
@@ -154,4 +155,29 @@ func (s *GameService) JoinGame(ctx context.Context, gameID string, userName stri
 	}
 
 	return player, nil
+}
+
+// GetPlayers retrieves all players in a game
+func (s *GameService) GetPlayers(ctx context.Context, gameID string) ([]*ent.Player, error) {
+	if gameID == "" {
+		return nil, ErrEmptyGameID
+	}
+
+	// Verify game exists
+	_, err := s.GetGameByID(ctx, gameID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all players for this game
+	players, err := s.client.Player.
+		Query().
+		Where(player.GameID(gameID)).
+		All(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return players, nil
 }

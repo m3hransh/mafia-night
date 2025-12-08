@@ -271,3 +271,69 @@ func TestJoinGameHandler(t *testing.T) {
 	})
 }
 
+func TestGetPlayersHandler(t *testing.T) {
+	client := database.SetupTestDB(t)
+	gameService := service.NewGameService(client)
+	handler := NewGameHandler(gameService)
+
+	t.Run("returns all players in a game", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		created, err := gameService.CreateGame(req.Context(), "mod-123")
+		require.NoError(t, err)
+
+		// Add players
+		_, err = gameService.JoinGame(req.Context(), created.ID, "player1")
+		require.NoError(t, err)
+		_, err = gameService.JoinGame(req.Context(), created.ID, "player2")
+		require.NoError(t, err)
+
+		r := chi.NewRouter()
+		r.Get("/api/games/{id}/players", handler.GetPlayers)
+
+		req = httptest.NewRequest("GET", "/api/games/"+created.ID+"/players", nil)
+		rr := httptest.NewRecorder()
+
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response []map[string]any
+		err = json.NewDecoder(rr.Body).Decode(&response)
+		require.NoError(t, err)
+		assert.Len(t, response, 2)
+	})
+
+	t.Run("returns empty list for game with no players", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		created, err := gameService.CreateGame(req.Context(), "mod-123")
+		require.NoError(t, err)
+
+		r := chi.NewRouter()
+		r.Get("/api/games/{id}/players", handler.GetPlayers)
+
+		req = httptest.NewRequest("GET", "/api/games/"+created.ID+"/players", nil)
+		rr := httptest.NewRecorder()
+
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response []map[string]any
+		err = json.NewDecoder(rr.Body).Decode(&response)
+		require.NoError(t, err)
+		assert.Empty(t, response)
+	})
+
+	t.Run("fails for non-existent game", func(t *testing.T) {
+		r := chi.NewRouter()
+		r.Get("/api/games/{id}/players", handler.GetPlayers)
+
+		req := httptest.NewRequest("GET", "/api/games/NOEXIST/players", nil)
+		rr := httptest.NewRecorder()
+
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+	})
+}
+

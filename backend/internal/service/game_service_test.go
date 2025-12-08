@@ -217,3 +217,57 @@ func TestGameService_JoinGame(t *testing.T) {
 		assert.Contains(t, err.Error(), "user ID")
 	})
 }
+
+func TestGameService_GetPlayers(t *testing.T) {
+	client := database.SetupTestDB(t)
+	service := NewGameService(client)
+	ctx := context.Background()
+
+	t.Run("returns all players in a game", func(t *testing.T) {
+		// Create a game
+		created, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		// Add players
+		_, err = service.JoinGame(ctx, created.ID, "player1")
+		require.NoError(t, err)
+		_, err = service.JoinGame(ctx, created.ID, "player2")
+		require.NoError(t, err)
+		_, err = service.JoinGame(ctx, created.ID, "player3")
+		require.NoError(t, err)
+
+		// Get players
+		players, err := service.GetPlayers(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Len(t, players, 3)
+		
+		// Check player names
+		names := make([]string, len(players))
+		for i, p := range players {
+			names[i] = p.Name
+		}
+		assert.Contains(t, names, "player1")
+		assert.Contains(t, names, "player2")
+		assert.Contains(t, names, "player3")
+	})
+
+	t.Run("returns empty list for game with no players", func(t *testing.T) {
+		created, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		players, err := service.GetPlayers(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Empty(t, players)
+	})
+
+	t.Run("fails with empty game ID", func(t *testing.T) {
+		_, err := service.GetPlayers(ctx, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "game ID")
+	})
+
+	t.Run("fails for non-existent game", func(t *testing.T) {
+		_, err := service.GetPlayers(ctx, "NOEXIST")
+		assert.Error(t, err)
+	})
+}

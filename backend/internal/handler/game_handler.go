@@ -146,6 +146,28 @@ func (h *GameHandler) JoinGame(w http.ResponseWriter, r *http.Request) {
 	JSONResponse(w, http.StatusOK, playerToJSON(player))
 }
 
+// GetPlayers handles GET /api/games/{id}/players
+func (h *GameHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+
+	players, err := h.gameService.GetPlayers(r.Context(), gameID)
+	if err != nil {
+		if errors.Is(err, service.ErrEmptyGameID) {
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		ErrorResponse(w, http.StatusNotFound, "game not found")
+		return
+	}
+
+	playersJSON := make([]map[string]any, len(players))
+	for i, player := range players {
+		playersJSON[i] = playerToJSON(player)
+	}
+
+	JSONResponse(w, http.StatusOK, playersJSON)
+}
+
 // gameToJSON converts an ent.Game to a JSON-serializable map
 func gameToJSON(g *ent.Game) map[string]any {
 	return map[string]any{
