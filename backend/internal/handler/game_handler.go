@@ -168,6 +168,24 @@ func (h *GameHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
 	JSONResponse(w, http.StatusOK, playersJSON)
 }
 
+// RemovePlayer handles DELETE /api/games/{id}/players/{player_id}
+func (h *GameHandler) RemovePlayer(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+	playerID := chi.URLParam(r, "player_id")
+
+	err := h.gameService.RemovePlayer(r.Context(), gameID, playerID)
+	if err != nil {
+		if errors.Is(err, service.ErrEmptyGameID) || errors.Is(err, service.ErrEmptyPlayerID) {
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		ErrorResponse(w, http.StatusNotFound, "game or player not found")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // gameToJSON converts an ent.Game to a JSON-serializable map
 func gameToJSON(g *ent.Game) map[string]any {
 	return map[string]any{

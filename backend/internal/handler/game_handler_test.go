@@ -337,3 +337,61 @@ func TestGetPlayersHandler(t *testing.T) {
 	})
 }
 
+func TestRemovePlayerHandler(t *testing.T) {
+	client := database.SetupTestDB(t)
+	gameService := service.NewGameService(client)
+	handler := NewGameHandler(gameService)
+
+	t.Run("removes player successfully", func(t *testing.T) {
+		req := httptest.NewRequest("DELETE", "/", nil)
+		created, err := gameService.CreateGame(req.Context(), "mod-123")
+		require.NoError(t, err)
+
+		player, err := gameService.JoinGame(req.Context(), created.ID, "player1")
+		require.NoError(t, err)
+
+		r := chi.NewRouter()
+		r.Delete("/api/games/{id}/players/{player_id}", handler.RemovePlayer)
+
+		req = httptest.NewRequest("DELETE", "/api/games/"+created.ID+"/players/"+player.ID.String(), nil)
+		rr := httptest.NewRecorder()
+
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusNoContent, rr.Code)
+
+		// Verify player is removed
+		players, err := gameService.GetPlayers(req.Context(), created.ID)
+		require.NoError(t, err)
+		assert.Empty(t, players)
+	})
+
+	t.Run("fails for non-existent game", func(t *testing.T) {
+		r := chi.NewRouter()
+		r.Delete("/api/games/{id}/players/{player_id}", handler.RemovePlayer)
+
+		req := httptest.NewRequest("DELETE", "/api/games/NOEXIST/players/00000000-0000-0000-0000-000000000000", nil)
+		rr := httptest.NewRecorder()
+
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+	})
+
+	t.Run("fails for non-existent player", func(t *testing.T) {
+		req := httptest.NewRequest("DELETE", "/", nil)
+		created, err := gameService.CreateGame(req.Context(), "mod-123")
+		require.NoError(t, err)
+
+		r := chi.NewRouter()
+		r.Delete("/api/games/{id}/players/{player_id}", handler.RemovePlayer)
+
+		req = httptest.NewRequest("DELETE", "/api/games/"+created.ID+"/players/00000000-0000-0000-0000-000000000000", nil)
+		rr := httptest.NewRecorder()
+
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+	})
+}
+

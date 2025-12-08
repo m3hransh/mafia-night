@@ -271,3 +271,55 @@ func TestGameService_GetPlayers(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestGameService_RemovePlayer(t *testing.T) {
+	client := database.SetupTestDB(t)
+	service := NewGameService(client)
+	ctx := context.Background()
+
+	t.Run("removes player successfully", func(t *testing.T) {
+		// Create game and add player
+		created, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		player, err := service.JoinGame(ctx, created.ID, "player1")
+		require.NoError(t, err)
+
+		// Remove player
+		err = service.RemovePlayer(ctx, created.ID, player.ID.String())
+		require.NoError(t, err)
+
+		// Verify player is removed
+		players, err := service.GetPlayers(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Empty(t, players)
+	})
+
+	t.Run("fails with empty game ID", func(t *testing.T) {
+		err := service.RemovePlayer(ctx, "", "player-id")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "game ID")
+	})
+
+	t.Run("fails with empty player ID", func(t *testing.T) {
+		created, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		err = service.RemovePlayer(ctx, created.ID, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "player ID")
+	})
+
+	t.Run("fails for non-existent game", func(t *testing.T) {
+		err := service.RemovePlayer(ctx, "NOEXIST", "player-id")
+		assert.Error(t, err)
+	})
+
+	t.Run("fails for non-existent player", func(t *testing.T) {
+		created, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		err = service.RemovePlayer(ctx, created.ID, "00000000-0000-0000-0000-000000000000")
+		assert.Error(t, err)
+	})
+}

@@ -15,7 +15,8 @@ var (
 	ErrEmptyGameID      = errors.New("game ID cannot be empty")
 	ErrEmptyModeratorID = errors.New("moderator ID cannot be empty")
 	ErrNotAuthorized    = errors.New("not authorized to perform this action")
-	ErrEmptyUserID       = errors.New("user ID cannot be empty")
+	ErrEmptyUserID      = errors.New("user ID cannot be empty")
+	ErrEmptyPlayerID    = errors.New("player ID cannot be empty")
 )
 
 // GameService handles game-related business logic
@@ -180,4 +181,45 @@ func (s *GameService) GetPlayers(ctx context.Context, gameID string) ([]*ent.Pla
 	}
 
 	return players, nil
+}
+
+// RemovePlayer removes a player from a game
+func (s *GameService) RemovePlayer(ctx context.Context, gameID string, playerID string) error {
+	if gameID == "" {
+		return ErrEmptyGameID
+	}
+	if playerID == "" {
+		return ErrEmptyPlayerID
+	}
+
+	// Verify game exists
+	_, err := s.GetGameByID(ctx, gameID)
+	if err != nil {
+		return err
+	}
+
+	// Parse player ID
+	playerUUID, err := uuid.Parse(playerID)
+	if err != nil {
+		return err
+	}
+
+	// Get the player and verify it belongs to this game
+	existingPlayer, err := s.client.Player.Get(ctx, playerUUID)
+	if err != nil {
+		return err
+	}
+
+	// Verify player belongs to this game
+	if existingPlayer.GameID != gameID {
+		return errors.New("player does not belong to this game")
+	}
+
+	// Delete the player
+	err = s.client.Player.DeleteOne(existingPlayer).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

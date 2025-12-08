@@ -62,6 +62,7 @@ func main() {
 			r.Delete("/{id}", gameHandler.DeleteGame)
 			r.Post("/{id}/join", gameHandler.JoinGame)
 			r.Get("/{id}/players", gameHandler.GetPlayers)
+			r.Delete("/{id}/players/{player_id}", gameHandler.RemovePlayer)
 		})
 	})
 
