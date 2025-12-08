@@ -224,3 +224,50 @@ func TestDeleteGameHandler(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, rr.Code)
 	})
 }
+
+func TestJoinGameHandler(t *testing.T) {
+	client := database.SetupTestDB(t)
+	gameService := service.NewGameService(client)
+	handler := NewGameHandler(gameService)
+
+	t.Run("joins game successfully", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/", nil)
+		created, err := gameService.CreateGame(req.Context(), "mod-123")
+		require.NoError(t, err)
+
+		body := map[string]string{"name": "player1"}
+		bodyBytes, _ := json.Marshal(body)
+
+		r := chi.NewRouter()
+		r.Post("/api/games/{id}/join", handler.JoinGame)
+
+		req = httptest.NewRequest("POST", "/api/games/"+created.ID+"/join", bytes.NewReader(bodyBytes))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response map[string]any
+		json.NewDecoder(rr.Body).Decode(&response)
+		assert.Equal(t, "player1", response["name"])
+	})
+
+	t.Run("fails without player name", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/", nil)
+		created, err := gameService.CreateGame(req.Context(), "mod-123")
+		require.NoError(t, err)
+
+		r := chi.NewRouter()
+		r.Post("/api/games/{id}/join", handler.JoinGame)
+
+		req = httptest.NewRequest("POST", "/api/games/"+created.ID+"/join", nil)
+		rr := httptest.NewRecorder()
+
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+}
+

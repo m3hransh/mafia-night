@@ -180,3 +180,40 @@ func TestGameService_DeleteGame(t *testing.T) {
 		assert.Contains(t, err.Error(), "moderator ID")
 	})
 }
+
+func TestGameService_JoinGame(t *testing.T) {
+	client := database.SetupTestDB(t)
+	service := NewGameService(client)
+	ctx := context.Background()
+
+	t.Run("joins game successfully", func(t *testing.T) {
+		created, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		userName := "player1"
+		player, err := service.JoinGame(ctx, created.ID, userName)
+		require.NoError(t, err)
+		assert.NotNil(t, player)
+		assert.Equal(t, created.ID, player.GameID)
+	})
+
+	t.Run("fails for non-existent game", func(t *testing.T) {
+		_, err := service.JoinGame(ctx, "NOEXIST", "player1")
+		assert.Error(t, err)
+	})
+
+	t.Run("fails with empty game ID", func(t *testing.T) {
+		_, err := service.JoinGame(ctx, "", "player1")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "game ID")
+	})
+
+	t.Run("fails with empty user ID", func(t *testing.T) {
+		created, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		_, err = service.JoinGame(ctx, created.ID, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "user ID")
+	})
+}

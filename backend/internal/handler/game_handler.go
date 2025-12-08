@@ -118,6 +118,34 @@ func (h *GameHandler) DeleteGame(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *GameHandler) JoinGame(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+	var req struct {
+		Name string `json:"name"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		ErrorResponse(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	player, err := h.gameService.JoinGame(r.Context(), gameID, req.Name)
+	if err != nil {
+		if errors.Is(err, service.ErrNotAuthorized) {
+			ErrorResponse(w, http.StatusForbidden, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrEmptyGameID) || errors.Is(err, service.ErrEmptyUserID) {
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		ErrorResponse(w, http.StatusNotFound, "game not found")
+		return
+	}
+
+	JSONResponse(w, http.StatusOK, playerToJSON(player))
+}
+
 // gameToJSON converts an ent.Game to a JSON-serializable map
 func gameToJSON(g *ent.Game) map[string]any {
 	return map[string]any{
@@ -127,3 +155,13 @@ func gameToJSON(g *ent.Game) map[string]any {
 		"created_at":   g.CreatedAt,
 	}
 }
+
+func playerToJSON(p *ent.Player) map[string]any {
+	return map[string]any{
+		"id":     p.ID,
+		"name":   p.Name,
+		"game_id": p.GameID,
+		"created_at": p.CreatedAt,
+	}
+}
+

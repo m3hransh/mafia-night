@@ -72,7 +72,7 @@ A web application for managing physical Mafia games with:
 **Goal:** Enable players to join games using game ID
 
 ### Backend Tests & Implementation:
-- [ ] Test: POST /api/games/:id/join - Player joins game
+- [x] Test: POST /api/games/:id/join - Player joins game
 - [ ] Test: GET /api/games/:id/players - List players in game
 - [ ] Test: DELETE /api/games/:id/players/:player_id - Remove player
 - [ ] Test: Duplicate name validation within a game

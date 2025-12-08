@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/pkg/gameid"
@@ -13,6 +14,7 @@ var (
 	ErrEmptyGameID      = errors.New("game ID cannot be empty")
 	ErrEmptyModeratorID = errors.New("moderator ID cannot be empty")
 	ErrNotAuthorized    = errors.New("not authorized to perform this action")
+	ErrEmptyUserID       = errors.New("user ID cannot be empty")
 )
 
 // GameService handles game-related business logic
@@ -122,4 +124,34 @@ func (s *GameService) DeleteGame(ctx context.Context, gameID string, moderatorID
 	}
 
 	return nil
+}
+
+func (s *GameService) JoinGame(ctx context.Context, gameID string, userName string) (*ent.Player, error) {
+	if gameID == "" {
+		return nil, ErrEmptyGameID	
+	}
+	if userName == ""	 {
+		return nil, ErrEmptyUserID
+	}
+
+
+	// Get the game first
+	existingGame, err := s.GetGameByID(ctx, gameID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the player
+	player, err := s.client.Player.
+		Create().
+		SetID(uuid.New()).
+		SetName(userName).
+		SetGameID(existingGame.ID).
+		Save(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return player, nil
 }

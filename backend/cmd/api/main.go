@@ -60,6 +60,7 @@ func main() {
 			r.Get("/{id}", gameHandler.GetGame)
 			r.Patch("/{id}", gameHandler.UpdateGameStatus)
 			r.Delete("/{id}", gameHandler.DeleteGame)
+			r.Post("/{id}/join", gameHandler.JoinGame)
 		})
 	})
 
