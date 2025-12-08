@@ -247,6 +247,34 @@ func TestGameService_JoinGame(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "player1", player2.Name)
 	})
+
+	t.Run("fails when game is active", func(t *testing.T) {
+		created, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		// Update game to active status
+		_, err = service.UpdateGameStatus(ctx, created.ID, game.StatusActive, "mod-123")
+		require.NoError(t, err)
+
+		// Try to join active game
+		_, err = service.JoinGame(ctx, created.ID, "player1")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "game has already started")
+	})
+
+	t.Run("fails when game is completed", func(t *testing.T) {
+		created, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		// Update game to completed status
+		_, err = service.UpdateGameStatus(ctx, created.ID, game.StatusCompleted, "mod-123")
+		require.NoError(t, err)
+
+		// Try to join completed game
+		_, err = service.JoinGame(ctx, created.ID, "player1")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "game has already started")
+	})
 }
 
 func TestGameService_GetPlayers(t *testing.T) {

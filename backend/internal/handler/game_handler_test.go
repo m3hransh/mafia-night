@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/internal/database"
 	"github.com/mafia-night/backend/internal/service"
 	"github.com/stretchr/testify/assert"
@@ -295,6 +296,28 @@ func TestJoinGameHandler(t *testing.T) {
 		rr = httptest.NewRecorder()
 		r.ServeHTTP(rr, req)
 		assert.Equal(t, http.StatusConflict, rr.Code)
+	})
+
+	t.Run("fails when game has already started", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/", nil)
+		created, err := gameService.CreateGame(req.Context(), "mod-123")
+		require.NoError(t, err)
+
+		// Update game to active
+		_, err = gameService.UpdateGameStatus(req.Context(), created.ID, game.StatusActive, "mod-123")
+		require.NoError(t, err)
+
+		body := map[string]string{"name": "player1"}
+		bodyBytes, _ := json.Marshal(body)
+
+		r := chi.NewRouter()
+		r.Post("/api/games/{id}/join", handler.JoinGame)
+
+		req = httptest.NewRequest("POST", "/api/games/"+created.ID+"/join", bytes.NewReader(bodyBytes))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
 	})
 }
 

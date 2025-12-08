@@ -19,6 +19,7 @@ var (
 	ErrEmptyUserID      = errors.New("user ID cannot be empty")
 	ErrEmptyPlayerID    = errors.New("player ID cannot be empty")
 	ErrPlayerNameExists = errors.New("player name already exists in this game")
+	ErrGameAlreadyStarted = errors.New("game has already started")
 )
 
 // GameService handles game-related business logic
@@ -143,6 +144,11 @@ func (s *GameService) JoinGame(ctx context.Context, gameID string, userName stri
 	existingGame, err := s.GetGameByID(ctx, gameID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Validate game status - can only join pending games
+	if existingGame.Status != game.StatusPending {
+		return nil, ErrGameAlreadyStarted
 	}
 
 	// Create the player
