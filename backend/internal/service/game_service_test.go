@@ -216,6 +216,37 @@ func TestGameService_JoinGame(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "user ID")
 	})
+
+	t.Run("fails with duplicate name in same game", func(t *testing.T) {
+		created, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		// First player joins successfully
+		_, err = service.JoinGame(ctx, created.ID, "player1")
+		require.NoError(t, err)
+
+		// Second player with same name should fail
+		_, err = service.JoinGame(ctx, created.ID, "player1")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already exists")
+	})
+
+	t.Run("allows same name in different games", func(t *testing.T) {
+		game1, err := service.CreateGame(ctx, "mod-123")
+		require.NoError(t, err)
+
+		game2, err := service.CreateGame(ctx, "mod-456")
+		require.NoError(t, err)
+
+		// Same name in different games should work
+		player1, err := service.JoinGame(ctx, game1.ID, "player1")
+		require.NoError(t, err)
+		assert.Equal(t, "player1", player1.Name)
+
+		player2, err := service.JoinGame(ctx, game2.ID, "player1")
+		require.NoError(t, err)
+		assert.Equal(t, "player1", player2.Name)
+	})
 }
 
 func TestGameService_GetPlayers(t *testing.T) {

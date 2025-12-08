@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent"
@@ -17,6 +18,7 @@ var (
 	ErrNotAuthorized    = errors.New("not authorized to perform this action")
 	ErrEmptyUserID      = errors.New("user ID cannot be empty")
 	ErrEmptyPlayerID    = errors.New("player ID cannot be empty")
+	ErrPlayerNameExists = errors.New("player name already exists in this game")
 )
 
 // GameService handles game-related business logic
@@ -152,6 +154,10 @@ func (s *GameService) JoinGame(ctx context.Context, gameID string, userName stri
 		Save(ctx)
 
 	if err != nil {
+		// Check if it's a duplicate key constraint error
+		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+			return nil, ErrPlayerNameExists
+		}
 		return nil, err
 	}
 

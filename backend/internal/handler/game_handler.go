@@ -131,6 +131,10 @@ func (h *GameHandler) JoinGame(w http.ResponseWriter, r *http.Request) {
 
 	player, err := h.gameService.JoinGame(r.Context(), gameID, req.Name)
 	if err != nil {
+		if errors.Is(err, service.ErrPlayerNameExists) {
+			ErrorResponse(w, http.StatusConflict, err.Error())
+			return
+		}
 		if errors.Is(err, service.ErrNotAuthorized) {
 			ErrorResponse(w, http.StatusForbidden, err.Error())
 			return
