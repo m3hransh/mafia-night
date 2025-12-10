@@ -1,12 +1,51 @@
+'use client';
+
+import dynamic from 'next/dynamic';
+import { useState } from 'react';
+
+// Dynamic import to avoid SSR issues with Three.js
+const CardScene = dynamic(() => import('@/components/CardScene').then(mod => ({ default: mod.CardScene })), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-screen flex items-center justify-center  from-slate-900  to-slate-900">
+      <div className="text-white text-2xl">Loading magical cards...</div>
+    </div>
+  ),
+});
+
+const roles = [
+  { name: 'Sherlock', video: '/roles/sherlock.webm' },
+  { name: 'Mafia', video: '/roles/Mafia.webm' },
+  { name: 'Doctor Watson', video: '/roles/Doctor Watson.webm' },
+];
+
 export default function Home() {
+  const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
+  const currentRole = roles[currentRoleIndex];
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Mafia Night</h1>
-        <p className="text-xl text-gray-600">
-          Web application for managing physical Mafia games
-        </p>
+    <main className="relative w-full h-screen overflow-hidden">
+      <CardScene videoSrc={currentRole.video} roleName={currentRole.name} />
+      
+      {/* Role selector */}
+      <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-10">
+        <div className="bg-black/50 backdrop-blur-md rounded-full px-6 py-3 flex gap-4">
+          {roles.map((role, index) => (
+            <button
+              key={role.name}
+              onClick={() => setCurrentRoleIndex(index)}
+              className={`px-4 py-2 rounded-full transition-all ${
+                index === currentRoleIndex
+                  ? 'bg-purple-600 text-white font-semibold'
+                  : 'bg-transparent text-gray-300 hover:bg-purple-600/30'
+              }`}
+            >
+              {role.name}
+            </button>
+          ))}
+        </div>
       </div>
+
     </main>
-  )
+  );
 }
