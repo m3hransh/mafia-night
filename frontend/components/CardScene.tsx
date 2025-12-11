@@ -8,10 +8,11 @@ import { Suspense } from 'react';
 interface CardSceneProps {
   videoSrc: string;
   roleName: string;
+  frameStyle?: 'cyan' | 'purple' | 'gold' | 'blue' | 'green' | 'golden-dynamic' | 'none';
   enableOrbitControls?: boolean;
 }
 
-export function CardScene({ videoSrc, roleName, enableOrbitControls = false }: CardSceneProps) {
+export function CardScene({ videoSrc, roleName, frameStyle = 'golden-dynamic', enableOrbitControls = false }: CardSceneProps) {
   return (
     <div className="w-full h-screen bg-gray-950">
       <Canvas>
@@ -20,7 +21,7 @@ export function CardScene({ videoSrc, roleName, enableOrbitControls = false }: C
           <PerspectiveCamera makeDefault position={[0, 0, 6]} fov={50} />
           
           {/* The Magic Card */}
-          <MagicCard3D videoSrc={videoSrc} roleName={roleName} position={[0, 0, 0]} />
+          <MagicCard3D videoSrc={videoSrc} roleName={roleName} frameStyle={frameStyle} position={[0, 0, 0]} />
           
           {/* Optional orbit controls for debugging */}
           {enableOrbitControls && <OrbitControls enableZoom={true} />}
