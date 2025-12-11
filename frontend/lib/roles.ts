@@ -1,19 +1,4 @@
-'use client';
-
-import dynamic from 'next/dynamic';
-import Link from 'next/link';
-
-// Dynamic import to avoid SSR issues with Three.js
-const CardScene = dynamic(() => import('@/components/CardScene').then(mod => ({ default: mod.CardScene })), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-screen flex items-center justify-center from-slate-900 to-slate-900">
-      <div className="text-white text-2xl">Loading magical cards...</div>
-    </div>
-  ),
-});
-
-const roles = [
+export const roles = [
   { name: 'Sherlock', video: '/roles/sherlock.webm', slug: 'sherlock' },
   { name: 'Mafia', video: '/roles/Mafia.webm', slug: 'mafia' },
   { name: 'Doctor Watson', video: '/roles/Doctor Watson.webm', slug: 'doctor-watson' },
@@ -45,37 +30,3 @@ const roles = [
   { name: 'Traitor', video: '/roles/Traitor.webm', slug: 'traitor' },
   { name: 'Yakuza', video: '/roles/Yakuza.webm', slug: 'yakuza' },
 ];
-
-export default function Home() {
-  return (
-    <main className="relative w-full min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-2xl">
-            Mafia Night
-          </h1>
-          <p className="text-2xl text-purple-300">Select a Role Card</p>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {roles.map((role) => (
-            <Link
-              key={role.slug}
-              href={`/role/${role.slug}`}
-              className="bg-black/30 backdrop-blur-md rounded-xl p-6 hover:bg-purple-600/20 transition-all transform hover:scale-105 border border-purple-500/20"
-            >
-              <div className="text-center">
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  {role.name}
-                </h3>
-                <p className="text-sm text-purple-300">View Card</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </main>
-  );
-}
-
-export { roles };

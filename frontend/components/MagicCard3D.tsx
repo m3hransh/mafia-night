@@ -10,10 +10,18 @@ interface MagicCard3DProps {
   roleName: string;
   position?: [number, number, number];
   onHover?: (hovered: boolean) => void;
-  frameStyle?: 'cyan' | 'purple' | 'gold' | 'blue' | 'green' | 'golden-dynamic' | 'none';
+  frameStyle?: 'cyan' | 'purple' | 'gold' | 'blue' | 'silver' | 'golden-dynamic' | 'none';
+  gradientStyle?: string;
 }
 
-export function MagicCard3D({ videoSrc, roleName, position = [0, 0, 0], onHover, frameStyle = 'golden-dynamic' }: MagicCard3DProps) {
+export function MagicCard3D({ 
+  videoSrc, 
+  roleName, 
+  position = [0, 0, 0], 
+  onHover, 
+  frameStyle = 'silver',
+  gradientStyle = 'option2'
+}: MagicCard3DProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -91,12 +99,12 @@ export function MagicCard3D({ videoSrc, roleName, position = [0, 0, 0], onHover,
   const padding = 0.15; // Padding from card edges
   const circleRadius = (cardWidth / 2) - padding; // Circle with padding
   
-  // Video display dimensions matching 3:4 aspect ratio
-  const videoTargetAspect = 0.75; // 3:4 ratio
+  // Video display dimensions matching 2:3 aspect ratio (narrower for better head framing)
+  const videoTargetAspect = 0.667; // 2:3 ratio
   const videoDisplayWidth = circleRadius * 2;
-  const videoDisplayHeight = videoDisplayWidth / videoTargetAspect; // Make it 3:4
+  const videoDisplayHeight = videoDisplayWidth / videoTargetAspect; // Make it 2:3
 
-  // Create shader material that preserves aspect ratio and crops to circle
+  // Create shader material for circular video mask
   const circularMaterial = useMemo(() => {
     const material = new THREE.ShaderMaterial({
       uniforms: {
@@ -127,19 +135,19 @@ export function MagicCard3D({ videoSrc, roleName, position = [0, 0, 0], onHover,
             discard;
           }
           
-          // Crop a 3:4 (width:height) ratio from the top of the video
+          // Crop a 2:3 (width:height) ratio from the top of the video
           vec2 adjustedUv = vUv;
           
-          // Target aspect ratio 3:4 = 0.75
-          float targetAspect = 0.75;
+          // Target aspect ratio 2:3 = 0.667 (narrower for better head framing)
+          float targetAspect = 0.667;
           
           if (textureAspect < targetAspect) {
-            // Video is narrower than 3:4 (like 864x1280 = 0.675)
+            // Video is narrower than 2:3 (like portrait videos)
             // Take full width, crop from bottom
             float heightRatio = textureAspect / targetAspect;
             adjustedUv.y = vUv.y * heightRatio;
           } else if (textureAspect > targetAspect) {
-            // Video is wider than 3:4 (landscape or square like 1280x1280 = 1.0)
+            // Video is wider than 2:3 (landscape or square)
             // Take from top, crop sides
             float widthRatio = targetAspect / textureAspect;
             adjustedUv.x = (vUv.x - 0.5) * widthRatio + 0.5;
@@ -151,6 +159,7 @@ export function MagicCard3D({ videoSrc, roleName, position = [0, 0, 0], onHover,
       `,
       side: THREE.DoubleSide,
       transparent: true,
+      depthWrite: false,
     });
 
     // Update aspect ratio when texture loads
@@ -161,6 +170,183 @@ export function MagicCard3D({ videoSrc, roleName, position = [0, 0, 0], onHover,
 
     return material;
   }, [videoTexture]);
+
+  // Gradient style configurations
+  const gradientStyles = {
+    option1: {
+      edgeColor: 'vec3(0.12, 0.12, 0.13)', // Very dark gray
+      centerColor: 'vec3(0.0, 0.0, 0.0)',
+      smoothness: '0.8',
+      edgeFade: '-0.35'
+    },
+    option2: {
+      edgeColor: 'vec3(0.08, 0.06, 0.12)', // Deep purple-black
+      centerColor: 'vec3(0.0, 0.0, 0.0)',
+      smoothness: '0.7',
+      edgeFade: '-0.4'
+    },
+    option3: {
+      edgeColor: 'vec3(0.15, 0.12, 0.08)', // Warm bronze-black
+      centerColor: 'vec3(0.0, 0.0, 0.0)',
+      smoothness: '0.9',
+      edgeFade: '-0.3'
+    },
+    option4: {
+      edgeColor: 'vec3(0.1, 0.12, 0.15)', // Cool steel-blue
+      centerColor: 'vec3(0.0, 0.0, 0.0)',
+      smoothness: '0.75',
+      edgeFade: '-0.38'
+    },
+    option5: {
+      edgeColor: 'vec3(0.18, 0.15, 0.12)', // Lighter warm brown
+      centerColor: 'vec3(0.02, 0.02, 0.02)', // Slightly lighter center
+      smoothness: '0.65',
+      edgeFade: '-0.42'
+    }
+  };
+
+  const currentGradient = gradientStyles[gradientStyle as keyof typeof gradientStyles] || gradientStyles.option1;
+
+  // Create gradient shader material
+  const gradientMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        
+        // Signed distance function for rounded rectangle
+        float sdRoundedBox(vec2 p, vec2 b, float r) {
+          vec2 q = abs(p) - b + r;
+          return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+        }
+        
+        void main() {
+          // Calculate distance from center-top point (0.5, 1.0) in UV space
+          vec2 centerTop = vec2(0.5, 1.0);
+          float distFromCenterTop = distance(vUv, centerTop);
+          
+          // Convert UV to centered coordinates (-0.5 to 0.5)
+          vec2 centeredUV = vUv - vec2(0.5, 0.5);
+          
+          // Calculate distance to edge of rounded rectangle
+          vec2 cardSize = vec2(0.5, 0.5);
+          float cornerRadius = 0.04;
+          float distToEdge = sdRoundedBox(centeredUV, cardSize, cornerRadius);
+          
+          // Create gradient based on distance to edge
+          float edgeFactor = smoothstep(${currentGradient.edgeFade}, 0.0, distToEdge);
+          
+          // Combine with radial gradient from center-top
+          float radialGradient = smoothstep(0.0, ${currentGradient.smoothness}, distFromCenterTop);
+          
+          // Final gradient considers both edge proximity and center-top distance
+          float gradient = max(radialGradient, edgeFactor);
+          
+          vec3 edgeColor = ${currentGradient.edgeColor};
+          vec3 centerColor = ${currentGradient.centerColor};
+          
+          vec3 finalColor = mix(centerColor, edgeColor, gradient);
+          
+          gl_FragColor = vec4(finalColor, 1.0);
+        }
+      `,
+      transparent: false,
+      side: THREE.FrontSide,
+    });
+  }, [gradientStyle]);
+  const goldenRingMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        innerRadius: { value: 0.32 },
+        outerRadius: { value: 0.35 },
+        mouseX: { value: mousePosition.x },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float innerRadius;
+        uniform float outerRadius;
+        uniform float mouseX;
+        varying vec2 vUv;
+        
+        void main() {
+          vec2 center = vec2(0.5, 0.5);
+          
+          // Create ellipse: squish top part down for "emerging" effect
+          vec2 toCenter = vUv - center;
+          
+          // We want to make the ring SMALLER at the top (squish it down)
+          // By DIVIDING (not multiplying), we EXPAND the effective distance at top
+          // which makes the ring appear SMALLER/narrower at top
+          if (vUv.y > 0.5) {
+            // Top half: divide by 0.95 to make ring appear smaller at top
+            toCenter.y /= 0.95;
+          }
+          
+          // Calculate elliptical distance
+          float dist = length(toCenter);
+          
+          // Only render the ring area
+          if (dist < innerRadius || dist > outerRadius) {
+            discard;
+          }
+          
+          // Calculate vertical position (0 = bottom, 1 = top in UV space)
+          // Note: UV coordinates might be flipped depending on texture orientation
+          float verticalPos = vUv.y;
+          
+          // We want: TOP transparent, BOTTOM visible
+          // If top has more color, it means top has higher alpha value
+          // So we need to INVERT: when vUv.y is high (top), make alpha LOW
+          float verticalGradient = 1.0 - verticalPos; // Invert: top becomes 0, bottom becomes 1
+          verticalGradient = pow(verticalGradient, 0.6); // Gentle curve for smooth fade
+          
+          // Create radial gradient: fade from inner edge to outer edge
+          float ringPosition = (dist - innerRadius) / (outerRadius - innerRadius);
+          ringPosition = clamp(ringPosition, 0.0, 1.0);
+          
+          // Fade outward with much softer curve
+          float radialGradient = 1.0 - ringPosition;
+          radialGradient = pow(radialGradient, 0.5); // Very gentle fade
+          
+          // Combine gradients
+          float combinedGradient = verticalGradient * radialGradient;
+          
+          // Ring thickness fade with much softer edges for smoother look
+          float ringFade = smoothstep(innerRadius, innerRadius + 0.02, dist) * 
+                           (1.0 - smoothstep(outerRadius - 0.02, outerRadius, dist));
+          
+          // Silver/platinum color instead of golden
+          float brightness = 0.75 + combinedGradient * 0.25;
+          vec3 silverColor = vec3(
+            brightness * 0.95,
+            brightness * 0.96,
+            brightness
+          );
+          
+          // Apply combined gradient with softer alpha for subtle appearance
+          float finalAlpha = combinedGradient * ringFade * 0.7;
+          
+          gl_FragColor = vec4(silverColor, finalAlpha);
+        }
+      `,
+      side: THREE.DoubleSide,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+  }, [mousePosition.x]);
 
   // Update aspect ratio dynamically
   useEffect(() => {
@@ -187,8 +373,8 @@ export function MagicCard3D({ videoSrc, roleName, position = [0, 0, 0], onHover,
     purple: '#a855f7',    // Purple - magical/mystical
     gold: '#fbbf24',      // Gold - premium/elegant
     blue: '#3b82f6',      // Blue - cool/calm
-    green: '#10b981',     // Green - tech/matrix
-    'golden-dynamic': '#fbbf24', // Dynamic golden with reflections
+    silver: '#C0C0C0',    // Silver - premium metallic
+    'golden-dynamic': '#C0C0C0', // Dynamic silver with reflections
     none: '#000000'       // No frame
   };
 
@@ -211,36 +397,43 @@ export function MagicCard3D({ videoSrc, roleName, position = [0, 0, 0], onHover,
     };
   }, [isDynamicGolden, mousePosition.x, mousePosition.y]);
 
-  // Dynamic golden gradient colors
+  // Dynamic platinum/silver gradient colors
   const dynamicGoldenColors = useMemo(() => {
     if (!isDynamicGolden) return null;
     
-    // Calculate color shift based on mouse position
-    const hueShift = mousePosition.x * 15; // -15 to +15 degrees
-    const baseHue = 45; // Gold is around 45 degrees
-    const newHue = baseHue + hueShift;
+    // Platinum/silver colors with slight brightness variation based on mouse position
+    const brightnessShift = mousePosition.x * 0.05; // Subtle brightness change
     
-    // Convert HSL to hex
-    const goldenShades = {
-      bright: `hsl(${newHue}, 95%, 65%)`,      // Bright gold
-      medium: `hsl(${newHue}, 85%, 55%)`,      // Medium gold
-      warm: `hsl(${newHue - 5}, 90%, 60%)`,    // Warmer gold
+    // Platinum/silver shades - cool metallic tones
+    const platinumShades = {
+      bright: `hsl(0, 0%, ${85 + brightnessShift}%)`,      // Bright platinum
+      medium: `hsl(0, 0%, ${70 + brightnessShift}%)`,      // Medium platinum
+      warm: `hsl(210, 5%, ${78 + brightnessShift}%)`,      // Cool platinum with slight blue tint
     };
     
-    return goldenShades;
+    return platinumShades;
   }, [isDynamicGolden, mousePosition.x]);
 
   return (
     <group ref={groupRef} position={position}>
-      {/* Main card background */}
+      {/* Main card background - solid black */}
       <RoundedBox
-        args={[cardWidth, cardHeight, 0.1]}
+        args={[cardWidth, cardHeight, 0.15]}
         radius={0.1}
         smoothness={4}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
       >
         <meshBasicMaterial color="#000000" side={THREE.FrontSide} />
+      </RoundedBox>
+
+      {/* Gradient overlay - fades from edges to black at center top */}
+      <RoundedBox
+        args={[cardWidth, cardHeight, 0.151]}
+        radius={0.1}
+        smoothness={4}
+      >
+        <primitive object={gradientMaterial} attach="material" />
       </RoundedBox>
 
       {showFrame && !isDynamicGolden && (
@@ -291,82 +484,97 @@ export function MagicCard3D({ videoSrc, roleName, position = [0, 0, 0], onHover,
 
       {isDynamicGolden && dynamicGoldenColors && (
         <>
-          {/* Dynamic golden frame - inner bright layer */}
+          {/* Multi-layer golden frame with depth and transparency */}
+          
+          {/* Inner glow - brightest, tight to card */}
           <RoundedBox
-            args={[cardWidth + 0.02, cardHeight + 0.02, 0.11]}
-            radius={0.12}
+            args={[cardWidth + 0.02, cardHeight + 0.02, 0.102]}
+            radius={0.11}
             smoothness={4}
           >
             <meshBasicMaterial
               color={dynamicGoldenColors.bright}
               transparent
-              opacity={goldenGlowIntensity.top}
+              opacity={0.6}
               side={THREE.BackSide}
+              blending={THREE.AdditiveBlending}
             />
           </RoundedBox>
 
-          {/* Dynamic golden frame - middle warm layer */}
+          {/* Middle layer - warm glow */}
           <RoundedBox
-            args={[cardWidth + 0.04, cardHeight + 0.04, 0.12]}
-            radius={0.13}
+            args={[cardWidth + 0.05, cardHeight + 0.05, 0.104]}
+            radius={0.12}
             smoothness={4}
           >
             <meshBasicMaterial
               color={dynamicGoldenColors.warm}
               transparent
-              opacity={goldenGlowIntensity.middle}
+              opacity={0.35}
               side={THREE.BackSide}
+              blending={THREE.AdditiveBlending}
             />
           </RoundedBox>
 
-          {/* Dynamic golden frame - outer soft glow */}
+          {/* Outer layer - soft diffusion */}
           <RoundedBox
-            args={[cardWidth + 0.08, cardHeight + 0.08, 0.13]}
-            radius={0.14}
+            args={[cardWidth + 0.1, cardHeight + 0.1, 0.106]}
+            radius={0.13}
             smoothness={4}
           >
             <meshBasicMaterial
               color={dynamicGoldenColors.medium}
               transparent
-              opacity={goldenGlowIntensity.outer}
+              opacity={0.2}
               side={THREE.BackSide}
+              blending={THREE.AdditiveBlending}
             />
           </RoundedBox>
 
-          {/* Additional shimmer effect on edges */}
+          {/* Far outer shimmer - very subtle */}
           <RoundedBox
-            args={[cardWidth + 0.12, cardHeight + 0.12, 0.14]}
-            radius={0.15}
+            args={[cardWidth + 0.15, cardHeight + 0.15, 0.108]}
+            radius={0.14}
             smoothness={4}
           >
             <meshBasicMaterial
               color={dynamicGoldenColors.bright}
               transparent
-              opacity={goldenGlowIntensity.outer * 0.3}
+              opacity={0.08}
               side={THREE.BackSide}
+              blending={THREE.AdditiveBlending}
             />
           </RoundedBox>
         </>
       )}
 
       {/* Circular video portrait at top center with padding */}
-      <mesh position={[0, cardHeight / 2 - circleRadius - padding, 0.06]} material={circularMaterial}>
+      <mesh position={[0, cardHeight / 2 - circleRadius - padding, 0.16]} material={circularMaterial} renderOrder={998}>
         <planeGeometry args={[videoDisplayWidth, videoDisplayWidth]} />
       </mesh>
 
-      {/* Role name text below the video */}
+      {/* Golden gradient ring around video circle */}
+      <mesh position={[0, cardHeight / 2 - circleRadius - padding, 0.17]} material={goldenRingMaterial} renderOrder={997}>
+        <planeGeometry args={[videoDisplayWidth * 1.5, videoDisplayWidth * 1.5]} />
+      </mesh>
+
+      {/* Comic-style role name text below the video */}
       <Text
-        position={[0, cardHeight / 2 - (circleRadius * 2) - padding - 0.3, 0.06]}
-        fontSize={0.25}
-        color="#ffffff"
+        position={[0, cardHeight / 2 - (circleRadius * 2) - padding - 0.2, 0.16]}
+        fontSize={0.28}
+        color="#E5E4E2"
         anchorX="center"
         anchorY="top"
         maxWidth={cardWidth - (padding * 2)}
         textAlign="center"
-        outlineWidth={0.01}
+        letterSpacing={0.05}
+        outlineWidth={0}
         outlineColor="#000000"
+        depthTest={false}
+        depthWrite={false}
+        renderOrder={999}
       >
-        {roleName}
+        {roleName.toUpperCase()}
       </Text>
     </group>
   );
