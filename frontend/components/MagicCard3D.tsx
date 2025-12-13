@@ -8,6 +8,7 @@ import * as THREE from 'three';
 interface MagicCard3DProps {
   videoSrc: string;
   roleName: string;
+  description: string;
   position?: [number, number, number];
   onHover?: (hovered: boolean) => void;
   frameStyle?: 'cyan' | 'purple' | 'gold' | 'blue' | 'silver' | 'golden-dynamic' | 'none';
@@ -17,13 +18,15 @@ interface MagicCard3DProps {
 export function MagicCard3D({ 
   videoSrc, 
   roleName, 
+  description,
   position = [0, 0, 0], 
   onHover, 
-  frameStyle = 'silver',
+  frameStyle = 'golden-dynamic',
   gradientStyle = 'option2'
 }: MagicCard3DProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   
   const videoTexture = useVideoTexture(videoSrc, {
@@ -31,6 +34,12 @@ export function MagicCard3D({
     muted: true,
     start: true,
   });
+
+  // Ensure videoTexture is loaded
+  if (!videoTexture) {
+    console.log('Video texture not loaded yet for:', videoSrc);
+    return null;
+  }
 
   // Smooth mouse tracking
   const targetRotation = useRef({ x: 0, y: 0 });
@@ -57,16 +66,19 @@ export function MagicCard3D({
   // Animate smooth rotation and floating
   useFrame((state, delta) => {
     if (groupRef.current) {
-      // Smooth rotation interpolation
-      if (hovered) {
+      // Handle flip animation
+      const targetRotationY = flipped ? Math.PI : 0;
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(
+        groupRef.current.rotation.y,
+        targetRotationY + (hovered && !flipped ? targetRotation.current.y * 0.3 : 0),
+        0.1
+      );
+      
+      // Smooth rotation interpolation for X axis
+      if (hovered && !flipped) {
         groupRef.current.rotation.x = THREE.MathUtils.lerp(
           groupRef.current.rotation.x,
           targetRotation.current.x,
-          0.1
-        );
-        groupRef.current.rotation.y = THREE.MathUtils.lerp(
-          groupRef.current.rotation.y,
-          targetRotation.current.y,
           0.1
         );
         
@@ -75,7 +87,6 @@ export function MagicCard3D({
       } else {
         // Return to neutral position
         groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, 0.1);
-        groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 0, 0.1);
         groupRef.current.position.z = THREE.MathUtils.lerp(groupRef.current.position.z, position[2], 0.1);
       }
     }
@@ -96,11 +107,11 @@ export function MagicCard3D({
   // Card dimensions
   const cardWidth = 2.5;
   const cardHeight = 3.5;
-  const padding = 0.15; // Padding from card edges
+  const padding = 0.25; // Padding from card edges
   const circleRadius = (cardWidth / 2) - padding; // Circle with padding
   
   // Video display dimensions matching 2:3 aspect ratio (narrower for better head framing)
-  const videoTargetAspect = 0.667; // 2:3 ratio
+  const videoTargetAspect = 1; // 2:3 ratio
   const videoDisplayWidth = circleRadius * 2;
   const videoDisplayHeight = videoDisplayWidth / videoTargetAspect; // Make it 2:3
 
@@ -131,7 +142,7 @@ export function MagicCard3D({
           float dist = distance(vUv, center);
           
           // Discard fragments outside the circle
-          if (dist > 0.5) {
+          if (dist > 0.5 ) {
             discard;
           }
           
@@ -139,16 +150,16 @@ export function MagicCard3D({
           vec2 adjustedUv = vUv;
           
           // Target aspect ratio 2:3 = 0.667 (narrower for better head framing)
-          float targetAspect = 0.667;
+          float targetAspect = 1.0;
           
           if (textureAspect < targetAspect) {
             // Video is narrower than 2:3 (like portrait videos)
             // Take full width, crop from bottom
             float heightRatio = textureAspect / targetAspect;
-            adjustedUv.y = vUv.y * heightRatio;
+            adjustedUv.y = vUv.y * heightRatio + (1.0 - heightRatio);
           } else if (textureAspect > targetAspect) {
             // Video is wider than 2:3 (landscape or square)
-            // Take from top, crop sides
+            // Take from bottom, crop sides
             float widthRatio = targetAspect / textureAspect;
             adjustedUv.x = (vUv.x - 0.5) * widthRatio + 0.5;
           }
@@ -205,10 +216,13 @@ export function MagicCard3D({
     }
   };
 
-  const currentGradient = gradientStyles[gradientStyle as keyof typeof gradientStyles] || gradientStyles.option1;
+  const currentGradient = useMemo(() => {
+    return gradientStyles[gradientStyle as keyof typeof gradientStyles] || gradientStyles.option2;
+  }, [gradientStyle]);
 
   // Create gradient shader material
   const gradientMaterial = useMemo(() => {
+    const gradient = currentGradient;
     return new THREE.ShaderMaterial({
       vertexShader: `
         varying vec2 vUv;
@@ -240,18 +254,18 @@ export function MagicCard3D({
           float distToEdge = sdRoundedBox(centeredUV, cardSize, cornerRadius);
           
           // Create gradient based on distance to edge
-          float edgeFactor = smoothstep(${currentGradient.edgeFade}, 0.0, distToEdge);
+          float edgeFactor = smoothstep(${gradient.edgeFade}, 0.0, distToEdge);
           
           // Combine with radial gradient from center-top
-          float radialGradient = smoothstep(0.0, ${currentGradient.smoothness}, distFromCenterTop);
+          float radialGradient = smoothstep(0.0, ${gradient.smoothness}, distFromCenterTop);
           
           // Final gradient considers both edge proximity and center-top distance
-          float gradient = max(radialGradient, edgeFactor);
+          float gradientVal = max(radialGradient, edgeFactor);
           
-          vec3 edgeColor = ${currentGradient.edgeColor};
-          vec3 centerColor = ${currentGradient.centerColor};
+          vec3 edgeColor = ${gradient.edgeColor};
+          vec3 centerColor = ${gradient.centerColor};
           
-          vec3 finalColor = mix(centerColor, edgeColor, gradient);
+          vec3 finalColor = mix(centerColor, edgeColor, gradientVal);
           
           gl_FragColor = vec4(finalColor, 1.0);
         }
@@ -259,7 +273,7 @@ export function MagicCard3D({
       transparent: false,
       side: THREE.FrontSide,
     });
-  }, [gradientStyle]);
+  }, [currentGradient]);
   const goldenRingMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
@@ -416,25 +430,21 @@ export function MagicCard3D({
 
   return (
     <group ref={groupRef} position={position}>
-      {/* Main card background - solid black */}
-      <RoundedBox
-        args={[cardWidth, cardHeight, 0.15]}
-        radius={0.1}
-        smoothness={4}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-      >
-        <meshBasicMaterial color="#000000" side={THREE.FrontSide} />
-      </RoundedBox>
+      {/* FRONT SIDE */}
+      <group visible={!flipped}>
+        {/* Main card background - solid black */}
+        <RoundedBox
+          args={[cardWidth, cardHeight, 0.15]}
+          radius={0.1}
+          smoothness={4}
+          onPointerOver={handlePointerOver}
+          onPointerOut={handlePointerOut}
+          onClick={() => setFlipped(true)}
+        >
+          <meshBasicMaterial color="#000000" side={THREE.FrontSide} />
+        </RoundedBox>
 
       {/* Gradient overlay - fades from edges to black at center top */}
-      <RoundedBox
-        args={[cardWidth, cardHeight, 0.151]}
-        radius={0.1}
-        smoothness={4}
-      >
-        <primitive object={gradientMaterial} attach="material" />
-      </RoundedBox>
 
       {showFrame && !isDynamicGolden && (
         <>
@@ -550,7 +560,7 @@ export function MagicCard3D({
 
       {/* Circular video portrait at top center with padding */}
       <mesh position={[0, cardHeight / 2 - circleRadius - padding, 0.16]} material={circularMaterial} renderOrder={998}>
-        <planeGeometry args={[videoDisplayWidth, videoDisplayWidth]} />
+        <planeGeometry args={[videoDisplayWidth, videoDisplayHeight]} />
       </mesh>
 
       {/* Golden gradient ring around video circle */}
@@ -570,12 +580,76 @@ export function MagicCard3D({
         letterSpacing={0.05}
         outlineWidth={0}
         outlineColor="#000000"
-        depthTest={false}
-        depthWrite={false}
         renderOrder={999}
       >
         {roleName.toUpperCase()}
       </Text>
+      </group>
+
+      {/* BACK SIDE */}
+      <group visible={flipped} rotation={[0, Math.PI, 0]}>
+        {/* Back card background */}
+        <RoundedBox
+          args={[cardWidth, cardHeight, 0.15]}
+          radius={0.1}
+          smoothness={4}
+          onClick={() => setFlipped(false)}
+        >
+          <meshBasicMaterial color="#000000" side={THREE.FrontSide} />
+        </RoundedBox>
+
+        {/* Back gradient overlay */}
+        <RoundedBox
+          args={[cardWidth, cardHeight, 0.151]}
+          radius={0.1}
+          smoothness={4}
+        >
+          <primitive object={gradientMaterial} attach="material" />
+        </RoundedBox>
+
+        {/* Role name at top */}
+        <Text
+          position={[0, cardHeight / 2 - 0.3, 0.16]}
+          fontSize={0.35}
+          color="#E5E4E2"
+          anchorX="center"
+          anchorY="top"
+          maxWidth={cardWidth - (padding * 2)}
+          textAlign="center"
+          letterSpacing={0.05}
+          font="/fonts/Inter_18pt-Bold.ttf"
+          renderOrder={999}
+        >
+          {roleName.toUpperCase()}
+        </Text>
+
+        {/* Description text */}
+        <Text
+          position={[0, 0, 0.16]}
+          fontSize={0.18}
+          color="#C0C0C0"
+          anchorX="center"
+          anchorY="middle"
+          maxWidth={cardWidth - (padding * 3)}
+          textAlign="center"
+          lineHeight={1.4}
+          renderOrder={999}
+        >
+          {description}
+        </Text>
+
+        {/* "Click to flip back" hint */}
+        <Text
+          position={[0, -cardHeight / 2 + 0.3, 0.16]}
+          fontSize={0.12}
+          color="#888888"
+          anchorX="center"
+          anchorY="bottom"
+          renderOrder={999}
+        >
+          Click to flip back
+        </Text>
+      </group>
     </group>
   );
 }

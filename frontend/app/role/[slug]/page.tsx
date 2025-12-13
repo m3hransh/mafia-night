@@ -30,7 +30,12 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
 
   return (
     <main className="relative w-full h-screen overflow-hidden">
-      <CardScene videoSrc={role.video} roleName={role.name} gradientStyle="option2" />
+      <CardScene 
+        videoSrc={role.video} 
+        roleName={role.name} 
+        description={role.description}
+        gradientStyle="option2" 
+      />
       
       {/* Navigation controls */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex items-center gap-4">
@@ -45,7 +50,7 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
         
         <Link
           href="/"
-          className="bg-black/50 backdrop-blur-md rounded-full px-6 py-3 hover:bg-purple-600/30 transition-all"
+          className="bg-black/50 backdrop-blur-md rounded-full px-5 py-3 hover:bg-purple-600/30 transition-all"
         >
           <span className="text-white font-semibold">{currentIndex + 1} / {roles.length}</span>
         </Link>
@@ -62,10 +67,9 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
 
       {/* Title overlay */}
       <div className="absolute top-8 left-1/2 transform -translate-x-1/2 text-center z-10">
-        <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-2xl">
+        <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-2xl">
           {role.name}
         </h1>
-        <p className="text-xl text-purple-300">Mafia Night • Role Card</p>
       </div>
 
       {/* Back to gallery button */}
