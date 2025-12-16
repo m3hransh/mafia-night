@@ -3,7 +3,7 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { MagicCard3D } from './MagicCard3D';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 interface CardSceneProps {
   videoSrc: string;
@@ -15,12 +15,24 @@ interface CardSceneProps {
 }
 
 export function CardScene({ videoSrc, roleName, description, frameStyle = 'golden-dynamic', gradientStyle = 'option2', enableOrbitControls = false }: CardSceneProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <div className="w-full h-screen bg-gray-950">
       <Canvas>
         <Suspense fallback={null}>
-          {/* Camera */}
-          <PerspectiveCamera makeDefault position={[0, 0, 6]} fov={50} />
+          {/* Camera - zoomed out more on mobile for better margins */}
+          <PerspectiveCamera makeDefault position={[0, 0, 6]} fov={isMobile ? 55 : 50} />
           
           {/* The Magic Card */}
           <MagicCard3D 

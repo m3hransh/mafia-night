@@ -50,7 +50,7 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
         
         <Link
           href="/"
-          className="bg-black/50 backdrop-blur-md rounded-full px-5 py-3 hover:bg-purple-600/30 transition-all"
+          className="bg-black/50 backdrop-blur-md rounded-full px-5 py-3 hover:bg-purple-600/30 transition-all whitespace-nowrap"
         >
           <span className="text-white font-semibold">{currentIndex + 1} / {roles.length}</span>
         </Link>

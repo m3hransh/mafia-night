@@ -74,6 +74,7 @@ export function MagicCard3D({
         0.1
       );
       
+      groupRef.current.position.z = position[2] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
       // Smooth rotation interpolation for X axis
       if (hovered && !flipped) {
         groupRef.current.rotation.x = THREE.MathUtils.lerp(
@@ -83,11 +84,10 @@ export function MagicCard3D({
         );
         
         // Subtle floating when hovered
-        groupRef.current.position.z = position[2] + Math.sin(state.clock.elapsedTime * 2) * 0.05;
       } else {
         // Return to neutral position
         groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, 0.1);
-        groupRef.current.position.z = THREE.MathUtils.lerp(groupRef.current.position.z, position[2], 0.1);
+        // groupRef.current.position.z = THREE.MathUtils.lerp(groupRef.current.position.z, position[2], 0.1);
       }
     }
   });
