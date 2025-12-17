@@ -8,9 +8,17 @@ describe('Home Page', () => {
     expect(heading).toBeInTheDocument()
   })
 
-  it('renders the application description', () => {
+  it('renders the role selector description', () => {
     render(<Home />)
-    const description = screen.getByText(/Web application for managing physical Mafia games/i)
+    const description = screen.getByText(/Select a Role Card/i)
     expect(description).toBeInTheDocument()
+  })
+
+  it('renders role cards', () => {
+    render(<Home />)
+    // Check for some of the role names
+    expect(screen.getByText('Sherlock')).toBeInTheDocument()
+    expect(screen.getByText('Mafia')).toBeInTheDocument()
+    expect(screen.getByText('Doctor Watson')).toBeInTheDocument()
   })
 })
