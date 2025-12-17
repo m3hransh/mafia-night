@@ -109,6 +109,14 @@ setup-vps:
   scp scripts/deployment/setup-vps.sh root@$$vps_ip:/tmp/ && \
   echo "Run on VPS: ssh root@$$vps_ip 'chmod +x /tmp/setup-vps.sh && /tmp/setup-vps.sh'"
 
+# Set up SSL/HTTPS with Let's Encrypt
+setup-ssl DOMAIN:
+  @if [ ! -f .env.production ]; then \
+    echo "Error: .env.production not found"; \
+    exit 1; \
+  fi
+  ./scripts/deployment/setup-ssl.sh {{DOMAIN}}
+
 # Deploy to production
 deploy-prod:
   @if [ ! -f .env.production ]; then \

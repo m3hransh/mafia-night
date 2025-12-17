@@ -51,19 +51,19 @@ ssh $DEPLOY_USER@$DEPLOY_HOST << EOF
     cd $DEPLOY_PATH
 
     # Pull latest images or build
-    docker-compose -f docker-compose.prod.yml pull || true
+    docker compose -f docker-compose.prod.yml pull || true
 
     # Stop existing containers
-    docker-compose -f docker-compose.prod.yml down
+    docker compose -f docker-compose.prod.yml down
 
     # Build and start containers
-    docker-compose -f docker-compose.prod.yml up -d --build
+    docker compose -f docker-compose.prod.yml up -d --build
 
     # Clean up old images
     docker image prune -f
 
     # Show running containers
-    docker-compose -f docker-compose.prod.yml ps
+    docker compose -f docker-compose.prod.yml ps
 EOF
 
 echo -e "${GREEN}Deployment completed successfully!${NC}"
