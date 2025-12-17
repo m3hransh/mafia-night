@@ -246,35 +246,42 @@ Watch deployment:
 
 ## Step 6: Domain Configuration (Optional)
 
-### Point Domain to VPS
+### Point Subdomain to VPS
 
 1. **In your domain registrar** (e.g., Namecheap, GoDaddy):
-   - Add A record: `@` → `YOUR_VPS_IP`
-   - Add A record: `www` → `YOUR_VPS_IP`
+   - Add A record: `mafia` → `YOUR_VPS_IP`
+
+   Example for Namecheap:
+   - Host: `mafia`
+   - Value: `YOUR_VPS_IP`
+   - Record Type: A
 
 2. **Wait for DNS propagation** (5 minutes - 48 hours)
 
 3. **Test**:
 ```bash
-ping your-domain.com
+ping mafia.your-domain.com
 ```
 
 ### Set Up SSL with Let's Encrypt
 
+See the detailed guide: [[SSL Setup]]
+
+Quick setup:
 ```bash
-# On VPS
-ssh deploy@YOUR_VPS_IP
+# On local machine
+just setup-ssl mafia.your-domain.com
 
-# Install certbot
-sudo apt-get install certbot python3-certbot-nginx
+# Then update nginx config
+cp nginx/nginx-https.conf nginx/nginx.conf
+# Edit nginx/nginx.conf to replace 'mafia.your-domain.com' with your actual subdomain
 
-# Get certificate
-sudo certbot --nginx -d your-domain.com -d www.your-domain.com
+# Update .env.production
+NEXT_PUBLIC_API_URL=https://mafia.your-domain.com/api
 
-# Auto-renewal is set up automatically
+# Deploy
+just deploy-prod
 ```
-
-Update `nginx/nginx.conf` to use HTTPS (uncomment HTTPS section).
 
 ## Common Operations
 

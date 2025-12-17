@@ -60,7 +60,7 @@ ssh $DEPLOY_USER@$DEPLOY_HOST << EOF
     echo "  - Agree to Terms of Service"
     echo ""
 
-    sudo certbot certonly --standalone -d $DOMAIN -d www.$DOMAIN
+    sudo certbot certonly --standalone -d $DOMAIN
 
     echo -e "${YELLOW}Creating SSL directory...${NC}"
     sudo mkdir -p $DEPLOY_PATH/nginx/ssl

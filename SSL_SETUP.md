@@ -5,18 +5,18 @@ Add HTTPS to your Mafia Night deployment in 10 minutes.
 ## TL;DR - Quick Steps
 
 ```bash
-# 1. Point your domain to VPS IP (in domain registrar DNS settings)
+# 1. Point your subdomain to VPS IP (in domain registrar DNS settings)
 # 2. Wait for DNS propagation (5-30 min)
 # 3. Run SSL setup
-just setup-ssl your-domain.com
+just setup-ssl mafia.your-domain.com
 
 # 4. Update nginx config
 cp nginx/nginx-https.conf nginx/nginx.conf
-# Edit nginx/nginx.conf and replace 'your-domain.com' with your actual domain
+# Edit nginx/nginx.conf and replace 'mafia.your-domain.com' with your actual subdomain
 
 # 5. Update environment
 # In .env.production, change:
-NEXT_PUBLIC_API_URL=https://your-domain.com/api
+NEXT_PUBLIC_API_URL=https://mafia.your-domain.com/api
 
 # 6. Deploy
 just deploy-prod
@@ -44,29 +44,28 @@ Done! 🎉
 
 ### Step 2: Configure DNS
 
-Add these A records in your domain's DNS settings:
+Add an A record for your subdomain in your domain's DNS settings:
 
 ```
-Type: A    Host: @      Value: YOUR_VPS_IP
-Type: A    Host: www    Value: YOUR_VPS_IP
+Type: A    Host: mafia    Value: YOUR_VPS_IP
 ```
 
 **Example (Namecheap):**
 1. Domain List → Manage
 2. Advanced DNS tab
 3. Add Record → A Record
-4. Host: `@`, Value: `YOUR_VPS_IP`, TTL: Automatic
+4. Host: `mafia`, Value: `YOUR_VPS_IP`, TTL: Automatic
 
 **Example (Cloudflare):**
 1. DNS → Records
 2. Add Record → A
-3. Name: `@`, IPv4: `YOUR_VPS_IP`, Proxied: ✓
+3. Name: `mafia`, IPv4: `YOUR_VPS_IP`, Proxied: ✓
 
 ### Step 3: Verify DNS
 
 ```bash
-# Check if domain points to your VPS
-ping your-domain.com
+# Check if subdomain points to your VPS
+ping mafia.your-domain.com
 
 # Or use online tool
 # https://dnschecker.org
@@ -77,7 +76,7 @@ ping your-domain.com
 ### Step 4: Run SSL Setup Script
 
 ```bash
-just setup-ssl your-domain.com
+just setup-ssl mafia.your-domain.com
 ```
 
 This will:
@@ -96,11 +95,11 @@ You'll be prompted for:
 # Copy HTTPS config template
 cp nginx/nginx-https.conf nginx/nginx.conf
 
-# Edit and replace 'your-domain.com' with your actual domain
+# Edit and replace 'mafia.your-domain.com' with your actual subdomain
 vim nginx/nginx.conf
 ```
 
-Or manually edit `nginx/nginx.conf` and replace both instances of `your-domain.com`.
+Or manually edit `nginx/nginx.conf` and replace the subdomain.
 
 ### Step 6: Update Environment
 
@@ -108,7 +107,7 @@ Edit `.env.production`:
 
 ```bash
 # Change from HTTP to HTTPS
-NEXT_PUBLIC_API_URL=https://your-domain.com/api
+NEXT_PUBLIC_API_URL=https://mafia.your-domain.com/api
 ```
 
 ### Step 7: Deploy
@@ -121,14 +120,14 @@ just deploy-prod
 
 ```bash
 # Test HTTPS
-curl https://your-domain.com
+curl https://mafia.your-domain.com
 
 # Test HTTP redirect
-curl -I http://your-domain.com
+curl -I http://mafia.your-domain.com
 # Should show: HTTP/1.1 301 Moved Permanently
 
 # Test SSL certificate
-curl -vI https://your-domain.com
+curl -vI https://mafia.your-domain.com
 ```
 
 **Online SSL Test:**
@@ -151,7 +150,7 @@ curl -vI https://your-domain.com
 
 ```bash
 # Check DNS
-nslookg your-domain.com
+nslookup mafia.your-domain.com
 
 # If not working, wait longer or check DNS settings in registrar
 ```
@@ -165,7 +164,7 @@ cd /opt/mafia-night
 docker compose -f docker-compose.prod.yml stop nginx
 
 # Try again
-just setup-ssl your-domain.com
+just setup-ssl mafia.your-domain.com
 ```
 
 ### Site Not Loading with HTTPS

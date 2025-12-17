@@ -33,11 +33,10 @@ Complete guide for adding HTTPS to your Mafia Night deployment using Let's Encry
 2. **Configure DNS**
    - Go to Domain List → Manage
    - Advanced DNS tab
-   - Add A Records:
+   - Add A Record for subdomain:
      ```
      Type    Host    Value           TTL
-     A       @       YOUR_VPS_IP     Automatic
-     A       www     YOUR_VPS_IP     Automatic
+     A       mafia   YOUR_VPS_IP     Automatic
      ```
 
 ### Option B: Cloudflare (Recommended for DDoS protection)
@@ -47,8 +46,7 @@ Complete guide for adding HTTPS to your Mafia Night deployment using Let's Encry
    - Register Domain
 
 2. **DNS Configuration** (automatically set up)
-   - A record: `@` → `YOUR_VPS_IP`
-   - A record: `www` → `YOUR_VPS_IP`
+   - A record: `mafia` → `YOUR_VPS_IP`
 
 3. **Cloudflare Settings**
    - SSL/TLS → Full (strict)
@@ -58,18 +56,17 @@ Complete guide for adding HTTPS to your Mafia Night deployment using Let's Encry
 ### Option C: Other Registrars
 
 Similar process:
-- Add A record for `@` pointing to `YOUR_VPS_IP`
-- Add A record for `www` pointing to `YOUR_VPS_IP`
+- Add A record for `mafia` (subdomain) pointing to `YOUR_VPS_IP`
 - Wait for DNS propagation (5 min - 48 hours)
 
 ## Step 2: Verify DNS Propagation
 
 ```bash
 # Check if DNS is working
-ping your-domain.com
+ping mafia.your-domain.com
 
 # Check DNS records
-nslookup your-domain.com
+nslookup mafia.your-domain.com
 
 # Or use online tools
 # https://dnschecker.org
@@ -110,16 +107,10 @@ docker-compose -f docker-compose.prod.yml stop nginx
 
 ## Step 5: Obtain SSL Certificate
 
-### For Single Domain
+### For Subdomain
 
 ```bash
-sudo certbot certonly --standalone -d your-domain.com
-```
-
-### For Domain + WWW Subdomain (Recommended)
-
-```bash
-sudo certbot certonly --standalone -d your-domain.com -d www.your-domain.com
+sudo certbot certonly --standalone -d mafia.your-domain.com
 ```
 
 ### Interactive Prompts
@@ -132,8 +123,8 @@ sudo certbot certonly --standalone -d your-domain.com -d www.your-domain.com
 
 ```
 Successfully received certificate.
-Certificate is saved at: /etc/letsencrypt/live/your-domain.com/fullchain.pem
-Key is saved at:         /etc/letsencrypt/live/your-domain.com/privkey.pem
+Certificate is saved at: /etc/letsencrypt/live/mafia.your-domain.com/fullchain.pem
+Key is saved at:         /etc/letsencrypt/live/mafia.your-domain.com/privkey.pem
 ```
 
 ## Step 6: Copy Certificates to Project
@@ -143,8 +134,8 @@ Key is saved at:         /etc/letsencrypt/live/your-domain.com/privkey.pem
 sudo mkdir -p /opt/mafia-night/nginx/ssl
 
 # Copy certificates
-sudo cp /etc/letsencrypt/live/your-domain.com/fullchain.pem /opt/mafia-night/nginx/ssl/cert.pem
-sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem /opt/mafia-night/nginx/ssl/key.pem
+sudo cp /etc/letsencrypt/live/mafia.your-domain.com/fullchain.pem /opt/mafia-night/nginx/ssl/cert.pem
+sudo cp /etc/letsencrypt/live/mafia.your-domain.com/privkey.pem /opt/mafia-night/nginx/ssl/key.pem
 
 # Set permissions
 sudo chown deploy:deploy /opt/mafia-night/nginx/ssl/*.pem
@@ -180,7 +171,7 @@ http {
     # HTTP server - redirect to HTTPS
     server {
         listen 80;
-        server_name your-domain.com www.your-domain.com;
+        server_name mafia.your-domain.com;
 
         # Redirect all HTTP to HTTPS
         return 301 https://$server_name$request_uri;
@@ -189,7 +180,7 @@ http {
     # HTTPS server
     server {
         listen 443 ssl http2;
-        server_name your-domain.com www.your-domain.com;
+        server_name mafia.your-domain.com;
 
         # SSL Configuration
         ssl_certificate /etc/nginx/ssl/cert.pem;
@@ -272,7 +263,7 @@ On your **local machine**, update `.env.production`:
 
 ```bash
 # Change this line
-NEXT_PUBLIC_API_URL=https://your-domain.com/api
+NEXT_PUBLIC_API_URL=https://mafia.your-domain.com/api
 ```
 
 ## Step 9: Deploy Updated Configuration
@@ -292,13 +283,13 @@ Or manually:
 
 ```bash
 # Test HTTPS
-curl https://your-domain.com
+curl https://mafia.your-domain.com
 
 # Check SSL certificate
-curl -vI https://your-domain.com
+curl -vI https://mafia.your-domain.com
 
 # Test HTTP redirect
-curl -I http://your-domain.com
+curl -I http://mafia.your-domain.com
 # Should show: 301 Moved Permanently
 ```
 
@@ -323,7 +314,7 @@ sudo certbot renew --dry-run
 sudo crontab -e
 
 # Add this line (runs twice daily)
-0 0,12 * * * certbot renew --quiet --post-hook "cp /etc/letsencrypt/live/your-domain.com/fullchain.pem /opt/mafia-night/nginx/ssl/cert.pem && cp /etc/letsencrypt/live/your-domain.com/privkey.pem /opt/mafia-night/nginx/ssl/key.pem && cd /opt/mafia-night && docker-compose -f docker-compose.prod.yml restart nginx"
+0 0,12 * * * certbot renew --quiet --post-hook "cp /etc/letsencrypt/live/mafia.your-domain.com/fullchain.pem /opt/mafia-night/nginx/ssl/cert.pem && cp /etc/letsencrypt/live/mafia.your-domain.com/privkey.pem /opt/mafia-night/nginx/ssl/key.pem && cd /opt/mafia-night && docker-compose -f docker-compose.prod.yml restart nginx"
 ```
 
 Or use systemd timer (more modern):
@@ -361,7 +352,7 @@ ssh deploy@$DEPLOY_HOST << EOF
     docker-compose -f docker-compose.prod.yml stop nginx
 
     # Get certificate
-    sudo certbot certonly --standalone -d $DOMAIN -d www.$DOMAIN
+    sudo certbot certonly --standalone -d $DOMAIN
 
     # Create SSL directory
     sudo mkdir -p /opt/mafia-night/nginx/ssl
@@ -376,7 +367,7 @@ ssh deploy@$DEPLOY_HOST << EOF
     sudo chmod 600 /opt/mafia-night/nginx/ssl/key.pem
 
     # Setup auto-renewal
-    echo "0 0,12 * * * certbot renew --quiet --post-hook \"cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /opt/mafia-night/nginx/ssl/cert.pem && cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /opt/mafia-night/nginx/ssl/key.pem && cd /opt/mafia-night && docker-compose -f docker-compose.prod.yml restart nginx\"" | sudo crontab -
+    echo "0 0,12 * * * certbot renew --quiet --post-hook \"cp /etc/letsencrypt/live/\$DOMAIN/fullchain.pem /opt/mafia-night/nginx/ssl/cert.pem && cp /etc/letsencrypt/live/\$DOMAIN/privkey.pem /opt/mafia-night/nginx/ssl/key.pem && cd /opt/mafia-night && docker-compose -f docker-compose.prod.yml restart nginx\"" | sudo crontab -
 
     echo "SSL setup complete!"
 EOF
@@ -421,7 +412,7 @@ https://dnschecker.org
 
 ```bash
 # Make sure port 80 is accessible
-curl http://your-domain.com
+curl http://mafia.your-domain.com
 
 # Check firewall
 sudo ufw status
@@ -460,8 +451,8 @@ Already included in the configuration:
 sudo certbot renew
 
 # Copy new certificates
-sudo cp /etc/letsencrypt/live/your-domain.com/fullchain.pem /opt/mafia-night/nginx/ssl/cert.pem
-sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem /opt/mafia-night/nginx/ssl/key.pem
+sudo cp /etc/letsencrypt/live/mafia.your-domain.com/fullchain.pem /opt/mafia-night/nginx/ssl/cert.pem
+sudo cp /etc/letsencrypt/live/mafia.your-domain.com/privkey.pem /opt/mafia-night/nginx/ssl/key.pem
 
 # Restart nginx
 cd /opt/mafia-night
