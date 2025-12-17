@@ -28,6 +28,8 @@ export function MagicCard3D({
   const [hovered, setHovered] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [gyroRotation, setGyroRotation] = useState({ beta: 0, gamma: 0 });
+  const [isMobile, setIsMobile] = useState(false);
   
   const videoTexture = useVideoTexture(videoSrc, {
     loop: true,
@@ -44,7 +46,77 @@ export function MagicCard3D({
   // Smooth mouse tracking
   const targetRotation = useRef({ x: 0, y: 0 });
 
+  // Detect if device is mobile
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    };
+    checkMobile();
+  }, []);
+
+  // Gyroscope handling for mobile
+  useEffect(() => {
+    if (!isMobile) return;
+
+    console.log('Setting up gyroscope for mobile device');
+
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      if (event.beta !== null && event.gamma !== null) {
+        console.log('Gyro values:', { beta: event.beta, gamma: event.gamma });
+        // beta: front-to-back tilt (-180 to 180)
+        // gamma: left-to-right tilt (-90 to 90)
+        setGyroRotation({
+          beta: event.beta,
+          gamma: event.gamma,
+        });
+      }
+    };
+
+    const handleMotion = (event: DeviceMotionEvent) => {
+      // Fallback to motion API if orientation doesn't work
+      if (event.accelerationIncludingGravity) {
+        const { x, y, z } = event.accelerationIncludingGravity;
+        if (x !== null && y !== null && z !== null) {
+          // Convert acceleration to rotation angles
+          const beta = Math.atan2(y, Math.sqrt(x * x + z * z)) * (180 / Math.PI);
+          const gamma = Math.atan2(x, Math.sqrt(y * y + z * z)) * (180 / Math.PI);
+          
+          setGyroRotation({
+            beta: beta,
+            gamma: gamma,
+          });
+        }
+      }
+    };
+
+    // Request permission for iOS 13+
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+      (DeviceOrientationEvent as any).requestPermission()
+        .then((permissionState: string) => {
+          console.log('iOS permission state:', permissionState);
+          if (permissionState === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+          }
+        })
+        .catch(console.error);
+    } else {
+      // Non-iOS devices (Android, etc)
+      console.log('Adding deviceorientation listener for Android');
+      window.addEventListener('deviceorientation', handleOrientation, true);
+      // Also try motion API as fallback
+      window.addEventListener('devicemotion', handleMotion, true);
+    }
+
+    return () => {
+      window.removeEventListener('deviceorientation', handleOrientation);
+      window.removeEventListener('devicemotion', handleMotion);
+    };
+  }, [isMobile]);
+
+  // Mouse tracking for desktop
+  useEffect(() => {
+    if (isMobile) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       const x = (e.clientX / window.innerWidth) * 2 - 1;
       const y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -61,34 +133,54 @@ export function MagicCard3D({
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [hovered]);
+  }, [hovered, isMobile]);
 
   // Animate smooth rotation and floating
   useFrame((state, delta) => {
     if (groupRef.current) {
       // Handle flip animation
       const targetRotationY = flipped ? Math.PI : 0;
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(
-        groupRef.current.rotation.y,
-        targetRotationY + (hovered && !flipped ? targetRotation.current.y * 0.3 : 0),
-        0.1
-      );
       
-      groupRef.current.position.z = position[2] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
-      // Smooth rotation interpolation for X axis
-      if (hovered && !flipped) {
+      if (isMobile && !flipped) {
+        // Mobile: use gyroscope data (inverted for natural feel)
+        // gamma controls Y rotation (left-right tilt)
+        // beta controls X rotation (front-back tilt)
+        const gyroY = (gyroRotation.gamma / 180) * 1.0; // Inverted and scaled
+        const gyroX = (-gyroRotation.beta / 180) * 0.8; // Inverted and scaled
+        
+        groupRef.current.rotation.y = THREE.MathUtils.lerp(
+          groupRef.current.rotation.y,
+          targetRotationY + gyroY,
+          0.1
+        );
+        groupRef.current.rotation.x = THREE.MathUtils.lerp(
+          groupRef.current.rotation.x,
+          gyroX,
+          0.1
+        );
+      } else if (hovered && !flipped) {
+        // Desktop: use mouse position
+        groupRef.current.rotation.y = THREE.MathUtils.lerp(
+          groupRef.current.rotation.y,
+          targetRotationY + targetRotation.current.y * 0.3,
+          0.1
+        );
         groupRef.current.rotation.x = THREE.MathUtils.lerp(
           groupRef.current.rotation.x,
           targetRotation.current.x,
           0.1
         );
-        
-        // Subtle floating when hovered
       } else {
         // Return to neutral position
+        groupRef.current.rotation.y = THREE.MathUtils.lerp(
+          groupRef.current.rotation.y,
+          targetRotationY,
+          0.1
+        );
         groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, 0.1);
-        // groupRef.current.position.z = THREE.MathUtils.lerp(groupRef.current.position.z, position[2], 0.1);
       }
+      
+      groupRef.current.position.z = position[2] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
   });
 

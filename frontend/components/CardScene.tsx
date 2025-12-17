@@ -16,6 +16,7 @@ interface CardSceneProps {
 
 export function CardScene({ videoSrc, roleName, description, frameStyle = 'golden-dynamic', gradientStyle = 'option2', enableOrbitControls = false }: CardSceneProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const [gyroDebug, setGyroDebug] = useState({ beta: 0, gamma: 0 });
 
   useEffect(() => {
     const checkMobile = () => {
@@ -27,8 +28,31 @@ export function CardScene({ videoSrc, roleName, description, frameStyle = 'golde
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Debug gyroscope
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      if (event.beta !== null && event.gamma !== null) {
+        setGyroDebug({ beta: event.beta, gamma: event.gamma });
+      }
+    };
+
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    return () => window.removeEventListener('deviceorientation', handleOrientation);
+  }, [isMobile]);
+
   return (
     <div className="w-full h-screen bg-gray-950">
+      {/* Debug overlay for mobile */}
+      {isMobile && (
+        <div className="absolute top-20 right-4 z-50 bg-black/70 text-white p-3 rounded text-xs">
+          <div>Beta: {gyroDebug.beta.toFixed(1)}°</div>
+          <div>Gamma: {gyroDebug.gamma.toFixed(1)}°</div>
+          <div className="text-[10px] mt-1 text-gray-400">Tilt phone to test</div>
+        </div>
+      )}
+      
       <Canvas>
         <Suspense fallback={null}>
           {/* Camera - zoomed out more on mobile for better margins */}

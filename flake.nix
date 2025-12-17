@@ -75,6 +75,7 @@
             git
             gh
             just
+            mkcert
             
             # Formatters & Linters
             gofumpt

@@ -76,7 +76,7 @@ test-frontend-watch:
 
 # Run frontend dev server
 dev-frontend:
-  cd frontend && npm run dev
+  cd frontend && npm run dev:https
 
 # Build frontend for production
 build-frontend:
