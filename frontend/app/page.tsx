@@ -1,50 +1,7 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
-
-// Dynamic import to avoid SSR issues with Three.js
-const CardScene = dynamic(() => import('@/components/CardScene').then(mod => ({ default: mod.CardScene })), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-screen flex items-center justify-center from-slate-900 to-slate-900">
-      <div className="text-white text-2xl">Loading magical cards...</div>
-    </div>
-  ),
-});
-
-const roles = [
-  { name: 'Sherlock', video: '/roles/sherlock.webm', slug: 'sherlock' },
-  { name: 'Mafia', video: '/roles/Mafia.webm', slug: 'mafia' },
-  { name: 'Doctor Watson', video: '/roles/Doctor Watson.webm', slug: 'doctor-watson' },
-  { name: 'Bodyguard', video: '/roles/Bodyguard.webm', slug: 'bodyguard' },
-  { name: 'Chef', video: '/roles/Chef.webm', slug: 'chef' },
-  { name: 'Citizen Kane', video: '/roles/Citizen Kane.webm', slug: 'citizen-kane' },
-  { name: 'Citizen Male', video: '/roles/Citizen_male.webm', slug: 'citizen-male' },
-  { name: 'Citizen', video: '/roles/Citizen.webm', slug: 'citizen' },
-  { name: 'Commander', video: '/roles/Commander.webm', slug: 'commander' },
-  { name: 'Constantine', video: '/roles/Constantine.webm', slug: 'constantine' },
-  { name: 'Cowgirl', video: '/roles/Cowgirl.webm', slug: 'cowgirl' },
-  { name: 'Gunsmith', video: '/roles/Gunsmith.webm', slug: 'gunsmith' },
-  { name: 'Hacker', video: '/roles/Hacker.webm', slug: 'hacker' },
-  { name: 'Leon', video: '/roles/Leon.webm', slug: 'leon' },
-  { name: 'Mayor', video: '/roles/Mayor.webm', slug: 'mayor' },
-  { name: 'Natasha', video: '/roles/Natasha.webm', slug: 'natasha' },
-  { name: 'Ocean\'s Friend', video: '/roles/Ocean_s friend.webm', slug: 'oceans-friend' },
-  { name: 'Ocean', video: '/roles/Ocean.webm', slug: 'ocean' },
-  { name: 'Police', video: '/roles/Police.webm', slug: 'police' },
-  { name: 'Priest', video: '/roles/Priest.webm', slug: 'priest' },
-  { name: 'Rostam', video: '/roles/Rostam.webm', slug: 'rostam' },
-  { name: 'Saboteur', video: '/roles/saboteur.webm', slug: 'saboteur' },
-  { name: 'Saul Goodman', video: '/roles/Saul Goodman.webm', slug: 'saul-goodman' },
-  { name: 'Spider', video: '/roles/Spider.webm', slug: 'spider' },
-  { name: 'Spy', video: '/roles/Spy.webm', slug: 'spy' },
-  { name: 'Terrorist', video: '/roles/Terrorist.webm', slug: 'terrorist' },
-  { name: 'Therapist', video: '/roles/Therapist.webm', slug: 'therapist' },
-  { name: 'Thief', video: '/roles/Thief.webm', slug: 'thief' },
-  { name: 'Traitor', video: '/roles/Traitor.webm', slug: 'traitor' },
-  { name: 'Yakuza', video: '/roles/Yakuza.webm', slug: 'yakuza' },
-];
+import { roles } from '@/lib/roles';
 
 export default function Home() {
   return (
@@ -77,5 +34,3 @@ export default function Home() {
     </main>
   );
 }
-
-export { roles };

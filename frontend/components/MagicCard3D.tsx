@@ -10,19 +10,13 @@ interface MagicCard3DProps {
   roleName: string;
   description: string;
   position?: [number, number, number];
-  onHover?: (hovered: boolean) => void;
-  frameStyle?: 'cyan' | 'purple' | 'gold' | 'blue' | 'silver' | 'golden-dynamic' | 'none';
-  gradientStyle?: string;
 }
 
-export function MagicCard3D({ 
-  videoSrc, 
-  roleName, 
+export function MagicCard3D({
+  videoSrc,
+  roleName,
   description,
-  position = [0, 0, 0], 
-  onHover, 
-  frameStyle = 'golden-dynamic',
-  gradientStyle = 'option2'
+  position = [0, 0, 0]
 }: MagicCard3DProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
@@ -39,7 +33,6 @@ export function MagicCard3D({
 
   // Ensure videoTexture is loaded
   if (!videoTexture) {
-    console.log('Video texture not loaded yet for:', videoSrc);
     return null;
   }
 
@@ -58,11 +51,8 @@ export function MagicCard3D({
   useEffect(() => {
     if (!isMobile) return;
 
-    console.log('Setting up gyroscope for mobile device');
-
     const handleOrientation = (event: DeviceOrientationEvent) => {
       if (event.beta !== null && event.gamma !== null) {
-        console.log('Gyro values:', { beta: event.beta, gamma: event.gamma });
         // beta: front-to-back tilt (-180 to 180)
         // gamma: left-to-right tilt (-90 to 90)
         setGyroRotation({
@@ -93,7 +83,6 @@ export function MagicCard3D({
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
       (DeviceOrientationEvent as any).requestPermission()
         .then((permissionState: string) => {
-          console.log('iOS permission state:', permissionState);
           if (permissionState === 'granted') {
             window.addEventListener('deviceorientation', handleOrientation);
           }
@@ -101,7 +90,6 @@ export function MagicCard3D({
         .catch(console.error);
     } else {
       // Non-iOS devices (Android, etc)
-      console.log('Adding deviceorientation listener for Android');
       window.addEventListener('deviceorientation', handleOrientation, true);
       // Also try motion API as fallback
       window.addEventListener('devicemotion', handleMotion, true);
@@ -186,13 +174,11 @@ export function MagicCard3D({
 
   const handlePointerOver = () => {
     setHovered(true);
-    onHover?.(true);
     document.body.style.cursor = 'pointer';
   };
 
   const handlePointerOut = () => {
     setHovered(false);
-    onHover?.(false);
     document.body.style.cursor = 'default';
   };
 
@@ -274,47 +260,16 @@ export function MagicCard3D({
     return material;
   }, [videoTexture]);
 
-  // Gradient style configurations
-  const gradientStyles = {
-    option1: {
-      edgeColor: 'vec3(0.12, 0.12, 0.13)', // Very dark gray
-      centerColor: 'vec3(0.0, 0.0, 0.0)',
-      smoothness: '0.8',
-      edgeFade: '-0.35'
-    },
-    option2: {
-      edgeColor: 'vec3(0.08, 0.06, 0.12)', // Deep purple-black
-      centerColor: 'vec3(0.0, 0.0, 0.0)',
-      smoothness: '0.7',
-      edgeFade: '-0.4'
-    },
-    option3: {
-      edgeColor: 'vec3(0.15, 0.12, 0.08)', // Warm bronze-black
-      centerColor: 'vec3(0.0, 0.0, 0.0)',
-      smoothness: '0.9',
-      edgeFade: '-0.3'
-    },
-    option4: {
-      edgeColor: 'vec3(0.1, 0.12, 0.15)', // Cool steel-blue
-      centerColor: 'vec3(0.0, 0.0, 0.0)',
-      smoothness: '0.75',
-      edgeFade: '-0.38'
-    },
-    option5: {
-      edgeColor: 'vec3(0.18, 0.15, 0.12)', // Lighter warm brown
-      centerColor: 'vec3(0.02, 0.02, 0.02)', // Slightly lighter center
-      smoothness: '0.65',
-      edgeFade: '-0.42'
-    }
+  // Gradient style configuration (deep purple-black theme)
+  const gradientConfig = {
+    edgeColor: 'vec3(0.08, 0.06, 0.12)', // Deep purple-black
+    centerColor: 'vec3(0.0, 0.0, 0.0)',
+    smoothness: '0.7',
+    edgeFade: '-0.4'
   };
-
-  const currentGradient = useMemo(() => {
-    return gradientStyles[gradientStyle as keyof typeof gradientStyles] || gradientStyles.option2;
-  }, [gradientStyle]);
 
   // Create gradient shader material
   const gradientMaterial = useMemo(() => {
-    const gradient = currentGradient;
     return new THREE.ShaderMaterial({
       vertexShader: `
         varying vec2 vUv;
@@ -346,16 +301,16 @@ export function MagicCard3D({
           float distToEdge = sdRoundedBox(centeredUV, cardSize, cornerRadius);
           
           // Create gradient based on distance to edge
-          float edgeFactor = smoothstep(${gradient.edgeFade}, 0.0, distToEdge);
-          
+          float edgeFactor = smoothstep(${gradientConfig.edgeFade}, 0.0, distToEdge);
+
           // Combine with radial gradient from center-top
-          float radialGradient = smoothstep(0.0, ${gradient.smoothness}, distFromCenterTop);
-          
+          float radialGradient = smoothstep(0.0, ${gradientConfig.smoothness}, distFromCenterTop);
+
           // Final gradient considers both edge proximity and center-top distance
           float gradientVal = max(radialGradient, edgeFactor);
-          
-          vec3 edgeColor = ${gradient.edgeColor};
-          vec3 centerColor = ${gradient.centerColor};
+
+          vec3 edgeColor = ${gradientConfig.edgeColor};
+          vec3 centerColor = ${gradientConfig.centerColor};
           
           vec3 finalColor = mix(centerColor, edgeColor, gradientVal);
           
@@ -365,7 +320,7 @@ export function MagicCard3D({
       transparent: false,
       side: THREE.FrontSide,
     });
-  }, [currentGradient]);
+  }, []);
   const goldenRingMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
@@ -473,52 +428,21 @@ export function MagicCard3D({
     }
   }, [videoTexture, circularMaterial]);
 
-  // Frame color options
-  const frameColors = {
-    cyan: '#00ffff',      // Bright cyan - futuristic
-    purple: '#a855f7',    // Purple - magical/mystical
-    gold: '#fbbf24',      // Gold - premium/elegant
-    blue: '#3b82f6',      // Blue - cool/calm
-    silver: '#C0C0C0',    // Silver - premium metallic
-    'golden-dynamic': '#C0C0C0', // Dynamic silver with reflections
-    none: '#000000'       // No frame
-  };
+  // Silver/platinum frame color
+  const frameColor = '#C0C0C0';
 
-  const frameColor = frameColors[frameStyle];
-  const showFrame = frameStyle !== 'none';
-  const isDynamicGolden = frameStyle === 'golden-dynamic';
-
-  // Calculate dynamic golden glow based on mouse position
-  const goldenGlowIntensity = useMemo(() => {
-    if (!isDynamicGolden) return { top: 0.15, middle: 0.1, outer: 0.05 };
-    
-    // Create varying intensities based on mouse position
-    const baseIntensity = 0.2;
-    const variation = (Math.sin(mousePosition.x * Math.PI) + 1) * 0.15;
-    
-    return {
-      top: baseIntensity + variation,
-      middle: (baseIntensity + variation) * 0.7,
-      outer: (baseIntensity + variation) * 0.4,
-    };
-  }, [isDynamicGolden, mousePosition.x, mousePosition.y]);
-
-  // Dynamic platinum/silver gradient colors
-  const dynamicGoldenColors = useMemo(() => {
-    if (!isDynamicGolden) return null;
-    
+  // Dynamic platinum/silver gradient colors based on mouse position
+  const dynamicPlatinumColors = useMemo(() => {
     // Platinum/silver colors with slight brightness variation based on mouse position
     const brightnessShift = mousePosition.x * 0.05; // Subtle brightness change
-    
+
     // Platinum/silver shades - cool metallic tones
-    const platinumShades = {
+    return {
       bright: `hsl(0, 0%, ${85 + brightnessShift}%)`,      // Bright platinum
       medium: `hsl(0, 0%, ${70 + brightnessShift}%)`,      // Medium platinum
       warm: `hsl(210, 5%, ${78 + brightnessShift}%)`,      // Cool platinum with slight blue tint
     };
-    
-    return platinumShades;
-  }, [isDynamicGolden, mousePosition.x]);
+  }, [mousePosition.x]);
 
   return (
     <group ref={groupRef} position={position}>
@@ -536,119 +460,67 @@ export function MagicCard3D({
           <meshBasicMaterial color="#000000" side={THREE.FrontSide} />
         </RoundedBox>
 
-      {/* Gradient overlay - fades from edges to black at center top */}
+        {/* Multi-layer platinum frame with depth and transparency */}
 
-      {showFrame && !isDynamicGolden && (
-        <>
-          {/* Static neon frame - outer glow */}
-          <RoundedBox
-            args={[cardWidth + 0.02, cardHeight + 0.02, 0.11]}
-            radius={0.12}
-            smoothness={4}
-          >
-            <meshBasicMaterial
-              color={frameColor}
-              transparent
-              opacity={0.15}
-              side={THREE.BackSide}
-            />
-          </RoundedBox>
+        {/* Inner glow - brightest, tight to card */}
+        <RoundedBox
+          args={[cardWidth + 0.02, cardHeight + 0.02, 0.102]}
+          radius={0.11}
+          smoothness={4}
+        >
+          <meshBasicMaterial
+            color={dynamicPlatinumColors.bright}
+            transparent
+            opacity={0.6}
+            side={THREE.BackSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </RoundedBox>
 
-          {/* Static neon frame - middle glow */}
-          <RoundedBox
-            args={[cardWidth + 0.04, cardHeight + 0.04, 0.12]}
-            radius={0.13}
-            smoothness={4}
-          >
-            <meshBasicMaterial
-              color={frameColor}
-              transparent
-              opacity={0.1}
-              side={THREE.BackSide}
-            />
-          </RoundedBox>
+        {/* Middle layer - warm glow */}
+        <RoundedBox
+          args={[cardWidth + 0.05, cardHeight + 0.05, 0.104]}
+          radius={0.12}
+          smoothness={4}
+        >
+          <meshBasicMaterial
+            color={dynamicPlatinumColors.warm}
+            transparent
+            opacity={0.35}
+            side={THREE.BackSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </RoundedBox>
 
-          {/* Static neon frame - outer most glow for depth */}
-          <RoundedBox
-            args={[cardWidth + 0.08, cardHeight + 0.08, 0.13]}
-            radius={0.14}
-            smoothness={4}
-          >
-            <meshBasicMaterial
-              color={frameColor}
-              transparent
-              opacity={0.05}
-              side={THREE.BackSide}
-            />
-          </RoundedBox>
-        </>
-      )}
+        {/* Outer layer - soft diffusion */}
+        <RoundedBox
+          args={[cardWidth + 0.1, cardHeight + 0.1, 0.106]}
+          radius={0.13}
+          smoothness={4}
+        >
+          <meshBasicMaterial
+            color={dynamicPlatinumColors.medium}
+            transparent
+            opacity={0.2}
+            side={THREE.BackSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </RoundedBox>
 
-      {isDynamicGolden && dynamicGoldenColors && (
-        <>
-          {/* Multi-layer golden frame with depth and transparency */}
-          
-          {/* Inner glow - brightest, tight to card */}
-          <RoundedBox
-            args={[cardWidth + 0.02, cardHeight + 0.02, 0.102]}
-            radius={0.11}
-            smoothness={4}
-          >
-            <meshBasicMaterial
-              color={dynamicGoldenColors.bright}
-              transparent
-              opacity={0.6}
-              side={THREE.BackSide}
-              blending={THREE.AdditiveBlending}
-            />
-          </RoundedBox>
-
-          {/* Middle layer - warm glow */}
-          <RoundedBox
-            args={[cardWidth + 0.05, cardHeight + 0.05, 0.104]}
-            radius={0.12}
-            smoothness={4}
-          >
-            <meshBasicMaterial
-              color={dynamicGoldenColors.warm}
-              transparent
-              opacity={0.35}
-              side={THREE.BackSide}
-              blending={THREE.AdditiveBlending}
-            />
-          </RoundedBox>
-
-          {/* Outer layer - soft diffusion */}
-          <RoundedBox
-            args={[cardWidth + 0.1, cardHeight + 0.1, 0.106]}
-            radius={0.13}
-            smoothness={4}
-          >
-            <meshBasicMaterial
-              color={dynamicGoldenColors.medium}
-              transparent
-              opacity={0.2}
-              side={THREE.BackSide}
-              blending={THREE.AdditiveBlending}
-            />
-          </RoundedBox>
-
-          {/* Far outer shimmer - very subtle */}
-          <RoundedBox
-            args={[cardWidth + 0.15, cardHeight + 0.15, 0.108]}
-            radius={0.14}
-            smoothness={4}
-          >
-            <meshBasicMaterial
-              color={dynamicGoldenColors.bright}
-              transparent
-              opacity={0.08}
-              side={THREE.BackSide}
-              blending={THREE.AdditiveBlending}
-            />
-          </RoundedBox>
-        </>
-      )}
+        {/* Far outer shimmer - very subtle */}
+        <RoundedBox
+          args={[cardWidth + 0.15, cardHeight + 0.15, 0.108]}
+          radius={0.14}
+          smoothness={4}
+        >
+          <meshBasicMaterial
+            color={dynamicPlatinumColors.bright}
+            transparent
+            opacity={0.08}
+            side={THREE.BackSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </RoundedBox>
 
       {/* Circular video portrait at top center with padding */}
       <mesh position={[0, cardHeight / 2 - circleRadius - padding, 0.16]} material={circularMaterial} renderOrder={998}>

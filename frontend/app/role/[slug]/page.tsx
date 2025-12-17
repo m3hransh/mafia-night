@@ -30,11 +30,10 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
 
   return (
     <main className="relative w-full h-screen overflow-hidden">
-      <CardScene 
-        videoSrc={role.video} 
-        roleName={role.name} 
+      <CardScene
+        videoSrc={role.video}
+        roleName={role.name}
         description={role.description}
-        gradientStyle="option2" 
       />
       
       {/* Navigation controls */}
