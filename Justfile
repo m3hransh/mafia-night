@@ -99,6 +99,58 @@ fmt: fmt-backend
 # Lint all code
 lint: lint-backend lint-frontend
 
+# Deployment commands
+# ===================
+
+# Set up VPS for deployment (run once)
+setup-vps:
+  @echo "Uploading setup script to VPS..."
+  @read -p "Enter VPS IP: " vps_ip && \
+  scp scripts/deployment/setup-vps.sh root@$$vps_ip:/tmp/ && \
+  echo "Run on VPS: ssh root@$$vps_ip 'chmod +x /tmp/setup-vps.sh && /tmp/setup-vps.sh'"
+
+# Deploy to production
+deploy-prod:
+  @if [ ! -f .env.production ]; then \
+    echo "Error: .env.production not found. Copy from .env.production.example"; \
+    exit 1; \
+  fi
+  ./scripts/deployment/deploy.sh
+
+# Rollback to previous deployment
+rollback:
+  ./scripts/deployment/rollback.sh
+
+# Build production Docker images locally (testing)
+build-prod:
+  docker-compose -f docker-compose.prod.yml build
+
+# Start production stack locally (testing)
+up-prod:
+  docker-compose -f docker-compose.prod.yml up -d
+
+# Stop production stack
+down-prod:
+  docker-compose -f docker-compose.prod.yml down
+
+# View production logs
+logs-prod:
+  docker-compose -f docker-compose.prod.yml logs -f
+
+# SSH into production VPS
+ssh-prod:
+  @source .env.production && ssh $$DEPLOY_USER@$$DEPLOY_HOST
+
+# View production container status on VPS
+status-prod:
+  @source .env.production && \
+  ssh $$DEPLOY_USER@$$DEPLOY_HOST "cd $$DEPLOY_PATH && docker-compose -f docker-compose.prod.yml ps"
+
+# View production logs on VPS
+logs-prod-vps SERVICE="":
+  @source .env.production && \
+  ssh $$DEPLOY_USER@$$DEPLOY_HOST "cd $$DEPLOY_PATH && docker-compose -f docker-compose.prod.yml logs -f {{SERVICE}}"
+
 # Docker commands
 # ==============
 
