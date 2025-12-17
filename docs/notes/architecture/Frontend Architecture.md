@@ -7,7 +7,7 @@ Design and organization of the [[Next.js]] frontend.
 ```
 ┌─────────────────┐
 │   App Router    │  app/
-│   (Next.js 15)  │
+│   (Next.js 16)  │
 └────────┬────────┘
          │
     ┌────▼────┐
@@ -16,6 +16,7 @@ Design and organization of the [[Next.js]] frontend.
          │
     ┌────▼────────┐
     │  Components │  components/
+    │  (3D Cards) │  (Three.js)
     └────┬────────┘
          │
     ┌────▼────┐
@@ -27,20 +28,29 @@ Design and organization of the [[Next.js]] frontend.
 
 ### File-Based Routing
 
+**Current Implementation:**
 ```
 app/
 ├── layout.tsx              # Root layout
-├── page.tsx                # / (home)
-├── globals.css            # Global styles
-├── games/
-│   ├── page.tsx           # /games (list)
-│   ├── [id]/
-│   │   └── page.tsx       # /games/:id (detail)
-│   └── create/
-│       └── page.tsx       # /games/create
-└── moderator/
-    └── [gameId]/
-        └── page.tsx        # /moderator/:gameId
+├── page.tsx                # / (home page)
+├── globals.css             # Global styles (Tailwind)
+└── role/
+    └── [slug]/
+        └── page.tsx        # /role/:slug (3D role card viewer)
+```
+
+**Planned Routes:**
+```
+app/games/
+├── page.tsx                # /games (list)
+├── [id]/
+│   └── page.tsx            # /games/:id (detail)
+└── create/
+    └── page.tsx            # /games/create
+
+app/moderator/
+└── [gameId]/
+    └── page.tsx            # /moderator/:gameId
 ```
 
 ### Layouts
@@ -80,10 +90,22 @@ export default function GamesPage() {
 
 ## Components
 
-### Organization
+### Current Organization
 
 ```
 components/
+├── CardScene.tsx          # 3D scene container (Three.js canvas)
+├── MagicCard3D.tsx        # 3D card component with shaders
+└── index.ts               # Component exports
+```
+
+### Planned Organization
+
+```
+components/
+├── 3d/                    # Three.js components
+│   ├── CardScene.tsx
+│   └── MagicCard3D.tsx
 ├── game/
 │   ├── GameCard.tsx
 │   ├── GameList.tsx
@@ -360,29 +382,143 @@ import Image from 'next/image'
 />
 ```
 
+## Three.js Integration
+
+### 3D Card Components
+
+The frontend uses Three.js via React Three Fiber for interactive 3D role cards.
+
+#### CardScene Component
+
+```tsx
+// components/CardScene.tsx
+'use client'
+
+import { Canvas } from '@react-three/fiber'
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
+
+export function CardScene({ videoSrc, roleName, description }) {
+  const [isMobile, setIsMobile] = useState(false)
+
+  return (
+    <div className="w-full h-screen">
+      <Canvas>
+        <Suspense fallback={null}>
+          <PerspectiveCamera makeDefault position={[0, 0, 6]} />
+          <MagicCard3D
+            videoSrc={videoSrc}
+            roleName={roleName}
+            description={description}
+          />
+        </Suspense>
+      </Canvas>
+    </div>
+  )
+}
+```
+
+#### MagicCard3D Component
+
+Features:
+- **Video Textures**: Displays role videos on 3D cards
+- **Custom Shaders**: Circular masks, gradients, and metallic effects
+- **Gyroscope Support**: Tilts card on mobile devices
+- **Mouse Tracking**: Interactive rotation on desktop
+- **Flip Animation**: Click to reveal role description
+- **Dynamic Lighting**: Golden/silver ring effects around video
+
+```tsx
+// components/MagicCard3D.tsx
+'use client'
+
+export function MagicCard3D({ videoSrc, roleName, description }) {
+  const [flipped, setFlipped] = useState(false)
+  const [gyroRotation, setGyroRotation] = useState({ beta: 0, gamma: 0 })
+
+  const videoTexture = useVideoTexture(videoSrc)
+
+  // Custom shader materials for effects
+  const circularMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({ /* ... */ })
+  }, [videoTexture])
+
+  return (
+    <group>
+      <RoundedBox onClick={() => setFlipped(!flipped)}>
+        <meshBasicMaterial color="#000000" />
+      </RoundedBox>
+      {/* Video, text, and effects */}
+    </group>
+  )
+}
+```
+
+### Role Management
+
+```tsx
+// lib/roles.ts
+export const roles = [
+  {
+    name: 'Sherlock',
+    video: '/roles/sherlock.webm',
+    slug: 'sherlock',
+    description: 'The brilliant detective...'
+  },
+  // 30+ roles total
+]
+```
+
 ## Project Structure
 
+**Current Implementation:**
 ```
 frontend/
 ├── app/                      # Next.js App Router
 │   ├── layout.tsx           # Root layout
 │   ├── page.tsx             # Home page
-│   ├── globals.css          # Global styles
-│   └── games/               # Games section
+│   ├── globals.css          # Global styles (Tailwind)
+│   └── role/
+│       └── [slug]/
+│           └── page.tsx     # 3D role card viewer
 ├── components/              # Reusable components
-│   ├── game/
-│   ├── player/
-│   └── ui/
-├── types/                   # TypeScript types
-│   ├── game.ts
-│   └── player.ts
+│   ├── CardScene.tsx        # 3D scene (Three.js canvas)
+│   ├── MagicCard3D.tsx      # 3D card with shaders
+│   └── index.ts             # Component exports
 ├── lib/                     # Utilities
-│   ├── api.ts              # API functions
-│   └── utils.ts            # Helper functions
-├── __tests__/              # Tests
-│   └── components/
-├── public/                 # Static files
-└── package.json
+│   └── roles.ts             # Role definitions (30+ roles)
+├── types/                   # TypeScript types
+│   └── jest.d.ts            # Jest type definitions
+├── __tests__/               # Tests
+│   ├── page.test.tsx        # Home page tests
+│   └── sample.test.tsx      # Sample tests
+├── public/                  # Static files
+│   └── roles/               # Role videos (.webm)
+├── jest.config.js           # Jest configuration
+├── jest.setup.ts            # Jest setup file
+├── next.config.js           # Next.js configuration
+├── tailwind.config.ts       # Tailwind configuration
+├── tsconfig.json            # TypeScript configuration
+└── package.json             # Dependencies
+```
+
+**Planned Structure:**
+```
+frontend/
+├── app/
+│   ├── games/               # Game management
+│   │   ├── page.tsx
+│   │   ├── [id]/page.tsx
+│   │   └── create/page.tsx
+│   └── moderator/
+│       └── [gameId]/page.tsx
+├── components/
+│   ├── 3d/                  # Three.js components
+│   ├── game/                # Game components
+│   ├── player/              # Player components
+│   └── ui/                  # UI components
+└── types/
+    ├── game.ts
+    └── player.ts
 ```
 
 ## Related Notes

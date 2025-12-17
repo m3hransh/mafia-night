@@ -4,7 +4,8 @@ React framework for the frontend.
 
 ## Version
 
-**Next.js 15** with App Router
+**Next.js 16** with App Router
+**React 19**
 
 ## Why Next.js?
 
@@ -194,16 +195,28 @@ Access: `process.env.NEXT_PUBLIC_API_URL`
 
 ### Commands
 ```bash
-# Development server
+# Development server (port 3001)
 npm run dev
 # or
 just dev-frontend
+
+# Development with HTTPS (for mobile testing)
+npm run dev:https
 
 # Build for production
 npm run build
 
 # Start production server
 npm start
+
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Generate coverage report
+npm run test:coverage
 ```
 
 ### Hot Reload
@@ -338,11 +351,77 @@ export default function Error({ error, reset }) {
 }
 ```
 
+## Three.js Integration
+
+### Dynamic Import for SSR
+
+Three.js requires client-side rendering. Use dynamic import with `ssr: false`:
+
+```tsx
+import dynamic from 'next/dynamic'
+
+const CardScene = dynamic(
+  () => import('@/components/CardScene').then(mod => ({ default: mod.CardScene })),
+  {
+    ssr: false,
+    loading: () => <div>Loading 3D scene...</div>
+  }
+)
+```
+
+### Libraries Used
+
+- `@react-three/fiber` - React renderer for Three.js
+- `@react-three/drei` - Helpers and components
+- `three` - Core 3D library
+- `troika-three-text` - 3D text rendering
+
+### Example Usage
+
+```tsx
+'use client'
+
+import { Canvas } from '@react-three/fiber'
+import { PerspectiveCamera } from '@react-three/drei'
+
+export function CardScene() {
+  return (
+    <Canvas>
+      <PerspectiveCamera makeDefault position={[0, 0, 6]} />
+      {/* 3D components */}
+    </Canvas>
+  )
+}
+```
+
+## Current Implementation
+
+### Pages
+- `/` - Home page with application title
+- `/role/[slug]` - 3D role card viewer (30+ roles)
+  - Supports gyroscope on mobile
+  - Mouse tracking on desktop
+  - Video textures
+  - Custom shader effects
+
+### Components
+- `CardScene` - Three.js canvas container
+- `MagicCard3D` - Interactive 3D cards with video
+
+### Features
+- Tailwind CSS 4 for styling
+- TypeScript with strict mode
+- Jest + React Testing Library
+- Dynamic routing for roles
+- Mobile-responsive design
+- Gyroscope support (iOS/Android)
+
 ## Learning Resources
 
 - Official Docs: https://nextjs.org/docs
 - Learn Next.js: https://nextjs.org/learn
 - App Router: https://nextjs.org/docs/app
+- React Three Fiber: https://docs.pmnd.rs/react-three-fiber
 
 ## Related Notes
 
@@ -354,4 +433,4 @@ export default function Error({ error, reset }) {
 
 ---
 
-#nextjs #react #frontend #framework
+#nextjs #react #frontend #framework #threejs
