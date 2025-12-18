@@ -106,10 +106,23 @@ Required values:
 Go to: **Repository Settings** → **Secrets and variables** → **Actions**
 
 Add these secrets:
-- `DB_USER`, `DB_PASSWORD`, `DB_NAME`
-- `NEXT_PUBLIC_API_URL`
-- `DEPLOY_USER`, `DEPLOY_HOST`, `DEPLOY_PATH`
-- `SSH_PRIVATE_KEY`
+
+**Database:**
+- `DB_USER` - Database username (e.g., `mafia_user`)
+- `DB_PASSWORD` - Database password (strong password)
+- `DB_NAME` - Database name (e.g., `mafia_night`)
+
+**CORS:**
+- `ALLOWED_ORIGINS` - Comma-separated frontend URLs (e.g., `http://your-domain.com,https://your-domain.com`)
+
+**API:**
+- `NEXT_PUBLIC_API_URL` - Backend API URL (e.g., `http://your-domain.com/api`)
+
+**Deployment:**
+- `DEPLOY_USER` - SSH user on VPS (e.g., `deploy`)
+- `DEPLOY_HOST` - VPS IP or domain
+- `DEPLOY_PATH` - Deployment directory (e.g., `/opt/mafia-night`)
+- `SSH_PRIVATE_KEY` - Private SSH key for deployment
 
 See [[CI-CD Pipeline]] for details.
 

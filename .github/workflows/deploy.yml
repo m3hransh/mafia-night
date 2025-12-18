@@ -152,6 +152,7 @@ jobs:
           DB_NAME=${{ secrets.DB_NAME }}
           PORT=8080
           GIN_MODE=release
+          ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
           NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
           DEPLOY_USER=${{ secrets.DEPLOY_USER }}
           DEPLOY_HOST=${{ secrets.DEPLOY_HOST }}

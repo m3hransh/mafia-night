@@ -6,9 +6,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	_ "github.com/lib/pq"
 
 	"github.com/mafia-night/backend/ent"
@@ -50,6 +52,19 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	// CORS middleware
+	allowedOrigins := getAllowedOrigins()
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   allowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Moderator-ID"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	fmt.Printf("CORS enabled for origins: %v\n", allowedOrigins)
+
 	// Health check
 	r.Get("/health", healthHandler)
 
@@ -81,4 +96,29 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status":"healthy"}`))
+}
+
+// getAllowedOrigins returns the list of allowed CORS origins
+// Reads from ALLOWED_ORIGINS environment variable (comma-separated)
+// Falls back to localhost origins for development
+func getAllowedOrigins() []string {
+	originsEnv := os.Getenv("ALLOWED_ORIGINS")
+
+	if originsEnv != "" {
+		// Production: use environment variable
+		origins := strings.Split(originsEnv, ",")
+		// Trim whitespace from each origin
+		for i, origin := range origins {
+			origins[i] = strings.TrimSpace(origin)
+		}
+		return origins
+	}
+
+	// Development: default to localhost
+	return []string{
+		"http://localhost:3000",
+		"https://localhost:3000",
+		"http://localhost:3001",
+		"https://localhost:3001",
+	}
 }

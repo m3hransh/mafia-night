@@ -62,16 +62,17 @@ on:
 
 Navigate to: **Repository Settings** → **Secrets and variables** → **Actions** → **New repository secret**
 
-| Secret Name           | Description          | Where to get it          |
-| --------------------- | -------------------- | ------------------------ |
-| `DB_USER`             | PostgreSQL username  | Choose your own          |
-| `DB_PASSWORD`         | PostgreSQL password  | Generate strong password |
-| `DB_NAME`             | Database name        | Usually `mafia_night`    |
-| `NEXT_PUBLIC_API_URL` | API URL for frontend | `http://YOUR_DOMAIN/api` |
-| `DEPLOY_USER`         | SSH username on VPS  | Usually `deploy`         |
-| `DEPLOY_HOST`         | VPS IP or domain     | From DigitalOcean        |
-| `DEPLOY_PATH`         | Deployment directory | `/opt/mafia-night`       |
-| `SSH_PRIVATE_KEY`     | SSH private key      | See below                |
+| Secret Name           | Description                        | Where to get it                                          |
+| --------------------- | ---------------------------------- | -------------------------------------------------------- |
+| `DB_USER`             | PostgreSQL username                | Choose your own                                          |
+| `DB_PASSWORD`         | PostgreSQL password                | Generate strong password                                 |
+| `DB_NAME`             | Database name                      | Usually `mafia_night`                                    |
+| `ALLOWED_ORIGINS`     | CORS allowed origins               | `http://YOUR_DOMAIN,https://YOUR_DOMAIN` (comma-separated) |
+| `NEXT_PUBLIC_API_URL` | API URL for frontend               | `http://YOUR_DOMAIN/api`                                 |
+| `DEPLOY_USER`         | SSH username on VPS                | Usually `deploy`                                         |
+| `DEPLOY_HOST`         | VPS IP or domain                   | From DigitalOcean                                        |
+| `DEPLOY_PATH`         | Deployment directory               | `/opt/mafia-night`                                       |
+| `SSH_PRIVATE_KEY`     | SSH private key                    | See below                                                |
 
 ### Optional Secrets (Docker Hub)
 
