@@ -14,10 +14,15 @@ describe('Home Page', () => {
     expect(description).toBeInTheDocument()
   })
 
-  it('renders links to view role cards', () => {
+  it('renders game action buttons', () => {
     render(<Home />)
-    const links = screen.getAllByRole('link', { name: /View Role Cards|Browse Roles/i })
-    expect(links.length).toBeGreaterThan(0)
+    expect(screen.getByRole('link', { name: /Create Game/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Join Game/i })).toBeInTheDocument()
+  })
+
+  it('renders link to browse role cards', () => {
+    render(<Home />)
+    expect(screen.getByRole('link', { name: /Browse Role Cards/i })).toBeInTheDocument()
   })
 
   it('displays the total number of roles', () => {

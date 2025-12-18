@@ -1,12 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { GradientBackground } from '@/components/GradientBackground';
 
 export default function Home() {
   return (
-    <main className="relative w-full min-h-screen bg-gradient-to-b from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center p-8">
-      <div className="max-w-4xl mx-auto text-center">
-        <h1 className="text-8xl font-bold text-white mb-6 drop-shadow-2xl">
+    <main className="relative w-full min-h-screen flex items-center justify-center p-8 overflow-hidden">
+      {/* Animated gradient background */}
+      <GradientBackground />
+
+      <div className="max-w-4xl mx-auto text-center relative z-10">
+        <h1 className="text-8xl font-bold text-white mb-6 drop-shadow-2xl animate-pulse-slow">
           Mafia Night
         </h1>
 
@@ -20,18 +24,20 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-          <Link
-            href="/roles"
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xl px-10 py-5 rounded-xl transition-all transform hover:scale-105 shadow-2xl"
-          >
-            View Role Cards
+          <Link href="/create-game"
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xl px-10 py-5 rounded-xl transition-all transform hover:scale-105 shadow-2xl">
+            Create Game
           </Link>
 
-          <Link
-            href="/roles"
-            className="bg-black/30 backdrop-blur-md border-2 border-purple-500/50 hover:border-purple-400 text-white font-semibold text-xl px-10 py-5 rounded-xl transition-all transform hover:scale-105"
-          >
-            Browse Roles
+          <Link href="/join-game"
+            className="bg-black/30 backdrop-blur-md border-2 border-purple-500/50 hover:border-purple-400 text-white font-semibold text-xl px-10 py-5 rounded-xl transition-all transform hover:scale-105">
+            Join Game
+          </Link>
+        </div>
+
+        <div className="mt-12">
+          <Link href="/roles" className="text-purple-300 hover:text-purple-200 underline text-lg transition-colors">
+            Browse Role Cards
           </Link>
         </div>
 

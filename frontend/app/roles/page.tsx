@@ -2,10 +2,14 @@
 
 import Link from 'next/link';
 import { roles } from '@/lib/roles';
+import { GradientBackground } from '@/components/GradientBackground';
 
 export default function RolesPage() {
   return (
     <main className="relative w-full min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-8">
+      {/* Animated gradient background */}
+      <GradientBackground />
+
       <div className="max-w-7xl mx-auto">
         {/* Back to home button */}
         <Link
