@@ -154,6 +154,41 @@ just run-backend
 just dev-frontend
 ```
 
+### Frontend with HTTPS (for testing device sensors)
+Required for testing device orientation/gyroscope on mobile devices.
+
+#### First Time Setup
+```bash
+# 1. Install local CA (optional but recommended)
+mkcert -install
+
+# 2. Generate certificates
+cd frontend
+mkdir -p certs
+cd certs
+mkcert -key-file localhost-key.pem -cert-file localhost.pem localhost 127.0.0.1 ::1
+```
+
+This creates:
+- `frontend/certs/localhost-key.pem` - Private key
+- `frontend/certs/localhost.pem` - Certificate
+- Valid for localhost, 127.0.0.1, and ::1
+- Expires in 3 years
+
+#### Run with HTTPS
+```bash
+cd frontend
+npm run dev:https
+```
+
+- Frontend: https://localhost:3000
+
+#### Notes
+- Use HTTPS when testing device features (gyroscope, camera, etc.)
+- Browsers require HTTPS for sensor access on mobile
+- `mkcert -install` prevents browser security warnings
+- Certificates are gitignored and local to your machine
+
 ## Code Quality
 
 ### Format Code
