@@ -8,17 +8,20 @@ describe('Home Page', () => {
     expect(heading).toBeInTheDocument()
   })
 
-  it('renders the role selector description', () => {
+  it('renders the game description', () => {
     render(<Home />)
-    const description = screen.getByText(/Select a Role Card/i)
+    const description = screen.getByText(/A social deduction game of mystery and deception/i)
     expect(description).toBeInTheDocument()
   })
 
-  it('renders role cards', () => {
+  it('renders links to view role cards', () => {
     render(<Home />)
-    // Check for some of the role names
-    expect(screen.getByText('Sherlock')).toBeInTheDocument()
-    expect(screen.getByText('Mafia')).toBeInTheDocument()
-    expect(screen.getByText('Doctor Watson')).toBeInTheDocument()
+    const links = screen.getAllByRole('link', { name: /View Role Cards|Browse Roles/i })
+    expect(links.length).toBeGreaterThan(0)
+  })
+
+  it('displays the total number of roles', () => {
+    render(<Home />)
+    expect(screen.getByText(/30 unique roles/i)).toBeInTheDocument()
   })
 })

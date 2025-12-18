@@ -48,7 +48,7 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
         </Link>
         
         <Link
-          href="/"
+          href="/roles"
           className="bg-black/50 backdrop-blur-md rounded-full px-5 py-3 hover:bg-purple-600/30 transition-all whitespace-nowrap"
         >
           <span className="text-white font-semibold">{currentIndex + 1} / {roles.length}</span>
@@ -73,8 +73,9 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
 
       {/* Back to gallery button */}
       <Link
-        href="/"
+        href="/roles"
         className="absolute top-8 left-8 z-10 bg-black/50 backdrop-blur-md rounded-full p-3 hover:bg-purple-600/30 transition-all"
+        title="Back to Roles"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
