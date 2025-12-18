@@ -128,56 +128,67 @@ export function MagicCard3D({
     if (groupRef.current) {
       // Handle flip animation
       const targetRotationY = flipped ? Math.PI : 0;
-      
+      // Use faster lerp when flipping for snappier response
+      const flipLerpSpeed = 0.15;
+      const tiltLerpSpeed = 0.1;
+
       if (isMobile && !flipped) {
         // Mobile: use gyroscope data (inverted for natural feel)
         // gamma controls Y rotation (left-right tilt)
         // beta controls X rotation (front-back tilt)
         const gyroY = (gyroRotation.gamma / 180) * 1.0; // Inverted and scaled
         const gyroX = (-gyroRotation.beta / 180) * 0.8; // Inverted and scaled
-        
+
         groupRef.current.rotation.y = THREE.MathUtils.lerp(
           groupRef.current.rotation.y,
           targetRotationY + gyroY,
-          0.1
+          tiltLerpSpeed
         );
         groupRef.current.rotation.x = THREE.MathUtils.lerp(
           groupRef.current.rotation.x,
           gyroX,
-          0.1
+          tiltLerpSpeed
         );
       } else if (hovered && !flipped) {
         // Desktop: use mouse position
         groupRef.current.rotation.y = THREE.MathUtils.lerp(
           groupRef.current.rotation.y,
           targetRotationY + targetRotation.current.y * 0.3,
-          0.1
+          tiltLerpSpeed
         );
         groupRef.current.rotation.x = THREE.MathUtils.lerp(
           groupRef.current.rotation.x,
           targetRotation.current.x,
-          0.1
+          tiltLerpSpeed
         );
       } else {
-        // Return to neutral position
+        // Return to neutral position or flip
         groupRef.current.rotation.y = THREE.MathUtils.lerp(
           groupRef.current.rotation.y,
           targetRotationY,
-          0.1
+          flipLerpSpeed
         );
-        groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, 0.1);
+        groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, flipLerpSpeed);
       }
-      
+
       groupRef.current.position.z = position[2] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
   });
 
   const handlePointerOver = () => {
-    setHovered(true);
-    document.body.style.cursor = 'pointer';
+    if (!flipped) {
+      setHovered(true);
+      document.body.style.cursor = 'pointer';
+    }
   };
 
   const handlePointerOut = () => {
+    setHovered(false);
+    document.body.style.cursor = 'default';
+  };
+
+  const handleFlip = () => {
+    setFlipped(!flipped);
     setHovered(false);
     document.body.style.cursor = 'default';
   };
@@ -447,15 +458,17 @@ export function MagicCard3D({
   return (
     <group ref={groupRef} position={position}>
       {/* FRONT SIDE */}
-      <group visible={!flipped}>
+      <group
+        visible={!flipped}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
+        onClick={handleFlip}
+      >
         {/* Main card background - solid black */}
         <RoundedBox
           args={[cardWidth, cardHeight, 0.15]}
           radius={0.1}
           smoothness={4}
-          onPointerOver={handlePointerOver}
-          onPointerOut={handlePointerOut}
-          onClick={() => setFlipped(true)}
         >
           <meshBasicMaterial color="#000000" side={THREE.FrontSide} />
         </RoundedBox>
@@ -551,13 +564,18 @@ export function MagicCard3D({
       </group>
 
       {/* BACK SIDE */}
-      <group visible={flipped} rotation={[0, Math.PI, 0]}>
+      <group
+        visible={flipped}
+        rotation={[0, Math.PI, 0]}
+        onClick={handleFlip}
+        onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+        onPointerOut={() => { document.body.style.cursor = 'default'; }}
+      >
         {/* Back card background */}
         <RoundedBox
           args={[cardWidth, cardHeight, 0.15]}
           radius={0.1}
           smoothness={4}
-          onClick={() => setFlipped(false)}
         >
           <meshBasicMaterial color="#000000" side={THREE.FrontSide} />
         </RoundedBox>
