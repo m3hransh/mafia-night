@@ -279,59 +279,6 @@ export function MagicCard3D({
     edgeFade: '-0.4'
   };
 
-  // Create gradient shader material
-  const gradientMaterial = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-        
-        // Signed distance function for rounded rectangle
-        float sdRoundedBox(vec2 p, vec2 b, float r) {
-          vec2 q = abs(p) - b + r;
-          return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
-        }
-        
-        void main() {
-          // Calculate distance from center-top point (0.5, 1.0) in UV space
-          vec2 centerTop = vec2(0.5, 1.0);
-          float distFromCenterTop = distance(vUv, centerTop);
-          
-          // Convert UV to centered coordinates (-0.5 to 0.5)
-          vec2 centeredUV = vUv - vec2(0.5, 0.5);
-          
-          // Calculate distance to edge of rounded rectangle
-          vec2 cardSize = vec2(0.5, 0.5);
-          float cornerRadius = 0.04;
-          float distToEdge = sdRoundedBox(centeredUV, cardSize, cornerRadius);
-          
-          // Create gradient based on distance to edge
-          float edgeFactor = smoothstep(${gradientConfig.edgeFade}, 0.0, distToEdge);
-
-          // Combine with radial gradient from center-top
-          float radialGradient = smoothstep(0.0, ${gradientConfig.smoothness}, distFromCenterTop);
-
-          // Final gradient considers both edge proximity and center-top distance
-          float gradientVal = max(radialGradient, edgeFactor);
-
-          vec3 edgeColor = ${gradientConfig.edgeColor};
-          vec3 centerColor = ${gradientConfig.centerColor};
-          
-          vec3 finalColor = mix(centerColor, edgeColor, gradientVal);
-          
-          gl_FragColor = vec4(finalColor, 1.0);
-        }
-      `,
-      transparent: false,
-      side: THREE.FrontSide,
-    });
-  }, []);
   const goldenRingMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
@@ -490,51 +437,6 @@ export function MagicCard3D({
           />
         </RoundedBox>
 
-        {/* Middle layer - warm glow */}
-        <RoundedBox
-          args={[cardWidth + 0.05, cardHeight + 0.05, 0.104]}
-          radius={0.12}
-          smoothness={4}
-        >
-          <meshBasicMaterial
-            color={dynamicPlatinumColors.warm}
-            transparent
-            opacity={0.35}
-            side={THREE.BackSide}
-            blending={THREE.AdditiveBlending}
-          />
-        </RoundedBox>
-
-        {/* Outer layer - soft diffusion */}
-        <RoundedBox
-          args={[cardWidth + 0.1, cardHeight + 0.1, 0.106]}
-          radius={0.13}
-          smoothness={4}
-        >
-          <meshBasicMaterial
-            color={dynamicPlatinumColors.medium}
-            transparent
-            opacity={0.2}
-            side={THREE.BackSide}
-            blending={THREE.AdditiveBlending}
-          />
-        </RoundedBox>
-
-        {/* Far outer shimmer - very subtle */}
-        <RoundedBox
-          args={[cardWidth + 0.15, cardHeight + 0.15, 0.108]}
-          radius={0.14}
-          smoothness={4}
-        >
-          <meshBasicMaterial
-            color={dynamicPlatinumColors.bright}
-            transparent
-            opacity={0.08}
-            side={THREE.BackSide}
-            blending={THREE.AdditiveBlending}
-          />
-        </RoundedBox>
-
       {/* Circular video portrait at top center with padding */}
       <mesh position={[0, cardHeight / 2 - circleRadius - padding, 0.16]} material={circularMaterial} renderOrder={998}>
         <planeGeometry args={[videoDisplayWidth, videoDisplayHeight]} />
@@ -548,7 +450,7 @@ export function MagicCard3D({
       {/* Comic-style role name text below the video */}
       <Text
         position={[0, cardHeight / 2 - (circleRadius * 2) - padding - 0.2, 0.16]}
-        fontSize={0.28}
+        fontSize={0.20}
         color="#E5E4E2"
         anchorX="center"
         anchorY="top"
@@ -580,19 +482,25 @@ export function MagicCard3D({
           <meshBasicMaterial color="#000000" side={THREE.FrontSide} />
         </RoundedBox>
 
-        {/* Back gradient overlay */}
+        {/* Inner glow - brightest, tight to card */}
         <RoundedBox
-          args={[cardWidth, cardHeight, 0.151]}
-          radius={0.1}
+          args={[cardWidth + 0.02, cardHeight + 0.02, 0.102]}
+          radius={0.11}
           smoothness={4}
         >
-          <primitive object={gradientMaterial} attach="material" />
+          <meshBasicMaterial
+            color={dynamicPlatinumColors.bright}
+            transparent
+            opacity={0.6}
+            side={THREE.BackSide}
+            blending={THREE.AdditiveBlending}
+          />
         </RoundedBox>
 
         {/* Role name at top */}
         <Text
           position={[0, cardHeight / 2 - 0.3, 0.16]}
-          fontSize={0.35}
+          fontSize={0.20}
           color="#E5E4E2"
           anchorX="center"
           anchorY="top"
@@ -608,7 +516,7 @@ export function MagicCard3D({
         {/* Description text */}
         <Text
           position={[0, 0, 0.16]}
-          fontSize={0.18}
+          fontSize={0.13}
           color="#C0C0C0"
           anchorX="center"
           anchorY="middle"
