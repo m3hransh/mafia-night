@@ -10,20 +10,26 @@ interface MagicCard3DProps {
   roleName: string;
   description: string;
   position?: [number, number, number];
+  gyroData?: { beta: number; gamma: number };
+  gyroEnabled?: boolean;
 }
 
 export function MagicCard3D({
   videoSrc,
   roleName,
   description,
-  position = [0, 0, 0]
+  position = [0, 0, 0],
+  gyroData,
+  gyroEnabled = false
 }: MagicCard3DProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [gyroRotation, setGyroRotation] = useState({ beta: 0, gamma: 0 });
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Use gyro data from props if available, otherwise default
+  const gyroRotation = gyroData || { beta: 0, gamma: 0 };
   
   const videoTexture = useVideoTexture(videoSrc, {
     loop: true,
@@ -46,60 +52,6 @@ export function MagicCard3D({
     };
     checkMobile();
   }, []);
-
-  // Gyroscope handling for mobile
-  useEffect(() => {
-    if (!isMobile) return;
-
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-      if (event.beta !== null && event.gamma !== null) {
-        // beta: front-to-back tilt (-180 to 180)
-        // gamma: left-to-right tilt (-90 to 90)
-        setGyroRotation({
-          beta: event.beta,
-          gamma: event.gamma,
-        });
-      }
-    };
-
-    const handleMotion = (event: DeviceMotionEvent) => {
-      // Fallback to motion API if orientation doesn't work
-      if (event.accelerationIncludingGravity) {
-        const { x, y, z } = event.accelerationIncludingGravity;
-        if (x !== null && y !== null && z !== null) {
-          // Convert acceleration to rotation angles
-          const beta = Math.atan2(y, Math.sqrt(x * x + z * z)) * (180 / Math.PI);
-          const gamma = Math.atan2(x, Math.sqrt(y * y + z * z)) * (180 / Math.PI);
-          
-          setGyroRotation({
-            beta: beta,
-            gamma: gamma,
-          });
-        }
-      }
-    };
-
-    // Request permission for iOS 13+
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-      (DeviceOrientationEvent as any).requestPermission()
-        .then((permissionState: string) => {
-          if (permissionState === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation);
-          }
-        })
-        .catch(console.error);
-    } else {
-      // Non-iOS devices (Android, etc)
-      window.addEventListener('deviceorientation', handleOrientation, true);
-      // Also try motion API as fallback
-      window.addEventListener('devicemotion', handleMotion, true);
-    }
-
-    return () => {
-      window.removeEventListener('deviceorientation', handleOrientation);
-      window.removeEventListener('devicemotion', handleMotion);
-    };
-  }, [isMobile]);
 
   // Mouse tracking for desktop
   useEffect(() => {
@@ -132,21 +84,16 @@ export function MagicCard3D({
       const flipLerpSpeed = 0.15;
       const tiltLerpSpeed = 0.1;
 
-      if (isMobile && !flipped) {
+      if (gyroEnabled && !flipped) {
         // Mobile: use gyroscope data (inverted for natural feel)
         // gamma controls Y rotation (left-right tilt)
         // beta controls X rotation (front-back tilt)
         const gyroY = (gyroRotation.gamma / 180) * 1.0; // Inverted and scaled
-        const gyroX = (-gyroRotation.beta / 180) * 0.8; // Inverted and scaled
+        const gyroX = (-gyroRotation.beta / 90) * 0.8; // Inverted and scaled
 
         groupRef.current.rotation.y = THREE.MathUtils.lerp(
           groupRef.current.rotation.y,
           targetRotationY + gyroY,
-          tiltLerpSpeed
-        );
-        groupRef.current.rotation.x = THREE.MathUtils.lerp(
-          groupRef.current.rotation.x,
-          gyroX,
           tiltLerpSpeed
         );
       } else if (hovered && !flipped) {
