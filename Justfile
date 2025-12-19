@@ -74,6 +74,8 @@ test-frontend:
 test-frontend-watch:
   cd frontend && npm run test:watch
 
+test-e2e:
+  cd frontend && npm run test:e2e
 # Run frontend dev server
 dev-frontend:
   cd frontend && npm run dev:https

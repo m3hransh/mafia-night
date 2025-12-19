@@ -54,46 +54,53 @@
             gotools
             go-tools
             delve
-            
+
             # Node.js
             nodejs_22
             nodePackages.typescript
             nodePackages.typescript-language-server
-            
+
             # Database
             postgresql_16
-            
+
             # Docker
             docker
             docker-compose
-            
+
             # Build tools
             gcc
             gnumake
-            
+
             # Development tools
             git
             gh
             just
             mkcert
-            
+
             # Formatters & Linters
             gofumpt
             golangci-lint
             nixpkgs-fmt
             pgcli
+
+            # E2E Testing - Playwright with browsers
+            playwright-driver.browsers
           ];
 
           shellHook = ''
             export GOPATH="$HOME/go"
             export PATH="$GOPATH/bin:$PATH"
-            
+
+            # Playwright environment variables for NixOS
+            export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+            export PLAYWRIGHT_BROWSERS_PATH="${pkgs.playwright-driver.browsers}"
+
             # Install gotestsum if not present
             if ! command -v gotestsum &> /dev/null; then
               echo "📦 Installing gotestsum..."
               go install gotest.tools/gotestsum@latest 2>/dev/null
             fi
-            
+
             echo ""
             echo "🎭 Mafia Night Development Environment"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -109,6 +116,7 @@
             echo "🚀 Quick commands:"
             echo "  just test-backend                 # Test backend"
             echo "  cd frontend && npm test           # Test frontend"
+            echo "  cd frontend && npm run test:e2e   # E2E tests (Playwright)"
             echo "  docker-compose up                 # Start all services"
             echo ""
             echo "🔧 Build commands:"

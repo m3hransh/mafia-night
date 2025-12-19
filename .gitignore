@@ -31,6 +31,12 @@ yarn-error.log*
 .env.production
 coverage/
 
+# Playwright E2E Testing
+test-results/
+playwright-report/
+playwright/.cache/
+.auth/
+
 # IDEs
 .vscode/
 .idea/

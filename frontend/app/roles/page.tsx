@@ -45,7 +45,7 @@ export default function RolesPage() {
     return (
       <main className="relative w-full min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-8">
         <GradientBackground />
-        <div className="max-w-7xl mx-auto text-center">
+        <div className="relative z-10 max-w-7xl mx-auto text-center">
           <h1 className="text-6xl font-bold text-white mb-4">Error</h1>
           <p className="text-xl text-red-400 mb-6">{error}</p>
           <button
