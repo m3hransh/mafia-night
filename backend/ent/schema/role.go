@@ -22,9 +22,16 @@ func (Role) Fields() []ent.Field {
 			NotEmpty().
 			MaxLen(50).
 			Unique(),
+		field.String("slug").
+			NotEmpty().
+			MaxLen(100).
+			Unique(),
+		field.String("video").
+			NotEmpty().
+			MaxLen(255),
 		field.Enum("team").
-			Values("mafia", "village"),
-		field.Text("abilities").
+			Values("mafia", "village", "independent"),
+		field.Text("description").
 			Optional(),
 	}
 }
@@ -40,5 +47,6 @@ func (Role) Edges() []ent.Edge {
 func (Role) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("team"),
+		index.Fields("slug"),
 	}
 }

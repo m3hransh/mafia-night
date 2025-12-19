@@ -107,8 +107,10 @@ var (
 	RolesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 50},
-		{Name: "team", Type: field.TypeEnum, Enums: []string{"mafia", "village"}},
-		{Name: "abilities", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "slug", Type: field.TypeString, Unique: true, Size: 100},
+		{Name: "video", Type: field.TypeString, Size: 255},
+		{Name: "team", Type: field.TypeEnum, Enums: []string{"mafia", "village", "independent"}},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 	}
 	// RolesTable holds the schema information for the "roles" table.
 	RolesTable = &schema.Table{
@@ -118,6 +120,11 @@ var (
 		Indexes: []*schema.Index{
 			{
 				Name:    "role_team",
+				Unique:  false,
+				Columns: []*schema.Column{RolesColumns[4]},
+			},
+			{
+				Name:    "role_slug",
 				Unique:  false,
 				Columns: []*schema.Column{RolesColumns[2]},
 			},

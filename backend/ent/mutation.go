@@ -1920,8 +1920,10 @@ type RoleMutation struct {
 	typ               string
 	id                *uuid.UUID
 	name              *string
+	slug              *string
+	video             *string
 	team              *role.Team
-	abilities         *string
+	description       *string
 	clearedFields     map[string]struct{}
 	game_roles        map[int]struct{}
 	removedgame_roles map[int]struct{}
@@ -2071,6 +2073,78 @@ func (m *RoleMutation) ResetName() {
 	m.name = nil
 }
 
+// SetSlug sets the "slug" field.
+func (m *RoleMutation) SetSlug(s string) {
+	m.slug = &s
+}
+
+// Slug returns the value of the "slug" field in the mutation.
+func (m *RoleMutation) Slug() (r string, exists bool) {
+	v := m.slug
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSlug returns the old "slug" field's value of the Role entity.
+// If the Role object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleMutation) OldSlug(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSlug is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSlug requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSlug: %w", err)
+	}
+	return oldValue.Slug, nil
+}
+
+// ResetSlug resets all changes to the "slug" field.
+func (m *RoleMutation) ResetSlug() {
+	m.slug = nil
+}
+
+// SetVideo sets the "video" field.
+func (m *RoleMutation) SetVideo(s string) {
+	m.video = &s
+}
+
+// Video returns the value of the "video" field in the mutation.
+func (m *RoleMutation) Video() (r string, exists bool) {
+	v := m.video
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVideo returns the old "video" field's value of the Role entity.
+// If the Role object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleMutation) OldVideo(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVideo is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVideo requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVideo: %w", err)
+	}
+	return oldValue.Video, nil
+}
+
+// ResetVideo resets all changes to the "video" field.
+func (m *RoleMutation) ResetVideo() {
+	m.video = nil
+}
+
 // SetTeam sets the "team" field.
 func (m *RoleMutation) SetTeam(r role.Team) {
 	m.team = &r
@@ -2107,53 +2181,53 @@ func (m *RoleMutation) ResetTeam() {
 	m.team = nil
 }
 
-// SetAbilities sets the "abilities" field.
-func (m *RoleMutation) SetAbilities(s string) {
-	m.abilities = &s
+// SetDescription sets the "description" field.
+func (m *RoleMutation) SetDescription(s string) {
+	m.description = &s
 }
 
-// Abilities returns the value of the "abilities" field in the mutation.
-func (m *RoleMutation) Abilities() (r string, exists bool) {
-	v := m.abilities
+// Description returns the value of the "description" field in the mutation.
+func (m *RoleMutation) Description() (r string, exists bool) {
+	v := m.description
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldAbilities returns the old "abilities" field's value of the Role entity.
+// OldDescription returns the old "description" field's value of the Role entity.
 // If the Role object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RoleMutation) OldAbilities(ctx context.Context) (v string, err error) {
+func (m *RoleMutation) OldDescription(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAbilities is only allowed on UpdateOne operations")
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAbilities requires an ID field in the mutation")
+		return v, errors.New("OldDescription requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAbilities: %w", err)
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
 	}
-	return oldValue.Abilities, nil
+	return oldValue.Description, nil
 }
 
-// ClearAbilities clears the value of the "abilities" field.
-func (m *RoleMutation) ClearAbilities() {
-	m.abilities = nil
-	m.clearedFields[role.FieldAbilities] = struct{}{}
+// ClearDescription clears the value of the "description" field.
+func (m *RoleMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[role.FieldDescription] = struct{}{}
 }
 
-// AbilitiesCleared returns if the "abilities" field was cleared in this mutation.
-func (m *RoleMutation) AbilitiesCleared() bool {
-	_, ok := m.clearedFields[role.FieldAbilities]
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *RoleMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[role.FieldDescription]
 	return ok
 }
 
-// ResetAbilities resets all changes to the "abilities" field.
-func (m *RoleMutation) ResetAbilities() {
-	m.abilities = nil
-	delete(m.clearedFields, role.FieldAbilities)
+// ResetDescription resets all changes to the "description" field.
+func (m *RoleMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, role.FieldDescription)
 }
 
 // AddGameRoleIDs adds the "game_roles" edge to the GameRole entity by ids.
@@ -2244,15 +2318,21 @@ func (m *RoleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RoleMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, role.FieldName)
+	}
+	if m.slug != nil {
+		fields = append(fields, role.FieldSlug)
+	}
+	if m.video != nil {
+		fields = append(fields, role.FieldVideo)
 	}
 	if m.team != nil {
 		fields = append(fields, role.FieldTeam)
 	}
-	if m.abilities != nil {
-		fields = append(fields, role.FieldAbilities)
+	if m.description != nil {
+		fields = append(fields, role.FieldDescription)
 	}
 	return fields
 }
@@ -2264,10 +2344,14 @@ func (m *RoleMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case role.FieldName:
 		return m.Name()
+	case role.FieldSlug:
+		return m.Slug()
+	case role.FieldVideo:
+		return m.Video()
 	case role.FieldTeam:
 		return m.Team()
-	case role.FieldAbilities:
-		return m.Abilities()
+	case role.FieldDescription:
+		return m.Description()
 	}
 	return nil, false
 }
@@ -2279,10 +2363,14 @@ func (m *RoleMutation) OldField(ctx context.Context, name string) (ent.Value, er
 	switch name {
 	case role.FieldName:
 		return m.OldName(ctx)
+	case role.FieldSlug:
+		return m.OldSlug(ctx)
+	case role.FieldVideo:
+		return m.OldVideo(ctx)
 	case role.FieldTeam:
 		return m.OldTeam(ctx)
-	case role.FieldAbilities:
-		return m.OldAbilities(ctx)
+	case role.FieldDescription:
+		return m.OldDescription(ctx)
 	}
 	return nil, fmt.Errorf("unknown Role field %s", name)
 }
@@ -2299,6 +2387,20 @@ func (m *RoleMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetName(v)
 		return nil
+	case role.FieldSlug:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSlug(v)
+		return nil
+	case role.FieldVideo:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVideo(v)
+		return nil
 	case role.FieldTeam:
 		v, ok := value.(role.Team)
 		if !ok {
@@ -2306,12 +2408,12 @@ func (m *RoleMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTeam(v)
 		return nil
-	case role.FieldAbilities:
+	case role.FieldDescription:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetAbilities(v)
+		m.SetDescription(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Role field %s", name)
@@ -2343,8 +2445,8 @@ func (m *RoleMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *RoleMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(role.FieldAbilities) {
-		fields = append(fields, role.FieldAbilities)
+	if m.FieldCleared(role.FieldDescription) {
+		fields = append(fields, role.FieldDescription)
 	}
 	return fields
 }
@@ -2360,8 +2462,8 @@ func (m *RoleMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *RoleMutation) ClearField(name string) error {
 	switch name {
-	case role.FieldAbilities:
-		m.ClearAbilities()
+	case role.FieldDescription:
+		m.ClearDescription()
 		return nil
 	}
 	return fmt.Errorf("unknown Role nullable field %s", name)
@@ -2374,11 +2476,17 @@ func (m *RoleMutation) ResetField(name string) error {
 	case role.FieldName:
 		m.ResetName()
 		return nil
+	case role.FieldSlug:
+		m.ResetSlug()
+		return nil
+	case role.FieldVideo:
+		m.ResetVideo()
+		return nil
 	case role.FieldTeam:
 		m.ResetTeam()
 		return nil
-	case role.FieldAbilities:
-		m.ResetAbilities()
+	case role.FieldDescription:
+		m.ResetDescription()
 		return nil
 	}
 	return fmt.Errorf("unknown Role field %s", name)

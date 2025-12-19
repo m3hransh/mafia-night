@@ -27,22 +27,34 @@ func (_c *RoleCreate) SetName(v string) *RoleCreate {
 	return _c
 }
 
+// SetSlug sets the "slug" field.
+func (_c *RoleCreate) SetSlug(v string) *RoleCreate {
+	_c.mutation.SetSlug(v)
+	return _c
+}
+
+// SetVideo sets the "video" field.
+func (_c *RoleCreate) SetVideo(v string) *RoleCreate {
+	_c.mutation.SetVideo(v)
+	return _c
+}
+
 // SetTeam sets the "team" field.
 func (_c *RoleCreate) SetTeam(v role.Team) *RoleCreate {
 	_c.mutation.SetTeam(v)
 	return _c
 }
 
-// SetAbilities sets the "abilities" field.
-func (_c *RoleCreate) SetAbilities(v string) *RoleCreate {
-	_c.mutation.SetAbilities(v)
+// SetDescription sets the "description" field.
+func (_c *RoleCreate) SetDescription(v string) *RoleCreate {
+	_c.mutation.SetDescription(v)
 	return _c
 }
 
-// SetNillableAbilities sets the "abilities" field if the given value is not nil.
-func (_c *RoleCreate) SetNillableAbilities(v *string) *RoleCreate {
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (_c *RoleCreate) SetNillableDescription(v *string) *RoleCreate {
 	if v != nil {
-		_c.SetAbilities(*v)
+		_c.SetDescription(*v)
 	}
 	return _c
 }
@@ -127,6 +139,22 @@ func (_c *RoleCreate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Role.name": %w`, err)}
 		}
 	}
+	if _, ok := _c.mutation.Slug(); !ok {
+		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "Role.slug"`)}
+	}
+	if v, ok := _c.mutation.Slug(); ok {
+		if err := role.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Role.slug": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Video(); !ok {
+		return &ValidationError{Name: "video", err: errors.New(`ent: missing required field "Role.video"`)}
+	}
+	if v, ok := _c.mutation.Video(); ok {
+		if err := role.VideoValidator(v); err != nil {
+			return &ValidationError{Name: "video", err: fmt.Errorf(`ent: validator failed for field "Role.video": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.Team(); !ok {
 		return &ValidationError{Name: "team", err: errors.New(`ent: missing required field "Role.team"`)}
 	}
@@ -174,13 +202,21 @@ func (_c *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 		_spec.SetField(role.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := _c.mutation.Slug(); ok {
+		_spec.SetField(role.FieldSlug, field.TypeString, value)
+		_node.Slug = value
+	}
+	if value, ok := _c.mutation.Video(); ok {
+		_spec.SetField(role.FieldVideo, field.TypeString, value)
+		_node.Video = value
+	}
 	if value, ok := _c.mutation.Team(); ok {
 		_spec.SetField(role.FieldTeam, field.TypeEnum, value)
 		_node.Team = value
 	}
-	if value, ok := _c.mutation.Abilities(); ok {
-		_spec.SetField(role.FieldAbilities, field.TypeString, value)
-		_node.Abilities = value
+	if value, ok := _c.mutation.Description(); ok {
+		_spec.SetField(role.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if nodes := _c.mutation.GameRolesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

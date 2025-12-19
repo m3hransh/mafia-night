@@ -17,10 +17,14 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldSlug holds the string denoting the slug field in the database.
+	FieldSlug = "slug"
+	// FieldVideo holds the string denoting the video field in the database.
+	FieldVideo = "video"
 	// FieldTeam holds the string denoting the team field in the database.
 	FieldTeam = "team"
-	// FieldAbilities holds the string denoting the abilities field in the database.
-	FieldAbilities = "abilities"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// EdgeGameRoles holds the string denoting the game_roles edge name in mutations.
 	EdgeGameRoles = "game_roles"
 	// Table holds the table name of the role in the database.
@@ -38,8 +42,10 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldSlug,
+	FieldVideo,
 	FieldTeam,
-	FieldAbilities,
+	FieldDescription,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -55,6 +61,10 @@ func ValidColumn(column string) bool {
 var (
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	SlugValidator func(string) error
+	// VideoValidator is a validator for the "video" field. It is called by the builders before save.
+	VideoValidator func(string) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -64,8 +74,9 @@ type Team string
 
 // Team values.
 const (
-	TeamMafia   Team = "mafia"
-	TeamVillage Team = "village"
+	TeamMafia       Team = "mafia"
+	TeamVillage     Team = "village"
+	TeamIndependent Team = "independent"
 )
 
 func (t Team) String() string {
@@ -75,7 +86,7 @@ func (t Team) String() string {
 // TeamValidator is a validator for the "team" field enum values. It is called by the builders before save.
 func TeamValidator(t Team) error {
 	switch t {
-	case TeamMafia, TeamVillage:
+	case TeamMafia, TeamVillage, TeamIndependent:
 		return nil
 	default:
 		return fmt.Errorf("role: invalid enum value for team field: %q", t)
@@ -95,14 +106,24 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
+// BySlug orders the results by the slug field.
+func BySlug(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSlug, opts...).ToFunc()
+}
+
+// ByVideo orders the results by the video field.
+func ByVideo(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVideo, opts...).ToFunc()
+}
+
 // ByTeam orders the results by the team field.
 func ByTeam(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTeam, opts...).ToFunc()
 }
 
-// ByAbilities orders the results by the abilities field.
-func ByAbilities(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldAbilities, opts...).ToFunc()
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByGameRolesCount orders the results by game_roles count.

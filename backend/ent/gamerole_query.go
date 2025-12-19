@@ -684,7 +684,6 @@ func (_g *GameRoleGroupBy) Scan(ctx context.Context, v any) error {
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	
 	return scanWithInterceptors[*GameRoleQuery, *GameRoleGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 

@@ -39,9 +39,11 @@ func main() {
 
 	// Initialize services
 	gameService := service.NewGameService(client)
+	roleService := service.NewRoleService(client)
 
 	// Initialize handlers
 	gameHandler := handler.NewGameHandler(gameService)
+	roleHandler := handler.NewRoleHandler(roleService)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -78,6 +80,11 @@ func main() {
 			r.Post("/{id}/join", gameHandler.JoinGame)
 			r.Get("/{id}/players", gameHandler.GetPlayers)
 			r.Delete("/{id}/players/{player_id}", gameHandler.RemovePlayer)
+		})
+
+		r.Route("/roles", func(r chi.Router) {
+			r.Get("/", roleHandler.GetRoles)
+			r.Get("/{slug}", roleHandler.GetRoleBySlug)
 		})
 	})
 

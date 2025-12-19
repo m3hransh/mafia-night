@@ -1,10 +1,11 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { use } from 'react';
-import { roles } from '@/lib/roles';
+import { fetchRoles, fetchRoleBySlug, Role, APIError } from '@/lib/api';
 import { GradientBackground } from '@/components/GradientBackground';
 
 // Dynamic import to avoid SSR issues with Three.js
@@ -19,15 +20,69 @@ const CardScene = dynamic(() => import('@/components/CardScene').then(mod => ({ 
 
 export default function RolePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
-  const role = roles.find(r => r.slug === slug);
+  const [role, setRole] = useState<Role | null>(null);
+  const [allRoles, setAllRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
-  if (!role) {
-    notFound();
+  useEffect(() => {
+    async function loadRoleData() {
+      try {
+        const [roleData, rolesData] = await Promise.all([
+          fetchRoleBySlug(slug),
+          fetchRoles()
+        ]);
+        setRole(roleData);
+        setAllRoles(rolesData);
+      } catch (err) {
+        if (err instanceof APIError) {
+          if (err.status === 404) {
+            notFound();
+          }
+          setError(err.message);
+        } else {
+          setError('Failed to load role');
+        }
+        console.error('Error loading role:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRoleData();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <main className="relative w-full h-screen overflow-hidden">
+        <GradientBackground />
+        <div className="w-full h-screen flex items-center justify-center">
+          <div className="text-white text-2xl">Loading magical card...</div>
+        </div>
+      </main>
+    );
   }
 
-  const currentIndex = roles.findIndex(r => r.slug === slug);
-  const prevRole = roles[(currentIndex - 1 + roles.length) % roles.length];
-  const nextRole = roles[(currentIndex + 1) % roles.length];
+  if (error || !role) {
+    return (
+      <main className="relative w-full h-screen overflow-hidden">
+        <GradientBackground />
+        <div className="w-full h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-4">Error</h1>
+            <p className="text-xl text-red-400 mb-6">{error || 'Role not found'}</p>
+            <Link href="/roles" className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all">
+              Back to Roles
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const currentIndex = allRoles.findIndex(r => r.slug === slug);
+  const prevRole = allRoles[(currentIndex - 1 + allRoles.length) % allRoles.length];
+  const nextRole = allRoles[(currentIndex + 1) % allRoles.length];
 
   return (
     <main className="relative w-full h-screen overflow-hidden">
@@ -47,7 +102,7 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
 
         <Link href="/roles"
           className="bg-black/50 backdrop-blur-md rounded-full px-5 py-3 hover:bg-purple-600/30 transition-all whitespace-nowrap">
-          <span className="text-white font-semibold">{currentIndex + 1} / {roles.length}</span>
+          <span className="text-white font-semibold">{currentIndex + 1} / {allRoles.length}</span>
         </Link>
 
         <Link href={`/role/${nextRole.slug}`}

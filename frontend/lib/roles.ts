@@ -1,3 +1,8 @@
+/**
+ * @deprecated This file is deprecated. Roles are now fetched from the backend API.
+ * Use the fetchRoles() and fetchRoleBySlug() functions from @/lib/api instead.
+ * This file is kept temporarily for backward compatibility and will be removed in a future update.
+ */
 export const roles = [
   { 
     name: 'Sherlock', 

@@ -42,6 +42,34 @@ func (_u *RoleUpdate) SetNillableName(v *string) *RoleUpdate {
 	return _u
 }
 
+// SetSlug sets the "slug" field.
+func (_u *RoleUpdate) SetSlug(v string) *RoleUpdate {
+	_u.mutation.SetSlug(v)
+	return _u
+}
+
+// SetNillableSlug sets the "slug" field if the given value is not nil.
+func (_u *RoleUpdate) SetNillableSlug(v *string) *RoleUpdate {
+	if v != nil {
+		_u.SetSlug(*v)
+	}
+	return _u
+}
+
+// SetVideo sets the "video" field.
+func (_u *RoleUpdate) SetVideo(v string) *RoleUpdate {
+	_u.mutation.SetVideo(v)
+	return _u
+}
+
+// SetNillableVideo sets the "video" field if the given value is not nil.
+func (_u *RoleUpdate) SetNillableVideo(v *string) *RoleUpdate {
+	if v != nil {
+		_u.SetVideo(*v)
+	}
+	return _u
+}
+
 // SetTeam sets the "team" field.
 func (_u *RoleUpdate) SetTeam(v role.Team) *RoleUpdate {
 	_u.mutation.SetTeam(v)
@@ -56,23 +84,23 @@ func (_u *RoleUpdate) SetNillableTeam(v *role.Team) *RoleUpdate {
 	return _u
 }
 
-// SetAbilities sets the "abilities" field.
-func (_u *RoleUpdate) SetAbilities(v string) *RoleUpdate {
-	_u.mutation.SetAbilities(v)
+// SetDescription sets the "description" field.
+func (_u *RoleUpdate) SetDescription(v string) *RoleUpdate {
+	_u.mutation.SetDescription(v)
 	return _u
 }
 
-// SetNillableAbilities sets the "abilities" field if the given value is not nil.
-func (_u *RoleUpdate) SetNillableAbilities(v *string) *RoleUpdate {
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (_u *RoleUpdate) SetNillableDescription(v *string) *RoleUpdate {
 	if v != nil {
-		_u.SetAbilities(*v)
+		_u.SetDescription(*v)
 	}
 	return _u
 }
 
-// ClearAbilities clears the value of the "abilities" field.
-func (_u *RoleUpdate) ClearAbilities() *RoleUpdate {
-	_u.mutation.ClearAbilities()
+// ClearDescription clears the value of the "description" field.
+func (_u *RoleUpdate) ClearDescription() *RoleUpdate {
+	_u.mutation.ClearDescription()
 	return _u
 }
 
@@ -151,6 +179,16 @@ func (_u *RoleUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Role.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Slug(); ok {
+		if err := role.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Role.slug": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Video(); ok {
+		if err := role.VideoValidator(v); err != nil {
+			return &ValidationError{Name: "video", err: fmt.Errorf(`ent: validator failed for field "Role.video": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Team(); ok {
 		if err := role.TeamValidator(v); err != nil {
 			return &ValidationError{Name: "team", err: fmt.Errorf(`ent: validator failed for field "Role.team": %w`, err)}
@@ -174,14 +212,20 @@ func (_u *RoleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(role.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Slug(); ok {
+		_spec.SetField(role.FieldSlug, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Video(); ok {
+		_spec.SetField(role.FieldVideo, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Team(); ok {
 		_spec.SetField(role.FieldTeam, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Abilities(); ok {
-		_spec.SetField(role.FieldAbilities, field.TypeString, value)
+	if value, ok := _u.mutation.Description(); ok {
+		_spec.SetField(role.FieldDescription, field.TypeString, value)
 	}
-	if _u.mutation.AbilitiesCleared() {
-		_spec.ClearField(role.FieldAbilities, field.TypeString)
+	if _u.mutation.DescriptionCleared() {
+		_spec.ClearField(role.FieldDescription, field.TypeString)
 	}
 	if _u.mutation.GameRolesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -262,6 +306,34 @@ func (_u *RoleUpdateOne) SetNillableName(v *string) *RoleUpdateOne {
 	return _u
 }
 
+// SetSlug sets the "slug" field.
+func (_u *RoleUpdateOne) SetSlug(v string) *RoleUpdateOne {
+	_u.mutation.SetSlug(v)
+	return _u
+}
+
+// SetNillableSlug sets the "slug" field if the given value is not nil.
+func (_u *RoleUpdateOne) SetNillableSlug(v *string) *RoleUpdateOne {
+	if v != nil {
+		_u.SetSlug(*v)
+	}
+	return _u
+}
+
+// SetVideo sets the "video" field.
+func (_u *RoleUpdateOne) SetVideo(v string) *RoleUpdateOne {
+	_u.mutation.SetVideo(v)
+	return _u
+}
+
+// SetNillableVideo sets the "video" field if the given value is not nil.
+func (_u *RoleUpdateOne) SetNillableVideo(v *string) *RoleUpdateOne {
+	if v != nil {
+		_u.SetVideo(*v)
+	}
+	return _u
+}
+
 // SetTeam sets the "team" field.
 func (_u *RoleUpdateOne) SetTeam(v role.Team) *RoleUpdateOne {
 	_u.mutation.SetTeam(v)
@@ -276,23 +348,23 @@ func (_u *RoleUpdateOne) SetNillableTeam(v *role.Team) *RoleUpdateOne {
 	return _u
 }
 
-// SetAbilities sets the "abilities" field.
-func (_u *RoleUpdateOne) SetAbilities(v string) *RoleUpdateOne {
-	_u.mutation.SetAbilities(v)
+// SetDescription sets the "description" field.
+func (_u *RoleUpdateOne) SetDescription(v string) *RoleUpdateOne {
+	_u.mutation.SetDescription(v)
 	return _u
 }
 
-// SetNillableAbilities sets the "abilities" field if the given value is not nil.
-func (_u *RoleUpdateOne) SetNillableAbilities(v *string) *RoleUpdateOne {
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (_u *RoleUpdateOne) SetNillableDescription(v *string) *RoleUpdateOne {
 	if v != nil {
-		_u.SetAbilities(*v)
+		_u.SetDescription(*v)
 	}
 	return _u
 }
 
-// ClearAbilities clears the value of the "abilities" field.
-func (_u *RoleUpdateOne) ClearAbilities() *RoleUpdateOne {
-	_u.mutation.ClearAbilities()
+// ClearDescription clears the value of the "description" field.
+func (_u *RoleUpdateOne) ClearDescription() *RoleUpdateOne {
+	_u.mutation.ClearDescription()
 	return _u
 }
 
@@ -384,6 +456,16 @@ func (_u *RoleUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Role.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Slug(); ok {
+		if err := role.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Role.slug": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Video(); ok {
+		if err := role.VideoValidator(v); err != nil {
+			return &ValidationError{Name: "video", err: fmt.Errorf(`ent: validator failed for field "Role.video": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Team(); ok {
 		if err := role.TeamValidator(v); err != nil {
 			return &ValidationError{Name: "team", err: fmt.Errorf(`ent: validator failed for field "Role.team": %w`, err)}
@@ -424,14 +506,20 @@ func (_u *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(role.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Slug(); ok {
+		_spec.SetField(role.FieldSlug, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Video(); ok {
+		_spec.SetField(role.FieldVideo, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Team(); ok {
 		_spec.SetField(role.FieldTeam, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Abilities(); ok {
-		_spec.SetField(role.FieldAbilities, field.TypeString, value)
+	if value, ok := _u.mutation.Description(); ok {
+		_spec.SetField(role.FieldDescription, field.TypeString, value)
 	}
-	if _u.mutation.AbilitiesCleared() {
-		_spec.ClearField(role.FieldAbilities, field.TypeString)
+	if _u.mutation.DescriptionCleared() {
+		_spec.ClearField(role.FieldDescription, field.TypeString)
 	}
 	if _u.mutation.GameRolesCleared() {
 		edge := &sqlgraph.EdgeSpec{

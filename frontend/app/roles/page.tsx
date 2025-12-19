@@ -1,10 +1,64 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { roles } from '@/lib/roles';
+import { fetchRoles, Role, APIError } from '@/lib/api';
 import { GradientBackground } from '@/components/GradientBackground';
 
 export default function RolesPage() {
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    async function loadRoles() {
+      try {
+        const data = await fetchRoles();
+        setRoles(data);
+      } catch (err) {
+        if (err instanceof APIError) {
+          setError(err.message);
+        } else {
+          setError('Failed to load roles');
+        }
+        console.error('Error loading roles:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRoles();
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="relative w-full min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-8">
+        <GradientBackground />
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-6xl font-bold text-white mb-4">Loading roles...</h1>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="relative w-full min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-8">
+        <GradientBackground />
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-6xl font-bold text-white mb-4">Error</h1>
+          <p className="text-xl text-red-400 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all"
+          >
+            Retry
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="relative w-full min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-8">
       {/* Animated gradient background */}

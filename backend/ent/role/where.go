@@ -59,9 +59,19 @@ func Name(v string) predicate.Role {
 	return predicate.Role(sql.FieldEQ(FieldName, v))
 }
 
-// Abilities applies equality check predicate on the "abilities" field. It's identical to AbilitiesEQ.
-func Abilities(v string) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldAbilities, v))
+// Slug applies equality check predicate on the "slug" field. It's identical to SlugEQ.
+func Slug(v string) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldSlug, v))
+}
+
+// Video applies equality check predicate on the "video" field. It's identical to VideoEQ.
+func Video(v string) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldVideo, v))
+}
+
+// Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
+func Description(v string) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldDescription, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -129,6 +139,136 @@ func NameContainsFold(v string) predicate.Role {
 	return predicate.Role(sql.FieldContainsFold(FieldName, v))
 }
 
+// SlugEQ applies the EQ predicate on the "slug" field.
+func SlugEQ(v string) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldSlug, v))
+}
+
+// SlugNEQ applies the NEQ predicate on the "slug" field.
+func SlugNEQ(v string) predicate.Role {
+	return predicate.Role(sql.FieldNEQ(FieldSlug, v))
+}
+
+// SlugIn applies the In predicate on the "slug" field.
+func SlugIn(vs ...string) predicate.Role {
+	return predicate.Role(sql.FieldIn(FieldSlug, vs...))
+}
+
+// SlugNotIn applies the NotIn predicate on the "slug" field.
+func SlugNotIn(vs ...string) predicate.Role {
+	return predicate.Role(sql.FieldNotIn(FieldSlug, vs...))
+}
+
+// SlugGT applies the GT predicate on the "slug" field.
+func SlugGT(v string) predicate.Role {
+	return predicate.Role(sql.FieldGT(FieldSlug, v))
+}
+
+// SlugGTE applies the GTE predicate on the "slug" field.
+func SlugGTE(v string) predicate.Role {
+	return predicate.Role(sql.FieldGTE(FieldSlug, v))
+}
+
+// SlugLT applies the LT predicate on the "slug" field.
+func SlugLT(v string) predicate.Role {
+	return predicate.Role(sql.FieldLT(FieldSlug, v))
+}
+
+// SlugLTE applies the LTE predicate on the "slug" field.
+func SlugLTE(v string) predicate.Role {
+	return predicate.Role(sql.FieldLTE(FieldSlug, v))
+}
+
+// SlugContains applies the Contains predicate on the "slug" field.
+func SlugContains(v string) predicate.Role {
+	return predicate.Role(sql.FieldContains(FieldSlug, v))
+}
+
+// SlugHasPrefix applies the HasPrefix predicate on the "slug" field.
+func SlugHasPrefix(v string) predicate.Role {
+	return predicate.Role(sql.FieldHasPrefix(FieldSlug, v))
+}
+
+// SlugHasSuffix applies the HasSuffix predicate on the "slug" field.
+func SlugHasSuffix(v string) predicate.Role {
+	return predicate.Role(sql.FieldHasSuffix(FieldSlug, v))
+}
+
+// SlugEqualFold applies the EqualFold predicate on the "slug" field.
+func SlugEqualFold(v string) predicate.Role {
+	return predicate.Role(sql.FieldEqualFold(FieldSlug, v))
+}
+
+// SlugContainsFold applies the ContainsFold predicate on the "slug" field.
+func SlugContainsFold(v string) predicate.Role {
+	return predicate.Role(sql.FieldContainsFold(FieldSlug, v))
+}
+
+// VideoEQ applies the EQ predicate on the "video" field.
+func VideoEQ(v string) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldVideo, v))
+}
+
+// VideoNEQ applies the NEQ predicate on the "video" field.
+func VideoNEQ(v string) predicate.Role {
+	return predicate.Role(sql.FieldNEQ(FieldVideo, v))
+}
+
+// VideoIn applies the In predicate on the "video" field.
+func VideoIn(vs ...string) predicate.Role {
+	return predicate.Role(sql.FieldIn(FieldVideo, vs...))
+}
+
+// VideoNotIn applies the NotIn predicate on the "video" field.
+func VideoNotIn(vs ...string) predicate.Role {
+	return predicate.Role(sql.FieldNotIn(FieldVideo, vs...))
+}
+
+// VideoGT applies the GT predicate on the "video" field.
+func VideoGT(v string) predicate.Role {
+	return predicate.Role(sql.FieldGT(FieldVideo, v))
+}
+
+// VideoGTE applies the GTE predicate on the "video" field.
+func VideoGTE(v string) predicate.Role {
+	return predicate.Role(sql.FieldGTE(FieldVideo, v))
+}
+
+// VideoLT applies the LT predicate on the "video" field.
+func VideoLT(v string) predicate.Role {
+	return predicate.Role(sql.FieldLT(FieldVideo, v))
+}
+
+// VideoLTE applies the LTE predicate on the "video" field.
+func VideoLTE(v string) predicate.Role {
+	return predicate.Role(sql.FieldLTE(FieldVideo, v))
+}
+
+// VideoContains applies the Contains predicate on the "video" field.
+func VideoContains(v string) predicate.Role {
+	return predicate.Role(sql.FieldContains(FieldVideo, v))
+}
+
+// VideoHasPrefix applies the HasPrefix predicate on the "video" field.
+func VideoHasPrefix(v string) predicate.Role {
+	return predicate.Role(sql.FieldHasPrefix(FieldVideo, v))
+}
+
+// VideoHasSuffix applies the HasSuffix predicate on the "video" field.
+func VideoHasSuffix(v string) predicate.Role {
+	return predicate.Role(sql.FieldHasSuffix(FieldVideo, v))
+}
+
+// VideoEqualFold applies the EqualFold predicate on the "video" field.
+func VideoEqualFold(v string) predicate.Role {
+	return predicate.Role(sql.FieldEqualFold(FieldVideo, v))
+}
+
+// VideoContainsFold applies the ContainsFold predicate on the "video" field.
+func VideoContainsFold(v string) predicate.Role {
+	return predicate.Role(sql.FieldContainsFold(FieldVideo, v))
+}
+
 // TeamEQ applies the EQ predicate on the "team" field.
 func TeamEQ(v Team) predicate.Role {
 	return predicate.Role(sql.FieldEQ(FieldTeam, v))
@@ -149,79 +289,79 @@ func TeamNotIn(vs ...Team) predicate.Role {
 	return predicate.Role(sql.FieldNotIn(FieldTeam, vs...))
 }
 
-// AbilitiesEQ applies the EQ predicate on the "abilities" field.
-func AbilitiesEQ(v string) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldAbilities, v))
+// DescriptionEQ applies the EQ predicate on the "description" field.
+func DescriptionEQ(v string) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldDescription, v))
 }
 
-// AbilitiesNEQ applies the NEQ predicate on the "abilities" field.
-func AbilitiesNEQ(v string) predicate.Role {
-	return predicate.Role(sql.FieldNEQ(FieldAbilities, v))
+// DescriptionNEQ applies the NEQ predicate on the "description" field.
+func DescriptionNEQ(v string) predicate.Role {
+	return predicate.Role(sql.FieldNEQ(FieldDescription, v))
 }
 
-// AbilitiesIn applies the In predicate on the "abilities" field.
-func AbilitiesIn(vs ...string) predicate.Role {
-	return predicate.Role(sql.FieldIn(FieldAbilities, vs...))
+// DescriptionIn applies the In predicate on the "description" field.
+func DescriptionIn(vs ...string) predicate.Role {
+	return predicate.Role(sql.FieldIn(FieldDescription, vs...))
 }
 
-// AbilitiesNotIn applies the NotIn predicate on the "abilities" field.
-func AbilitiesNotIn(vs ...string) predicate.Role {
-	return predicate.Role(sql.FieldNotIn(FieldAbilities, vs...))
+// DescriptionNotIn applies the NotIn predicate on the "description" field.
+func DescriptionNotIn(vs ...string) predicate.Role {
+	return predicate.Role(sql.FieldNotIn(FieldDescription, vs...))
 }
 
-// AbilitiesGT applies the GT predicate on the "abilities" field.
-func AbilitiesGT(v string) predicate.Role {
-	return predicate.Role(sql.FieldGT(FieldAbilities, v))
+// DescriptionGT applies the GT predicate on the "description" field.
+func DescriptionGT(v string) predicate.Role {
+	return predicate.Role(sql.FieldGT(FieldDescription, v))
 }
 
-// AbilitiesGTE applies the GTE predicate on the "abilities" field.
-func AbilitiesGTE(v string) predicate.Role {
-	return predicate.Role(sql.FieldGTE(FieldAbilities, v))
+// DescriptionGTE applies the GTE predicate on the "description" field.
+func DescriptionGTE(v string) predicate.Role {
+	return predicate.Role(sql.FieldGTE(FieldDescription, v))
 }
 
-// AbilitiesLT applies the LT predicate on the "abilities" field.
-func AbilitiesLT(v string) predicate.Role {
-	return predicate.Role(sql.FieldLT(FieldAbilities, v))
+// DescriptionLT applies the LT predicate on the "description" field.
+func DescriptionLT(v string) predicate.Role {
+	return predicate.Role(sql.FieldLT(FieldDescription, v))
 }
 
-// AbilitiesLTE applies the LTE predicate on the "abilities" field.
-func AbilitiesLTE(v string) predicate.Role {
-	return predicate.Role(sql.FieldLTE(FieldAbilities, v))
+// DescriptionLTE applies the LTE predicate on the "description" field.
+func DescriptionLTE(v string) predicate.Role {
+	return predicate.Role(sql.FieldLTE(FieldDescription, v))
 }
 
-// AbilitiesContains applies the Contains predicate on the "abilities" field.
-func AbilitiesContains(v string) predicate.Role {
-	return predicate.Role(sql.FieldContains(FieldAbilities, v))
+// DescriptionContains applies the Contains predicate on the "description" field.
+func DescriptionContains(v string) predicate.Role {
+	return predicate.Role(sql.FieldContains(FieldDescription, v))
 }
 
-// AbilitiesHasPrefix applies the HasPrefix predicate on the "abilities" field.
-func AbilitiesHasPrefix(v string) predicate.Role {
-	return predicate.Role(sql.FieldHasPrefix(FieldAbilities, v))
+// DescriptionHasPrefix applies the HasPrefix predicate on the "description" field.
+func DescriptionHasPrefix(v string) predicate.Role {
+	return predicate.Role(sql.FieldHasPrefix(FieldDescription, v))
 }
 
-// AbilitiesHasSuffix applies the HasSuffix predicate on the "abilities" field.
-func AbilitiesHasSuffix(v string) predicate.Role {
-	return predicate.Role(sql.FieldHasSuffix(FieldAbilities, v))
+// DescriptionHasSuffix applies the HasSuffix predicate on the "description" field.
+func DescriptionHasSuffix(v string) predicate.Role {
+	return predicate.Role(sql.FieldHasSuffix(FieldDescription, v))
 }
 
-// AbilitiesIsNil applies the IsNil predicate on the "abilities" field.
-func AbilitiesIsNil() predicate.Role {
-	return predicate.Role(sql.FieldIsNull(FieldAbilities))
+// DescriptionIsNil applies the IsNil predicate on the "description" field.
+func DescriptionIsNil() predicate.Role {
+	return predicate.Role(sql.FieldIsNull(FieldDescription))
 }
 
-// AbilitiesNotNil applies the NotNil predicate on the "abilities" field.
-func AbilitiesNotNil() predicate.Role {
-	return predicate.Role(sql.FieldNotNull(FieldAbilities))
+// DescriptionNotNil applies the NotNil predicate on the "description" field.
+func DescriptionNotNil() predicate.Role {
+	return predicate.Role(sql.FieldNotNull(FieldDescription))
 }
 
-// AbilitiesEqualFold applies the EqualFold predicate on the "abilities" field.
-func AbilitiesEqualFold(v string) predicate.Role {
-	return predicate.Role(sql.FieldEqualFold(FieldAbilities, v))
+// DescriptionEqualFold applies the EqualFold predicate on the "description" field.
+func DescriptionEqualFold(v string) predicate.Role {
+	return predicate.Role(sql.FieldEqualFold(FieldDescription, v))
 }
 
-// AbilitiesContainsFold applies the ContainsFold predicate on the "abilities" field.
-func AbilitiesContainsFold(v string) predicate.Role {
-	return predicate.Role(sql.FieldContainsFold(FieldAbilities, v))
+// DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
+func DescriptionContainsFold(v string) predicate.Role {
+	return predicate.Role(sql.FieldContainsFold(FieldDescription, v))
 }
 
 // HasGameRoles applies the HasEdge predicate on the "game_roles" edge.

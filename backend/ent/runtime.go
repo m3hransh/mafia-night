@@ -107,6 +107,42 @@ func init() {
 			return nil
 		}
 	}()
+	// roleDescSlug is the schema descriptor for slug field.
+	roleDescSlug := roleFields[2].Descriptor()
+	// role.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	role.SlugValidator = func() func(string) error {
+		validators := roleDescSlug.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(slug string) error {
+			for _, fn := range fns {
+				if err := fn(slug); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// roleDescVideo is the schema descriptor for video field.
+	roleDescVideo := roleFields[3].Descriptor()
+	// role.VideoValidator is a validator for the "video" field. It is called by the builders before save.
+	role.VideoValidator = func() func(string) error {
+		validators := roleDescVideo.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(video string) error {
+			for _, fn := range fns {
+				if err := fn(video); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// roleDescID is the schema descriptor for id field.
 	roleDescID := roleFields[0].Descriptor()
 	// role.DefaultID holds the default value on creation for the id field.
