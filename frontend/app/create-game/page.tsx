@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { GradientBackground } from '@/components/GradientBackground';
+import { RoleSelectionPanel } from '@/components/RoleSelectionPanel';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Player {
@@ -18,6 +19,8 @@ interface Game {
   created_at: string;
 }
 
+type GamePhase = 'not-created' | 'waiting-for-players' | 'selecting-roles' | 'game-started';
+
 export default function CreateGamePage() {
   const [game, setGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -25,6 +28,7 @@ export default function CreateGamePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const [gamePhase, setGamePhase] = useState<GamePhase>('not-created');
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -76,6 +80,7 @@ export default function CreateGamePage() {
 
       const gameData = await response.json();
       setGame(gameData);
+      setGamePhase('waiting-for-players');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create game');
     } finally {
@@ -94,6 +99,24 @@ export default function CreateGamePage() {
   const getJoinUrl = () => {
     if (!game) return '';
     return `${window.location.origin}/join-game?code=${game.id}`;
+  };
+
+  const handleStartRoleSelection = () => {
+    if (players.length > 0) {
+      setGamePhase('selecting-roles');
+    }
+  };
+
+  const handleRolesSelected = (selectedRoles: { roleId: string; count: number }[]) => {
+    // TODO: Send selected roles to backend
+    console.log('Selected roles:', selectedRoles);
+    setGamePhase('game-started');
+    // Here you would typically send the role selection to the backend
+    // and transition to the actual game screen
+  };
+
+  const handleCancelRoleSelection = () => {
+    setGamePhase('waiting-for-players');
   };
 
   return (
@@ -140,6 +163,23 @@ export default function CreateGamePage() {
                 {loading ? 'Creating Game...' : 'Create Game'}
               </button>
             </div>
+          </div>
+        ) : gamePhase === 'selecting-roles' ? (
+          <RoleSelectionPanel
+            playerCount={players.length}
+            onRolesSelected={handleRolesSelected}
+            onCancel={handleCancelRoleSelection}
+          />
+        ) : gamePhase === 'game-started' ? (
+          <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">Game Started!</h2>
+            <p className="text-purple-300 mb-6">Roles have been assigned. The game can now begin.</p>
+            <Link
+              href="/"
+              className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold text-lg px-8 py-4 rounded-xl transition-all"
+            >
+              Return Home
+            </Link>
           </div>
         ) : (
           <div className="space-y-6">
@@ -205,10 +245,11 @@ export default function CreateGamePage() {
             {/* Actions */}
             <div className="flex gap-4 justify-center">
               <button
+                onClick={handleStartRoleSelection}
                 disabled={players.length === 0}
                 className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105"
               >
-                Start Game
+                Select Roles & Start Game
               </button>
               <Link
                 href="/roles"
