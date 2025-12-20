@@ -119,6 +119,29 @@ export default function CreateGamePage() {
     setGamePhase('waiting-for-players');
   };
 
+  const shareGame = async () => {
+    const shareData = {
+      title: 'Join Mafia Night Game!',
+      text: `Join my Mafia Night game! Game code: ${game?.id}`,
+      url: getJoinUrl(),
+    };
+
+    try {
+      // Use native share API if available (mobile devices)
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback to copying link
+        await navigator.clipboard.writeText(getJoinUrl());
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      }
+    } catch (err) {
+      // User cancelled or error occurred
+      console.log('Share cancelled or failed:', err);
+    }
+  };
+
   return (
     <main className="relative w-full min-h-screen p-8">
       <GradientBackground />
@@ -199,9 +222,18 @@ export default function CreateGamePage() {
               </div>
               <div className="mt-4">
                 <p className="text-sm text-purple-300 mb-2">Share this link with players:</p>
-                <div className="bg-black/50 rounded-lg p-3 text-sm text-purple-200 break-all">
+                <div className="bg-black/50 rounded-lg p-3 text-sm text-purple-200 break-all mb-3">
                   {getJoinUrl()}
                 </div>
+                <button
+                  onClick={shareGame}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  Share Game Link
+                </button>
               </div>
             </div>
 
