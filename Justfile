@@ -13,9 +13,9 @@ test-backend:
   #!/usr/bin/env bash
   cd backend
   if command -v gotestsum &> /dev/null; then
-    gotestsum --format testname
+    gotestsum --format testname -- -p 1 ./...
   else
-    go test ./...
+    go test -p 1 ./...
   fi
 
 # Run backend tests with verbose output
@@ -23,9 +23,9 @@ test-backend-verbose:
   #!/usr/bin/env bash
   cd backend
   if command -v gotestsum &> /dev/null; then
-    gotestsum --format standard-verbose
+    gotestsum --format standard-verbose -- -p 1 ./...
   else
-    go test -v ./...
+    go test -v -p 1 ./...
   fi
 
 # Run backend tests with coverage
@@ -33,9 +33,9 @@ test-backend-coverage:
   #!/usr/bin/env bash
   cd backend
   if command -v gotestsum &> /dev/null; then
-    gotestsum --format testname -- -cover ./...
+    gotestsum --format testname -- -p 1 -cover ./...
   else
-    go test -cover ./...
+    go test -p 1 -cover ./...
   fi
 
 # Run backend tests in watch mode
@@ -133,67 +133,67 @@ rollback:
 
 # Build production Docker images locally (testing)
 build-prod:
-  docker-compose -f docker-compose.prod.yml build
+  docker compose -f docker-compose.prod.yml build
 
 # Start production stack locally (testing)
 up-prod:
-  docker-compose -f docker-compose.prod.yml up -d
+  docker compose -f docker-compose.prod.yml up -d
 
 # Stop production stack
 down-prod:
-  docker-compose -f docker-compose.prod.yml down
+  docker compose -f docker-compose.prod.yml down
 
 # View production logs
 logs-prod:
-  docker-compose -f docker-compose.prod.yml logs -f
+  docker compose -f docker-compose.prod.yml logs -f
 
 # SSH into production VPS
 ssh-prod:
-  @source .env.production && ssh $$DEPLOY_USER@$$DEPLOY_HOST
+	@set -a && . {{justfile_directory()}}/.env.production && set +a && ssh ${DEPLOY_USER}@${DEPLOY_HOST}
 
 # View production container status on VPS
 status-prod:
-  @source .env.production && \
-  ssh $$DEPLOY_USER@$$DEPLOY_HOST "cd $$DEPLOY_PATH && docker-compose -f docker-compose.prod.yml ps"
+	@set -a && . {{justfile_directory()}}/.env.production && set +a && \
+	ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_PATH} && docker compose -f docker-compose.prod.yml ps"
 
 # View production logs on VPS
 logs-prod-vps SERVICE="":
-  @source .env.production && \
-  ssh $$DEPLOY_USER@$$DEPLOY_HOST "cd $$DEPLOY_PATH && docker-compose -f docker-compose.prod.yml logs -f {{SERVICE}}"
+	@set -a && . {{justfile_directory()}}/.env.production && set +a && \
+	ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_PATH} && docker compose -f docker-compose.prod.yml logs -f {{SERVICE}}"
 
 # Docker commands
 # ==============
 
 # Start all services with Docker
 up:
-  docker-compose up --build
+  docker compose up --build
 
 # Start services in background
 up-detached:
-  docker-compose up -d --build
+  docker compose up -d --build
 
 # Stop all services
 down:
-  docker-compose down
+  docker compose down
 
 # View logs
 logs:
-  docker-compose logs -f
+  docker compose logs -f
 
 # Database commands
 # ================
 
 # Start PostgreSQL only
 db:
-  docker-compose up -d postgres
+  docker compose up -d postgres
 
 # Connect to PostgreSQL
 db-connect:
-  docker-compose exec postgres psql -U mafia_user -d mafia_night
+  docker compose exec postgres psql -U mafia_user -d mafia_night
 
 # Stop database
 db-stop:
-  docker-compose stop postgres
+  docker compose stop postgres
 
 # Clean commands
 # =============
@@ -271,7 +271,16 @@ db-reset: db-drop db-migrate db-seed
 
 # Drop all tables
 db-drop:
-  docker-compose exec postgres psql -U mafia_user -d mafia_night -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+  docker compose exec postgres psql -U mafia_user -d mafia_night -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
 db-drop-test:
-  docker-compose exec postgres psql -U mafia_user -d mafia_night_test -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+  docker compose exec postgres psql -U mafia_user -d mafia_night_test -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# Production database commands
+db-migrate-prod:
+	@set -a && . {{justfile_directory()}}/.env.production && set +a && \
+	ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_PATH} && docker compose -f docker-compose.prod.yml exec -T backend ./migrate"
+
+db-seed-prod:
+	@set -a && . {{justfile_directory()}}/.env.production && set +a && \
+	ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_PATH} && docker compose -f docker-compose.prod.yml exec -T backend ./seed"
