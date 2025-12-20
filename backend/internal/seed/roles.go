@@ -15,6 +15,7 @@ type RoleData struct {
 	Video       string
 	Description string
 	Team        role.Team
+	Abilities   []string
 }
 
 // Roles contains all 30 roles from frontend with team assignments
@@ -25,6 +26,7 @@ var Roles = []RoleData{
 		Video:       "/roles/sherlock.webm",
 		Description: "The brilliant detective who can investigate one player each night to discover their role. Uses deduction and logic to find the criminals.",
 		Team:        role.TeamIndependent,
+		Abilities:   []string{"Investigate player each night", "Discover player's role", "Cannot be killed at night"},
 	},
 	{
 		Name:        "Mafia",
@@ -32,6 +34,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Mafia.webm",
 		Description: "A member of the criminal organization. Works with other Mafia members to eliminate citizens during the night. Win by outnumbering the town.",
 		Team:        role.TeamMafia,
+		Abilities:   []string{"Kill one player each night", "Coordinate with other Mafia", "Win by outnumbering villagers"},
 	},
 	{
 		Name:        "Doctor Watson",
@@ -39,6 +42,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Doctor Watson.webm",
 		Description: "The trusted medical expert who can protect one player each night from elimination. Cannot protect the same person two nights in a row.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{"Protect one player each night", "Cannot protect same player twice in a row", "Prevent night kills"},
 	},
 	{
 		Name:        "Bodyguard",
@@ -46,6 +50,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Bodyguard.webm",
 		Description: "Professional protector who shields one player each night. If that player is attacked, both the attacker and bodyguard may die.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{"Protect one player each night", "Die if protected player is attacked", "Kill the attacker"},
 	},
 	{
 		Name:        "Chef",
@@ -60,6 +65,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Citizen Kane.webm",
 		Description: "Influential townsperson whose vote counts double during eliminations. A powerful voice in the community with hidden wealth.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Citizen Male",
@@ -67,6 +73,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Citizen_male.webm",
 		Description: "An ordinary member of the town with no special powers. Must rely on logic and observation to identify the criminals among them.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Citizen",
@@ -74,6 +81,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Citizen.webm",
 		Description: "Regular townsperson trying to survive and help eliminate the Mafia. Uses voting and discussion to protect the innocent.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Commander",
@@ -81,6 +89,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Commander.webm",
 		Description: "Military leader who can rally the town and coordinate defenses. Has tactical knowledge and leadership abilities to guide citizens.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Constantine",
@@ -88,6 +97,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Constantine.webm",
 		Description: "Mystic occult detective who can sense supernatural evil. Has unique powers to detect dark forces working against the town.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Cowgirl",
@@ -95,6 +105,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Cowgirl.webm",
 		Description: "Quick-draw sharpshooter from the frontier. Can use her weapon skills to eliminate threats but must choose targets carefully.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Gunsmith",
@@ -102,6 +113,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Gunsmith.webm",
 		Description: "Arms dealer who can detect if a player owns weapons. Knows who might be dangerous but not their true allegiance.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Hacker",
@@ -109,6 +121,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Hacker.webm",
 		Description: "Digital infiltrator who can access secret information. Can hack into communications to learn about other players actions.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Leon",
@@ -116,6 +129,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Leon.webm",
 		Description: "Professional cleaner and hitman who works in the shadows. Highly skilled and dangerous with unclear loyalties.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Mayor",
@@ -123,6 +137,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Mayor.webm",
 		Description: "Elected leader of the town. Can reveal themselves to gain extra voting power or call emergency meetings to discuss threats.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Natasha",
@@ -130,6 +145,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Natasha.webm",
 		Description: "Mysterious operative with espionage training. Can gather intelligence and has connections to both sides of the conflict.",
 		Team:        role.TeamMafia,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Ocean's Friend",
@@ -137,6 +153,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Ocean_s friend.webm",
 		Description: "Part of a heist crew with strategic planning skills. Works to protect their team and can coordinate group actions.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Ocean",
@@ -144,6 +161,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Ocean.webm",
 		Description: "Master thief and strategist who leads complex operations. Can steal items or information from other players during the night.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Police",
@@ -151,6 +169,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Police.webm",
 		Description: "Law enforcement officer investigating the crimes. Can arrest one suspect per night to learn their alignment and protect the town.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Priest",
@@ -158,6 +177,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Priest.webm",
 		Description: "Holy man who can resurrect one eliminated player or protect souls. Has divine powers to aid the innocent and punish evil.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Rostam",
@@ -165,6 +185,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Rostam.webm",
 		Description: "Legendary hero warrior with incredible strength. Can challenge others to combat and has enhanced defensive abilities.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Saboteur",
@@ -172,6 +193,7 @@ var Roles = []RoleData{
 		Video:       "/roles/saboteur.webm",
 		Description: "Agent of chaos who disrupts plans and sows confusion. Can interfere with other players abilities and create mayhem in the night.",
 		Team:        role.TeamMafia,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Saul Goodman",
@@ -179,6 +201,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Saul Goodman.webm",
 		Description: "Criminal lawyer who can defend accused players. Can prevent one elimination per game through legal manipulation and persuasion.",
 		Team:        role.TeamMafia,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Spider",
@@ -186,6 +209,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Spider.webm",
 		Description: "Web-spinning vigilante who protects the innocent. Can trap criminals and has enhanced senses to detect danger approaching.",
 		Team:        role.TeamMafia,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Spy",
@@ -193,6 +217,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Spy.webm",
 		Description: "Covert intelligence operative who gathers secrets. Can spy on conversations and learn about other players actions and roles.",
 		Team:        role.TeamMafia,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Terrorist",
@@ -200,6 +225,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Terrorist.webm",
 		Description: "Extremist with explosive capabilities. Can eliminate multiple players at once but will also perish in the blast. Use carefully.",
 		Team:        role.TeamMafia,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Therapist",
@@ -207,6 +233,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Therapist.webm",
 		Description: "Mental health professional who can calm disturbed minds. Can prevent certain roles from using their abilities by providing therapy.",
 		Team:        role.TeamVillage,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Thief",
@@ -214,6 +241,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Thief.webm",
 		Description: "Cunning burglar who steals from others at night. Can take items, abilities, or information from other players to gain advantage.",
 		Team:        role.TeamMafia,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Traitor",
@@ -221,6 +249,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Traitor.webm",
 		Description: "Betrayer who appears as citizen but aids the Mafia. Unknown even to Mafia, becomes active if all Mafia are eliminated.",
 		Team:        role.TeamMafia,
+		Abilities:   []string{},
 	},
 	{
 		Name:        "Yakuza",
@@ -228,6 +257,7 @@ var Roles = []RoleData{
 		Video:       "/roles/Yakuza.webm",
 		Description: "Japanese crime syndicate member with honor code. Works with organized criminals and has unique assassination techniques.",
 		Team:        role.TeamMafia,
+		Abilities:   []string{},
 	},
 }
 
@@ -252,7 +282,8 @@ func SeedRoles(ctx context.Context, client *ent.Client) error {
 			SetSlug(r.Slug).
 			SetVideo(r.Video).
 			SetDescription(r.Description).
-			SetTeam(r.Team)
+			SetTeam(r.Team).
+			SetAbilities(r.Abilities)
 	}
 
 	created, err := client.Role.CreateBulk(bulk...).Save(ctx)

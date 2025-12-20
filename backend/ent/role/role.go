@@ -25,6 +25,8 @@ const (
 	FieldTeam = "team"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
+	// FieldAbilities holds the string denoting the abilities field in the database.
+	FieldAbilities = "abilities"
 	// EdgeGameRoles holds the string denoting the game_roles edge name in mutations.
 	EdgeGameRoles = "game_roles"
 	// Table holds the table name of the role in the database.
@@ -46,6 +48,7 @@ var Columns = []string{
 	FieldVideo,
 	FieldTeam,
 	FieldDescription,
+	FieldAbilities,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

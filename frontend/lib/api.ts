@@ -7,6 +7,7 @@ export interface Role {
   video: string;
   description: string;
   team: 'mafia' | 'village' | 'independent';
+  abilities?: string[];
 }
 
 export class APIError extends Error {

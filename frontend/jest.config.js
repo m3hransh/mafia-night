@@ -21,6 +21,7 @@ const customJestConfig = {
     '!**/jest.config.js',
     '!**/next.config.js',
   ],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/', '/e2e/'],
   testMatch: [
     '**/__tests__/**/*.{ts,tsx}',
     '**/*.{spec,test}.{ts,tsx}',

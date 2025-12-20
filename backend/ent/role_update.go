@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/predicate"
@@ -101,6 +102,24 @@ func (_u *RoleUpdate) SetNillableDescription(v *string) *RoleUpdate {
 // ClearDescription clears the value of the "description" field.
 func (_u *RoleUpdate) ClearDescription() *RoleUpdate {
 	_u.mutation.ClearDescription()
+	return _u
+}
+
+// SetAbilities sets the "abilities" field.
+func (_u *RoleUpdate) SetAbilities(v []string) *RoleUpdate {
+	_u.mutation.SetAbilities(v)
+	return _u
+}
+
+// AppendAbilities appends value to the "abilities" field.
+func (_u *RoleUpdate) AppendAbilities(v []string) *RoleUpdate {
+	_u.mutation.AppendAbilities(v)
+	return _u
+}
+
+// ClearAbilities clears the value of the "abilities" field.
+func (_u *RoleUpdate) ClearAbilities() *RoleUpdate {
+	_u.mutation.ClearAbilities()
 	return _u
 }
 
@@ -226,6 +245,17 @@ func (_u *RoleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(role.FieldDescription, field.TypeString)
+	}
+	if value, ok := _u.mutation.Abilities(); ok {
+		_spec.SetField(role.FieldAbilities, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedAbilities(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, role.FieldAbilities, value)
+		})
+	}
+	if _u.mutation.AbilitiesCleared() {
+		_spec.ClearField(role.FieldAbilities, field.TypeJSON)
 	}
 	if _u.mutation.GameRolesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -365,6 +395,24 @@ func (_u *RoleUpdateOne) SetNillableDescription(v *string) *RoleUpdateOne {
 // ClearDescription clears the value of the "description" field.
 func (_u *RoleUpdateOne) ClearDescription() *RoleUpdateOne {
 	_u.mutation.ClearDescription()
+	return _u
+}
+
+// SetAbilities sets the "abilities" field.
+func (_u *RoleUpdateOne) SetAbilities(v []string) *RoleUpdateOne {
+	_u.mutation.SetAbilities(v)
+	return _u
+}
+
+// AppendAbilities appends value to the "abilities" field.
+func (_u *RoleUpdateOne) AppendAbilities(v []string) *RoleUpdateOne {
+	_u.mutation.AppendAbilities(v)
+	return _u
+}
+
+// ClearAbilities clears the value of the "abilities" field.
+func (_u *RoleUpdateOne) ClearAbilities() *RoleUpdateOne {
+	_u.mutation.ClearAbilities()
 	return _u
 }
 
@@ -520,6 +568,17 @@ func (_u *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) {
 	}
 	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(role.FieldDescription, field.TypeString)
+	}
+	if value, ok := _u.mutation.Abilities(); ok {
+		_spec.SetField(role.FieldAbilities, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedAbilities(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, role.FieldAbilities, value)
+		})
+	}
+	if _u.mutation.AbilitiesCleared() {
+		_spec.ClearField(role.FieldAbilities, field.TypeJSON)
 	}
 	if _u.mutation.GameRolesCleared() {
 		edge := &sqlgraph.EdgeSpec{

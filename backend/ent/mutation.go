@@ -1924,6 +1924,8 @@ type RoleMutation struct {
 	video             *string
 	team              *role.Team
 	description       *string
+	abilities         *[]string
+	appendabilities   []string
 	clearedFields     map[string]struct{}
 	game_roles        map[int]struct{}
 	removedgame_roles map[int]struct{}
@@ -2230,6 +2232,71 @@ func (m *RoleMutation) ResetDescription() {
 	delete(m.clearedFields, role.FieldDescription)
 }
 
+// SetAbilities sets the "abilities" field.
+func (m *RoleMutation) SetAbilities(s []string) {
+	m.abilities = &s
+	m.appendabilities = nil
+}
+
+// Abilities returns the value of the "abilities" field in the mutation.
+func (m *RoleMutation) Abilities() (r []string, exists bool) {
+	v := m.abilities
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAbilities returns the old "abilities" field's value of the Role entity.
+// If the Role object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleMutation) OldAbilities(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAbilities is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAbilities requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAbilities: %w", err)
+	}
+	return oldValue.Abilities, nil
+}
+
+// AppendAbilities adds s to the "abilities" field.
+func (m *RoleMutation) AppendAbilities(s []string) {
+	m.appendabilities = append(m.appendabilities, s...)
+}
+
+// AppendedAbilities returns the list of values that were appended to the "abilities" field in this mutation.
+func (m *RoleMutation) AppendedAbilities() ([]string, bool) {
+	if len(m.appendabilities) == 0 {
+		return nil, false
+	}
+	return m.appendabilities, true
+}
+
+// ClearAbilities clears the value of the "abilities" field.
+func (m *RoleMutation) ClearAbilities() {
+	m.abilities = nil
+	m.appendabilities = nil
+	m.clearedFields[role.FieldAbilities] = struct{}{}
+}
+
+// AbilitiesCleared returns if the "abilities" field was cleared in this mutation.
+func (m *RoleMutation) AbilitiesCleared() bool {
+	_, ok := m.clearedFields[role.FieldAbilities]
+	return ok
+}
+
+// ResetAbilities resets all changes to the "abilities" field.
+func (m *RoleMutation) ResetAbilities() {
+	m.abilities = nil
+	m.appendabilities = nil
+	delete(m.clearedFields, role.FieldAbilities)
+}
+
 // AddGameRoleIDs adds the "game_roles" edge to the GameRole entity by ids.
 func (m *RoleMutation) AddGameRoleIDs(ids ...int) {
 	if m.game_roles == nil {
@@ -2318,7 +2385,7 @@ func (m *RoleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RoleMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, role.FieldName)
 	}
@@ -2333,6 +2400,9 @@ func (m *RoleMutation) Fields() []string {
 	}
 	if m.description != nil {
 		fields = append(fields, role.FieldDescription)
+	}
+	if m.abilities != nil {
+		fields = append(fields, role.FieldAbilities)
 	}
 	return fields
 }
@@ -2352,6 +2422,8 @@ func (m *RoleMutation) Field(name string) (ent.Value, bool) {
 		return m.Team()
 	case role.FieldDescription:
 		return m.Description()
+	case role.FieldAbilities:
+		return m.Abilities()
 	}
 	return nil, false
 }
@@ -2371,6 +2443,8 @@ func (m *RoleMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldTeam(ctx)
 	case role.FieldDescription:
 		return m.OldDescription(ctx)
+	case role.FieldAbilities:
+		return m.OldAbilities(ctx)
 	}
 	return nil, fmt.Errorf("unknown Role field %s", name)
 }
@@ -2415,6 +2489,13 @@ func (m *RoleMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDescription(v)
 		return nil
+	case role.FieldAbilities:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAbilities(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Role field %s", name)
 }
@@ -2448,6 +2529,9 @@ func (m *RoleMutation) ClearedFields() []string {
 	if m.FieldCleared(role.FieldDescription) {
 		fields = append(fields, role.FieldDescription)
 	}
+	if m.FieldCleared(role.FieldAbilities) {
+		fields = append(fields, role.FieldAbilities)
+	}
 	return fields
 }
 
@@ -2464,6 +2548,9 @@ func (m *RoleMutation) ClearField(name string) error {
 	switch name {
 	case role.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case role.FieldAbilities:
+		m.ClearAbilities()
 		return nil
 	}
 	return fmt.Errorf("unknown Role nullable field %s", name)
@@ -2487,6 +2574,9 @@ func (m *RoleMutation) ResetField(name string) error {
 		return nil
 	case role.FieldDescription:
 		m.ResetDescription()
+		return nil
+	case role.FieldAbilities:
+		m.ResetAbilities()
 		return nil
 	}
 	return fmt.Errorf("unknown Role field %s", name)

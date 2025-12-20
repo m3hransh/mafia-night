@@ -111,6 +111,7 @@ var (
 		{Name: "video", Type: field.TypeString, Size: 255},
 		{Name: "team", Type: field.TypeEnum, Enums: []string{"mafia", "village", "independent"}},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "abilities", Type: field.TypeJSON, Nullable: true},
 	}
 	// RolesTable holds the schema information for the "roles" table.
 	RolesTable = &schema.Table{

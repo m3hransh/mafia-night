@@ -40,10 +40,6 @@ export default function Home() {
             Browse Role Cards
           </Link>
         </div>
-
-        <div className="mt-16 text-purple-400 text-sm">
-          <p>30 unique roles with special abilities</p>
-        </div>
       </div>
     </main>
   );

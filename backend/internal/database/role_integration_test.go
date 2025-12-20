@@ -18,14 +18,17 @@ func TestRoleRepository_Create(t *testing.T) {
 		Create().
 		SetName("Mafia").
 		SetTeam("mafia").
-		SetAbilities("Kill one villager each night").
+		SetSlug("mafia").
+		SetVideo("mafia_intro.mp4").
+		SetAbilities([]string{"Kill one villager each night"}).
 		Save(ctx)
 
 	require.NoError(t, err)
 	assert.NotZero(t, r.ID)
 	assert.Equal(t, "Mafia", r.Name)
 	assert.Equal(t, role.TeamMafia, r.Team)
-	assert.Equal(t, "Kill one villager each night", r.Abilities)
+	assert.Equal(t, "mafia_intro.mp4", r.Video)
+	assert.Equal(t, []string{"Kill one villager each night"}, r.Abilities)
 }
 
 func TestRoleRepository_UniqueNames(t *testing.T) {
@@ -37,6 +40,9 @@ func TestRoleRepository_UniqueNames(t *testing.T) {
 		Create().
 		SetName("Doctor").
 		SetTeam("village").
+		SetSlug("doctor").
+		SetVideo("doctor_intro.mp4").
+		SetAbilities([]string{"Save one player each night"}).
 		Save(ctx)
 	require.NoError(t, err)
 
@@ -45,6 +51,8 @@ func TestRoleRepository_UniqueNames(t *testing.T) {
 		Create().
 		SetName("Doctor").
 		SetTeam("village").
+		SetSlug("doctor-2").
+		SetVideo("doctor_intro_2.mp4").
 		Save(ctx)
 	assert.Error(t, err)
 }
@@ -56,12 +64,13 @@ func TestRoleRepository_SeedPredefinedRoles(t *testing.T) {
 	predefinedRoles := []struct {
 		name      string
 		team      string
-		abilities string
+		video     string
+		abilities []string
 	}{
-		{"Mafia", "mafia", "Kill one villager each night"},
-		{"Doctor", "village", "Save one player each night"},
-		{"Detective", "village", "Investigate one player each night"},
-		{"Villager", "village", "No special abilities"},
+		{"Mafia", "mafia", "mafia_intro.mp4", []string{"Kill one villager each night"}},
+		{"Doctor", "village", "doctor_intro.mp4", []string{"Save one player each night"}},
+		{"Detective", "village", "detective_intro.mp4", []string{"Investigate one player each night"}},
+		{"Villager", "village", "villager_intro.mp4", []string{"No special abilities"}},
 	}
 
 	// Create predefined roles
@@ -71,6 +80,8 @@ func TestRoleRepository_SeedPredefinedRoles(t *testing.T) {
 			Create().
 			SetName(r.name).
 			SetTeam(team).
+			SetSlug(r.name).
+			SetVideo(r.video).
 			SetAbilities(r.abilities).
 			Save(ctx)
 		require.NoError(t, err)
@@ -87,11 +98,11 @@ func TestRoleRepository_GetByTeam(t *testing.T) {
 	ctx := context.Background()
 
 	// Create roles
-	_, err := client.Role.Create().SetName("Mafia").SetTeam("mafia").Save(ctx)
+	_, err := client.Role.Create().SetName("Mafia").SetTeam("mafia").SetSlug("mafia").SetVideo("mafia_intro.mp4").Save(ctx)
 	require.NoError(t, err)
-	_, err = client.Role.Create().SetName("Doctor").SetTeam("village").Save(ctx)
+	_, err = client.Role.Create().SetName("Doctor").SetTeam("village").SetSlug("doctor").SetVideo("doctor_intro.mp4").Save(ctx)
 	require.NoError(t, err)
-	_, err = client.Role.Create().SetName("Detective").SetTeam("village").Save(ctx)
+	_, err = client.Role.Create().SetName("Detective").SetTeam("village").SetSlug("detective").SetVideo("detective_intro.mp4").Save(ctx)
 	require.NoError(t, err)
 
 	// Query village roles

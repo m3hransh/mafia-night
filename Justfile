@@ -272,3 +272,6 @@ db-reset: db-drop db-migrate db-seed
 # Drop all tables
 db-drop:
   docker-compose exec postgres psql -U mafia_user -d mafia_night -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+db-drop-test:
+  docker-compose exec postgres psql -U mafia_user -d mafia_night_test -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"

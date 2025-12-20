@@ -364,6 +364,16 @@ func DescriptionContainsFold(v string) predicate.Role {
 	return predicate.Role(sql.FieldContainsFold(FieldDescription, v))
 }
 
+// AbilitiesIsNil applies the IsNil predicate on the "abilities" field.
+func AbilitiesIsNil() predicate.Role {
+	return predicate.Role(sql.FieldIsNull(FieldAbilities))
+}
+
+// AbilitiesNotNil applies the NotNil predicate on the "abilities" field.
+func AbilitiesNotNil() predicate.Role {
+	return predicate.Role(sql.FieldNotNull(FieldAbilities))
+}
+
 // HasGameRoles applies the HasEdge predicate on the "game_roles" edge.
 func HasGameRoles() predicate.Role {
 	return predicate.Role(func(s *sql.Selector) {

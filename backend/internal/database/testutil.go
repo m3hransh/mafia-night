@@ -22,8 +22,12 @@ func SetupTestDB(t *testing.T) *ent.Client {
 		t.Fatalf("failed opening connection to postgres: %v", err)
 	}
 
-	// Run migrations
 	ctx := context.Background()
+	
+	// Clean up any existing data first
+	CleanupTestDB(t, client)
+	
+	// Run migrations (create tables if they don't exist)
 	if err := client.Schema.Create(ctx); err != nil {
 		t.Fatalf("failed creating schema: %v", err)
 	}

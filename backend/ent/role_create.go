@@ -59,6 +59,12 @@ func (_c *RoleCreate) SetNillableDescription(v *string) *RoleCreate {
 	return _c
 }
 
+// SetAbilities sets the "abilities" field.
+func (_c *RoleCreate) SetAbilities(v []string) *RoleCreate {
+	_c.mutation.SetAbilities(v)
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *RoleCreate) SetID(v uuid.UUID) *RoleCreate {
 	_c.mutation.SetID(v)
@@ -217,6 +223,10 @@ func (_c *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(role.FieldDescription, field.TypeString, value)
 		_node.Description = value
+	}
+	if value, ok := _c.mutation.Abilities(); ok {
+		_spec.SetField(role.FieldAbilities, field.TypeJSON, value)
+		_node.Abilities = value
 	}
 	if nodes := _c.mutation.GameRolesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

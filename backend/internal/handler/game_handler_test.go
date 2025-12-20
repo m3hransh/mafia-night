@@ -29,7 +29,7 @@ func TestCreateGameHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusCreated, rr.Code)
 
-		var response map[string]interface{}
+		var response map[string]any
 		err := json.NewDecoder(rr.Body).Decode(&response)
 		require.NoError(t, err)
 

@@ -33,6 +33,9 @@ func (Role) Fields() []ent.Field {
 			Values("mafia", "village", "independent"),
 		field.Text("description").
 			Optional(),
+		field.JSON("abilities", []string{}).
+			Optional().
+			Comment("List of role abilities"),
 	}
 }
 

@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -27,6 +28,8 @@ type Role struct {
 	Team role.Team `json:"team,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
+	// List of role abilities
+	Abilities []string `json:"abilities,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RoleQuery when eager-loading is set.
 	Edges        RoleEdges `json:"edges"`
@@ -56,6 +59,8 @@ func (*Role) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case role.FieldAbilities:
+			values[i] = new([]byte)
 		case role.FieldName, role.FieldSlug, role.FieldVideo, role.FieldTeam, role.FieldDescription:
 			values[i] = new(sql.NullString)
 		case role.FieldID:
@@ -110,6 +115,14 @@ func (_m *Role) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
 				_m.Description = value.String
+			}
+		case role.FieldAbilities:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field abilities", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Abilities); err != nil {
+					return fmt.Errorf("unmarshal field abilities: %w", err)
+				}
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -166,6 +179,9 @@ func (_m *Role) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(_m.Description)
+	builder.WriteString(", ")
+	builder.WriteString("abilities=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Abilities))
 	builder.WriteByte(')')
 	return builder.String()
 }
