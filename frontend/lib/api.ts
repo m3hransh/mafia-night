@@ -128,3 +128,68 @@ export async function removePlayer(gameId: string, playerId: string): Promise<vo
     throw new APIError(response.status, error || 'Failed to remove player');
   }
 }
+
+/**
+ * Distributes roles to players
+ */
+export async function distributeRoles(
+  gameId: string,
+  moderatorId: string,
+  roles: { role_id: string; count: number }[]
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/distribute-roles`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Moderator-ID': moderatorId,
+    },
+    body: JSON.stringify({ roles }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new APIError(response.status, error || 'Failed to distribute roles');
+  }
+}
+
+export interface PlayerRoleAssignment {
+  player_id: string;
+  player_name: string;
+  role_id: string;
+  role_name: string;
+  role_slug: string;
+  video: string;
+  team: 'mafia' | 'village' | 'independent';
+  assigned_at: string;
+}
+
+/**
+ * Gets all role assignments for a game (moderator only)
+ */
+export async function getGameRoles(gameId: string, moderatorId: string): Promise<PlayerRoleAssignment[]> {
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/roles`, {
+    headers: {
+      'X-Moderator-ID': moderatorId,
+    },
+  });
+
+  if (!response.ok) {
+    throw new APIError(response.status, 'Failed to fetch game roles');
+  }
+
+  return response.json();
+}
+
+/**
+ * Gets the assigned role for a specific player
+ */
+export async function getPlayerRole(gameId: string, playerId: string): Promise<Role> {
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/players/${playerId}/role`);
+
+  if (!response.ok) {
+    throw new APIError(response.status, 'Failed to fetch player role');
+  }
+
+  return response.json();
+}
+

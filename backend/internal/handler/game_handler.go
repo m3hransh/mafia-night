@@ -213,3 +213,130 @@ func playerToJSON(p *ent.Player) map[string]any {
 	}
 }
 
+// DistributeRoles handles POST /api/games/{id}/distribute-roles
+func (h *GameHandler) DistributeRoles(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+	moderatorID := r.Header.Get("X-Moderator-ID")
+
+	if moderatorID == "" {
+		ErrorResponse(w, http.StatusBadRequest, "X-Moderator-ID header is required")
+		return
+	}
+
+	var req struct {
+		Roles []service.RoleSelection `json:"roles"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		ErrorResponse(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	err := h.gameService.DistributeRoles(r.Context(), gameID, moderatorID, req.Roles)
+	if err != nil {
+		if errors.Is(err, service.ErrNotAuthorized) {
+			ErrorResponse(w, http.StatusForbidden, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrInvalidRoleCount) {
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrRolesAlreadyAssigned) {
+			ErrorResponse(w, http.StatusConflict, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrEmptyGameID) || errors.Is(err, service.ErrEmptyModeratorID) {
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	JSONResponse(w, http.StatusOK, map[string]any{
+		"message": "roles distributed successfully",
+	})
+}
+
+// GetPlayerRole handles GET /api/games/{id}/players/{player_id}/role
+func (h *GameHandler) GetPlayerRole(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+	playerID := chi.URLParam(r, "player_id")
+
+	gameRole, err := h.gameService.GetPlayerRole(r.Context(), gameID, playerID)
+	if err != nil {
+		if errors.Is(err, service.ErrEmptyGameID) || errors.Is(err, service.ErrEmptyPlayerID) {
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		ErrorResponse(w, http.StatusNotFound, "role not assigned or player not found")
+		return
+	}
+
+	// Get the role information
+	role := gameRole.Edges.Role
+	if role == nil {
+		ErrorResponse(w, http.StatusInternalServerError, "role information not found")
+		return
+	}
+
+	JSONResponse(w, http.StatusOK, map[string]any{
+		"id":          role.ID,
+		"name":        role.Name,
+		"slug":        role.Slug,
+		"video":       role.Video,
+		"description": role.Description,
+		"team":        role.Team,
+		"abilities":   role.Abilities,
+		"assigned_at": gameRole.AssignedAt,
+	})
+}
+
+// GetGameRoles handles GET /api/games/{id}/roles (moderator view)
+func (h *GameHandler) GetGameRoles(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+	moderatorID := r.Header.Get("X-Moderator-ID")
+
+	if moderatorID == "" {
+		ErrorResponse(w, http.StatusBadRequest, "X-Moderator-ID header is required")
+		return
+	}
+
+	gameRoles, err := h.gameService.GetGameRoles(r.Context(), gameID, moderatorID)
+	if err != nil {
+		if errors.Is(err, service.ErrNotAuthorized) {
+			ErrorResponse(w, http.StatusForbidden, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrEmptyGameID) || errors.Is(err, service.ErrEmptyModeratorID) {
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		ErrorResponse(w, http.StatusNotFound, "game not found")
+		return
+	}
+
+	// Transform to JSON response grouped by team
+	response := make([]map[string]any, 0, len(gameRoles))
+	for _, gameRole := range gameRoles {
+		player := gameRole.Edges.Player
+		role := gameRole.Edges.Role
+
+		if player != nil && role != nil {
+			response = append(response, map[string]any{
+				"player_id":   player.ID,
+				"player_name": player.Name,
+				"role_id":     role.ID,
+				"role_name":   role.Name,
+				"role_slug":   role.Slug,
+				"video":       role.Video,
+				"team":        role.Team,
+				"assigned_at": gameRole.AssignedAt,
+			})
+		}
+	}
+
+	JSONResponse(w, http.StatusOK, response)
+}
+

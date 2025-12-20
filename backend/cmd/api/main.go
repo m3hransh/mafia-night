@@ -80,6 +80,9 @@ func main() {
 			r.Post("/{id}/join", gameHandler.JoinGame)
 			r.Get("/{id}/players", gameHandler.GetPlayers)
 			r.Delete("/{id}/players/{player_id}", gameHandler.RemovePlayer)
+			r.Post("/{id}/distribute-roles", gameHandler.DistributeRoles)
+			r.Get("/{id}/roles", gameHandler.GetGameRoles)
+			r.Get("/{id}/players/{player_id}/role", gameHandler.GetPlayerRole)
 		})
 
 		r.Route("/roles", func(r chi.Router) {
