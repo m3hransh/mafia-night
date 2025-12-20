@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { GradientBackground } from '@/components/GradientBackground';
 import { RoleSelectionPanel } from '@/components/RoleSelectionPanel';
 import { v4 as uuidv4 } from 'uuid';
-import { saveModeratorGame, getModeratorGame, clearModeratorGame } from '@/lib/gameStorage';
+import { saveModeratorGame, getModeratorGame, clearModeratorGame, validateModeratorGameState } from '@/lib/gameStorage';
+import { deleteGame, removePlayer } from '@/lib/api';
 
 interface Player {
   id: string;
@@ -28,6 +29,8 @@ export default function CreateGamePage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [moderatorId, setModeratorId] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [removingPlayerId, setRemovingPlayerId] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [gamePhase, setGamePhase] = useState<GamePhase>('not-created');
@@ -35,34 +38,33 @@ export default function CreateGamePage() {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
   const router = useRouter();
 
-  // Check for existing game and restore state on mount
+  // Check for existing game and restore state on mount with backend validation
   useEffect(() => {
-    const savedGame = getModeratorGame();
-    if (savedGame) {
-      // Verify game still exists on backend
-      fetch(`${API_BASE_URL}/api/games/${savedGame.gameId}`)
-        .then(res => {
+    const checkSavedGame = async () => {
+      const validatedState = await validateModeratorGameState();
+      if (validatedState) {
+        // Fetch full game data
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/games/${validatedState.gameId}`);
           if (res.ok) {
-            return res.json();
+            const gameData = await res.json();
+            setGame(gameData);
+            setModeratorId(validatedState.moderatorId);
+            setGamePhase(validatedState.phase);
+          } else {
+            clearModeratorGame();
+            setModeratorId(uuidv4());
           }
-          throw new Error('Game not found');
-        })
-        .then((gameData) => {
-          // Restore game state
-          setGame(gameData);
-          setModeratorId(savedGame.moderatorId);
-          setGamePhase(savedGame.phase);
-        })
-        .catch(() => {
-          // Game doesn't exist anymore, clear storage
+        } catch {
           clearModeratorGame();
-          const id = uuidv4();
-          setModeratorId(id);
-        });
-    } else {
-      const id = uuidv4();
-      setModeratorId(id);
-    }
+          setModeratorId(uuidv4());
+        }
+      } else {
+        setModeratorId(uuidv4());
+      }
+    };
+
+    checkSavedGame();
   }, [API_BASE_URL]);
 
   // Poll for players when game is created
@@ -176,6 +178,47 @@ export default function CreateGamePage() {
     } catch (err) {
       // User cancelled or error occurred
       console.log('Share cancelled or failed:', err);
+    }
+  };
+
+  const closeGame = async () => {
+    if (!game) return;
+
+    if (!confirm('Are you sure you want to close this game? All players will be removed and the game will be deleted.')) {
+      return;
+    }
+
+    setClosing(true);
+    setError('');
+
+    try {
+      await deleteGame(game.id, moderatorId);
+      clearModeratorGame();
+      router.push('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to close game');
+      setClosing(false);
+    }
+  };
+
+  const handleRemovePlayer = async (playerId: string, playerName: string) => {
+    if (!game) return;
+
+    if (!confirm(`Remove ${playerName} from the game?`)) {
+      return;
+    }
+
+    setRemovingPlayerId(playerId);
+    setError('');
+
+    try {
+      await removePlayer(game.id, playerId);
+      // Update local state - remove from players list
+      setPlayers(prevPlayers => prevPlayers.filter(p => p.id !== playerId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove player');
+    } finally {
+      setRemovingPlayerId(null);
     }
   };
 
@@ -300,11 +343,20 @@ export default function CreateGamePage() {
                         <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                           {index + 1}
                         </div>
-                        <span className="text-white font-semibold">{player.name}</span>
+                        <div>
+                          <span className="text-white font-semibold block">{player.name}</span>
+                          <span className="text-xs text-purple-400">
+                            Joined {new Date(player.created_at).toLocaleTimeString()}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-sm text-purple-400">
-                        Joined {new Date(player.created_at).toLocaleTimeString()}
-                      </span>
+                      <button
+                        onClick={() => handleRemovePlayer(player.id, player.name)}
+                        disabled={removingPlayerId === player.id}
+                        className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white text-sm px-4 py-2 rounded-lg transition-all"
+                      >
+                        {removingPlayerId === player.id ? 'Removing...' : 'Remove'}
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -312,20 +364,33 @@ export default function CreateGamePage() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={handleStartRoleSelection}
-                disabled={players.length === 0}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold md:text-lg px-8 py-2 rounded-xl transition-all transform hover:scale-105"
-              >
-                Select Roles
-              </button>
-              <Link
-                href="/roles"
-                className="bg-purple-600 hover:bg-purple-700 text-white font-bold md:text-lg px-2 md:px-8 py-2 rounded-xl transition-all transform hover:scale-105 inline-block text-center"
-              >
-                View Roles
-              </Link>
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={handleStartRoleSelection}
+                  disabled={players.length === 0}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold md:text-lg px-8 py-2 rounded-xl transition-all transform hover:scale-105"
+                >
+                  Select Roles
+                </button>
+                <Link
+                  href="/roles"
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold md:text-lg px-2 md:px-8 py-2 rounded-xl transition-all transform hover:scale-105 inline-block text-center"
+                >
+                  View Roles
+                </Link>
+              </div>
+
+              {/* Close Game Button */}
+              <div className="text-center">
+                <button
+                  onClick={closeGame}
+                  disabled={closing}
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg transition-all"
+                >
+                  {closing ? 'Closing Game...' : 'Close Game'}
+                </button>
+              </div>
             </div>
           </div>
         )}

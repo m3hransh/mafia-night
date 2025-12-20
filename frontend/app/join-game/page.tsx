@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { GradientBackground } from '@/components/GradientBackground';
-import { savePlayerGame, getPlayerGame, clearPlayerGame } from '@/lib/gameStorage';
+import { savePlayerGame, getPlayerGame, clearPlayerGame, validatePlayerGameState } from '@/lib/gameStorage';
+import { removePlayer } from '@/lib/api';
 
 interface Player {
   id: string;
@@ -14,41 +15,33 @@ interface Player {
 
 function JoinGameContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [gameCode, setGameCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [playerId, setPlayerId] = useState('');
   const [joined, setJoined] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState('');
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-  // Check for existing player session on mount
+  // Check for existing player session on mount with backend validation
   useEffect(() => {
-    const savedPlayer = getPlayerGame();
-    if (savedPlayer) {
-      // Verify player still exists in game
-      fetch(`${API_BASE_URL}/api/games/${savedPlayer.gameId}/players`)
-        .then(res => res.json())
-        .then((playersList: Player[]) => {
-          const playerExists = playersList.find(p => p.id === savedPlayer.playerId);
-          if (playerExists) {
-            // Restore player state
-            setGameCode(savedPlayer.gameId);
-            setPlayerName(savedPlayer.playerName);
-            setPlayerId(savedPlayer.playerId);
-            setJoined(true);
-          } else {
-            // Player not in game anymore
-            clearPlayerGame();
-          }
-        })
-        .catch(() => {
-          clearPlayerGame();
-        });
-    }
-  }, [API_BASE_URL]);
+    const checkSavedPlayer = async () => {
+      const validatedState = await validatePlayerGameState();
+      if (validatedState) {
+        // Restore player state
+        setGameCode(validatedState.gameId);
+        setPlayerName(validatedState.playerName);
+        setPlayerId(validatedState.playerId);
+        setJoined(true);
+      }
+    };
+
+    checkSavedPlayer();
+  }, []);
 
   useEffect(() => {
     const code = searchParams.get('code');
@@ -101,13 +94,31 @@ function JoinGameContent() {
       const playerData = await response.json();
       setPlayerId(playerData.id);
       setJoined(true);
-      
+
       // Save to localStorage
       savePlayerGame(gameCode, playerData.id, playerName);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join game');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const leaveGame = async () => {
+    if (!confirm('Are you sure you want to leave the game?')) {
+      return;
+    }
+
+    setLeaving(true);
+    setError('');
+
+    try {
+      await removePlayer(gameCode, playerId);
+      clearPlayerGame();
+      router.push('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to leave game');
+      setLeaving(false);
     }
   };
 
@@ -229,12 +240,21 @@ function JoinGameContent() {
             </div>
 
             <div className="text-center">
-              <p className="text-purple-300">Waiting for the game to start...</p>
-              <div className="mt-4">
+              <p className="text-purple-300 mb-6">Waiting for the game to start...</p>
+              <div className="mb-6">
                 <div className="animate-pulse inline-block w-3 h-3 bg-purple-500 rounded-full mx-1"></div>
                 <div className="animate-pulse inline-block w-3 h-3 bg-purple-500 rounded-full mx-1" style={{ animationDelay: '0.2s' }}></div>
                 <div className="animate-pulse inline-block w-3 h-3 bg-purple-500 rounded-full mx-1" style={{ animationDelay: '0.4s' }}></div>
               </div>
+
+              {/* Leave Game Button */}
+              <button
+                onClick={leaveGame}
+                disabled={leaving}
+                className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg transition-all"
+              >
+                {leaving ? 'Leaving...' : 'Leave Game'}
+              </button>
             </div>
           </div>
         )}

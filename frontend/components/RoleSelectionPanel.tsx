@@ -194,11 +194,11 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
 
       <div className="mt-8 flex gap-4 justify-center">
         <button onClick={onCancel}
-          className="bg-gray-600 hover:bg-gray-700 text-white font-bold text-lg px-8 py-4 rounded-xl transition-all">
+          className="bg-gray-600 hover:bg-gray-700 text-white font-bold md:text-lg px-3 py-3 md:px-8 md:py-4 rounded-xl transition-all">
           Cancel
         </button>
         <button onClick={handleConfirm} disabled={!isValid}
-          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105">
+          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 px-3 text-white font-bold md:text-lg md:px-8 md:py-4 rounded-xl transition-all transform hover:scale-105">
           Confirm Selection
         </button>
       </div>

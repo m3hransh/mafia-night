@@ -121,3 +121,51 @@ export function clearPlayerGame() {
     console.error('Failed to clear player game:', error);
   }
 }
+
+/**
+ * Validates moderator game state against backend
+ * Returns validated state or null if invalid
+ */
+export async function validateModeratorGameState(): Promise<ModeratorGameState | null> {
+  const state = getModeratorGame();
+  if (!state) return null;
+
+  try {
+    const { validateGameExists } = await import('./api');
+    const gameExists = await validateGameExists(state.gameId);
+
+    if (!gameExists) {
+      clearModeratorGame();
+      return null;
+    }
+
+    return state;
+  } catch (error) {
+    console.error('Failed to validate moderator game:', error);
+    return state; // Return state anyway if validation fails (network error, etc.)
+  }
+}
+
+/**
+ * Validates player game state against backend
+ * Returns validated state or null if invalid
+ */
+export async function validatePlayerGameState(): Promise<PlayerGameState | null> {
+  const state = getPlayerGame();
+  if (!state) return null;
+
+  try {
+    const { validatePlayerInGame } = await import('./api');
+    const playerInGame = await validatePlayerInGame(state.gameId, state.playerId);
+
+    if (!playerInGame) {
+      clearPlayerGame();
+      return null;
+    }
+
+    return state;
+  } catch (error) {
+    console.error('Failed to validate player game:', error);
+    return state; // Return state anyway if validation fails (network error, etc.)
+  }
+}

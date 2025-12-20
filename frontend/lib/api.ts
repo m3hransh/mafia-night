@@ -42,3 +42,89 @@ export async function fetchRoleBySlug(slug: string): Promise<Role> {
 
   return response.json();
 }
+
+// Game-related types and functions
+
+export interface Game {
+  id: string;
+  moderator_id: string;
+  status: 'pending' | 'active' | 'completed';
+  created_at: string;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  game_id: string;
+  created_at: string;
+}
+
+/**
+ * Validates if a game exists on the backend
+ */
+export async function validateGameExists(gameId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/games/${gameId}`);
+    return response.ok;
+  } catch (error) {
+    console.error('Failed to validate game:', error);
+    return false;
+  }
+}
+
+/**
+ * Validates if a player is still part of a game
+ */
+export async function validatePlayerInGame(gameId: string, playerId: string): Promise<boolean> {
+  try {
+    const players = await fetchPlayers(gameId);
+    return players.some(player => player.id === playerId);
+  } catch (error) {
+    console.error('Failed to validate player in game:', error);
+    return false;
+  }
+}
+
+/**
+ * Fetches all players in a game
+ */
+export async function fetchPlayers(gameId: string): Promise<Player[]> {
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/players`);
+
+  if (!response.ok) {
+    throw new APIError(response.status, 'Failed to fetch players');
+  }
+
+  return response.json();
+}
+
+/**
+ * Deletes a game (moderator only)
+ */
+export async function deleteGame(gameId: string, moderatorId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}`, {
+    method: 'DELETE',
+    headers: {
+      'X-Moderator-ID': moderatorId,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new APIError(response.status, error || 'Failed to delete game');
+  }
+}
+
+/**
+ * Removes a player from a game
+ */
+export async function removePlayer(gameId: string, playerId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/players/${playerId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new APIError(response.status, error || 'Failed to remove player');
+  }
+}
