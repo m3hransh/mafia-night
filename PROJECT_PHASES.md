@@ -81,11 +81,11 @@ A web application for managing physical Mafia games with:
 - [x] Implement: Join API handlers
 
 ### Frontend Tests & Implementation:
-- [ ] Test: Join game form component
-- [ ] Test: Form validation (name, game ID)
-- [ ] Test: API integration
-- [ ] Implement: Player join page
-- [ ] Implement: Success/error notifications
+- [x] Test: Join game form component
+- [x] Test: Form validation (name, game ID)
+- [x] Test: API integration
+- [x] Implement: Player join page
+- [x] Implement: Success/error notifications
 
 ### Deliverables:
 - Player join API endpoints

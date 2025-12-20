@@ -86,7 +86,7 @@ test.describe('Game Flow - Create and Join Game', () => {
       await expect(moderatorPage.locator('h2:has-text("Players")')).toContainText('(2)');
 
       // Step 5: Moderator starts role selection
-      const startButton = moderatorPage.locator('button:has-text("Select Roles & Start Game")');
+      const startButton = moderatorPage.locator('button:has-text("Select Roles")');
       await expect(startButton).toBeEnabled();
       await startButton.click();
       
@@ -236,7 +236,7 @@ test.describe('Game Flow - Create and Join Game', () => {
     await page.waitForTimeout(2000);
     
     // Start button should be disabled
-    const startButton = page.locator('button:has-text("Select Roles & Start Game")');
+    const startButton = page.locator('button:has-text("Select Roles")');
     await expect(startButton).toBeDisabled();
   });
 });

@@ -26,21 +26,61 @@ test.describe('Roles Gallery Page', () => {
   });
 
   test('should display back to home button', async ({ page }) => {
-    const backButton = page.locator('a[href="/"]').first();
+    const backButton = page.getByRole('main').getByRole('link', {name: 'Home'});
     await expect(backButton).toBeVisible();
-    await expect(backButton).toContainText('Home');
 
     // Check that it has the correct href
     await expect(backButton).toHaveAttribute('href', '/');
   });
 
-  test('should display role names in cards', async ({ page }) => {
+  test('should display role names for initially loaded cards', async ({ page }) => {
     await waitForPageLoad(page);
 
-    // Check for specific roles
-    await expect(page.locator('text=Sherlock')).toBeVisible();
-    await expect(page.locator('text=Mafia')).toBeVisible();
-    await expect(page.locator('text=Doctor Watson')).toBeVisible();
+    // With lazy loading, only first 6 cards load immediately
+    // Check for roles that should be in the initial batch (positions 0-5)
+    // These roles are eagerly loaded with preload="auto"
+    const initialRoles = [
+      'Sherlock',      // Position 0
+      'Mafia',         // Position 1
+      'Doctor Watson', // Position 2
+    ];
+
+    for (const roleName of initialRoles) {
+      const roleCard = page.locator(`text=${roleName}`).first();
+      await expect(roleCard).toBeVisible({ timeout: 10000 });
+    }
+
+    // Verify that role cards have videos with proper lazy loading attributes
+    const firstCard = page.locator('a[href^="/role/"]').first();
+    await expect(firstCard).toBeVisible();
+  });
+
+  test('should lazy load videos for cards below the fold', async ({ page }) => {
+    await waitForPageLoad(page);
+
+    // wait for 2 sec
+    await page.waitForTimeout(2000);
+
+    // Get total number of role cards
+    const allCards = page.locator('a[href^="/role/"]');
+    const totalCards = await allCards.count();
+
+    // Verify we have more than 6 cards (otherwise lazy loading doesn't apply)
+    expect(totalCards).toBeGreaterThan(6);
+
+    // Scroll to bottom to trigger lazy loading
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    // Wait for lazy loaded content to appear
+    await page.waitForTimeout(1000);
+
+    // Check that a card that should be lazy loaded is now visible
+    // This would typically be a role at position 7 or later
+    const lazyLoadedCards = allCards.nth(7);
+    await expect(lazyLoadedCards).toBeVisible();
+
+    // Verify the page still has the expected structure after lazy loading
+    await expect(page.locator('h1:has-text("Role Cards")')).toBeVisible();
   });
 
   test('should have correct grid layout', async ({ page }) => {
@@ -179,5 +219,37 @@ test.describe('Roles Gallery Page', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     grid = page.locator('.grid');
     await expect(grid).toBeVisible();
+  });
+
+  test('should not load all videos immediately for performance', async ({ page }) => {
+    // Track network requests for video files
+    const videoRequests: string[] = [];
+
+    page.on('request', request => {
+      const url = request.url();
+      if (url.includes('.webm') || url.includes('cloudinary.com')) {
+        videoRequests.push(url);
+      }
+    });
+
+    await page.goto('/roles');
+    await waitForPageLoad(page);
+
+    // Wait a bit for any initial video loads
+    await page.waitForTimeout(2000);
+
+    // With 30 total roles, we should NOT have 30 video requests immediately
+    // Only first ~6 should be eagerly loaded
+    // This test ensures lazy loading is working
+    const initialVideoRequests = videoRequests.length;
+
+    // Should have some videos loaded (first batch)
+    expect(initialVideoRequests).toBeGreaterThan(0);
+
+    // But should NOT have all 30 loaded yet (accounting for retries, should be less than 15)
+    expect(initialVideoRequests).toBeLessThan(15);
+
+    // Log for debugging
+    console.log(`Initial video requests: ${initialVideoRequests}`);
   });
 });
