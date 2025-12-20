@@ -43,7 +43,7 @@ test-backend-watch:
   cd backend && ../scripts/test-watch.sh
 
 # Run backend server
-run-backend:
+dev-backend:
   cd backend && go run ./cmd/api
 
 # Build backend binary
@@ -223,10 +223,23 @@ setup: install-frontend
 
 # Start development environment
 dev:
-  @echo "Starting development environment..."
+  @echo "Starting database..."
+  @just db
   @echo "Backend: http://localhost:8080"
   @echo "Frontend: http://localhost:3000"
-  @just up-detached
+  @echo "Opening backend and frontend in separate tmux windows..."
+  #!/usr/bin/env bash
+  # Kill existing session if it exists
+  tmux kill-session -t mafia-dev 2>/dev/null || true
+  # Create new session with backend in first window
+  tmux new-session -d -s mafia-dev -n backend
+  tmux send-keys -t mafia-dev:backend "just dev-backend" C-m
+  # Create frontend window
+  tmux new-window -t mafia-dev -n frontend
+  tmux send-keys -t mafia-dev:frontend "just dev-frontend" C-m
+  # Select backend window and attach
+  tmux select-window -t mafia-dev:backend
+  tmux attach-session -t mafia-dev
 
 # Nix commands
 # ===========
