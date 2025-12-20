@@ -6,6 +6,7 @@ Welcome to the atomic notes knowledge base for Mafia Night! 🎭
 
 ### 📚 Core Concepts
 - [[Project Overview]] - What is Mafia Night?
+- [[CURRENT_FEATURES]] - Feature status and roadmap
 - [[Tech Stack]] - Technologies used
 - [[TDD Approach]] - Test-Driven Development methodology
 - [[Project Structure]] - Codebase organization
@@ -31,6 +32,9 @@ Welcome to the atomic notes knowledge base for Mafia Night! 🎭
 - [[Database Schema]] - Data model (future)
 - [[API Design]] - REST API structure (future)
 - [[Telegram Bot]] - Bot integration (future)
+
+### ✨ Features
+- [[Game State Persistence]] - localStorage and session management
 
 ### 📈 Development Phases
 - [[Phase 1 - Infrastructure]] - ✅ Complete
@@ -68,4 +72,4 @@ If viewing in Obsidian:
 
 ---
 
-*Last updated: 2025-11-29*
+*Last updated: 2024-12-20*

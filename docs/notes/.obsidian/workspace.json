@@ -1,24 +1,24 @@
 {
   "main": {
-    "id": "f81107328a963bd0",
+    "id": "983716ebdca4f5dd",
     "type": "split",
     "children": [
       {
-        "id": "c161fe2954aa047b",
+        "id": "7efbc272055e6d17",
         "type": "tabs",
         "children": [
           {
-            "id": "9f7cd331e6a09764",
+            "id": "17f743459584f8f3",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "deployment/SSL Setup.md",
+                "file": "3d-magic-cards.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "SSL Setup"
+              "title": "3d-magic-cards"
             }
           }
         ]
@@ -27,16 +27,15 @@
     "direction": "vertical"
   },
   "left": {
-    "id": "ab35315fb2b74f32",
+    "id": "05d964f21d314c7d",
     "type": "split",
     "children": [
       {
-        "id": "e31c7f1cd6d570b0",
+        "id": "387c628fec4365b7",
         "type": "tabs",
-        "dimension": 60.895522388059696,
         "children": [
           {
-            "id": "b6bd55aebe881bf9",
+            "id": "b8ddbd23bae901f6",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -49,7 +48,7 @@
             }
           },
           {
-            "id": "781bcc4815158b8f",
+            "id": "0cbde8ddc96bb01e",
             "type": "leaf",
             "state": {
               "type": "search",
@@ -66,7 +65,7 @@
             }
           },
           {
-            "id": "f3943a19addb28a7",
+            "id": "81aa3f0b55202322",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -76,43 +75,27 @@
             }
           }
         ]
-      },
-      {
-        "id": "82c911dd8f1240c3",
-        "type": "tabs",
-        "dimension": 39.1044776119403,
-        "children": [
-          {
-            "id": "8f41c8e717284ca0",
-            "type": "leaf",
-            "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
-            }
-          }
-        ]
       }
     ],
     "direction": "horizontal",
-    "width": 611.5
+    "width": 300,
+    "collapsed": true
   },
   "right": {
-    "id": "228ac88cbf9bcb5c",
+    "id": "c7ffa094b16bdef1",
     "type": "split",
     "children": [
       {
-        "id": "debc991625b2a07a",
+        "id": "64ba8428b85fe271",
         "type": "tabs",
         "children": [
           {
-            "id": "36d922d705d6d129",
+            "id": "85e62ce3e354878e",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
-                "file": "workflows/Development Workflow.md",
+                "file": "3d-magic-cards.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -122,25 +105,25 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Development Workflow"
+              "title": "Backlinks for 3d-magic-cards"
             }
           },
           {
-            "id": "60338187c2602be0",
+            "id": "236eaa057fe58250",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "workflows/Development Workflow.md",
+                "file": "3d-magic-cards.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Development Workflow"
+              "title": "Outgoing links from 3d-magic-cards"
             }
           },
           {
-            "id": "9292fb293fef068e",
+            "id": "07e43b3eb11c1e53",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -155,7 +138,7 @@
             }
           },
           {
-            "id": "2bcc513f91ac494b",
+            "id": "00cb9cd621b32a58",
             "type": "leaf",
             "state": {
               "type": "all-properties",
@@ -169,18 +152,18 @@
             }
           },
           {
-            "id": "26f736a133e58ce8",
+            "id": "67ebb3ed8be2efdd",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
-                "file": "workflows/Development Workflow.md",
+                "file": "3d-magic-cards.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Development Workflow"
+              "title": "Outline of 3d-magic-cards"
             }
           }
         ]
@@ -193,36 +176,21 @@
   "left-ribbon": {
     "hiddenItems": {
       "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
       "canvas:Create new canvas": false,
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false,
-      "graph:Open graph view": false
+      "bases:Create new base": false
     }
   },
-  "active": "9f7cd331e6a09764",
+  "active": "17f743459584f8f3",
   "lastOpenFiles": [
-    "tools/Ent ORM.md",
-    "Untitled.base",
-    "STRUCTURE.md",
-    "README.md",
-    "workflows/Development Workflow.md",
-    "tools/PostgreSQL.md",
-    "tools/Nix Flakes.md",
-    "tools/Next.js.md",
-    "tools/Go Language.md",
-    "setup/Quick Start.md",
-    "phases/Phase 1 - Infrastructure.md",
-    "workflows/Testing Workflow.md",
-    "tools/Chi Router.md",
-    "tools/direnv.md",
-    "setup/Installing Nix.md",
-    "phases/Phase 2 - Database Layer.md",
-    "concepts/TDD Approach.md",
-    "concepts/Bazel Migration.md",
-    "concepts/Project Overview.md",
-    "architecture/Backend Architecture.md",
-    "Welcome.md"
+    "CURRENT_FEATURES.md",
+    "features/Game State Persistence.md",
+    "features",
+    "Untitled 2.base",
+    "concepts/Go HTTP Handlers.md",
+    "Untitled 1.base"
   ]
 }

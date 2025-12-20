@@ -19,6 +19,9 @@ Replace paper-based role distribution with a digital system that:
 - 📱 **Telegram Integration** - Private role delivery
 - 🎯 **Moderator Dashboard** - Full game visibility
 - ⚡ **Real-time Updates** - Live player status
+- 💾 **State Persistence** - Resume games after refresh/close
+- 🎨 **Animated Role Cards** - Video backgrounds for each role
+- 🔗 **Social Sharing** - Share game links via WhatsApp/messaging apps
 
 ## Architecture
 
@@ -42,6 +45,7 @@ Replace paper-based role distribution with a digital system that:
 - [[Frontend Architecture]] - Frontend design
 - [[Project Structure]] - Code organization
 - [[Phase 1 - Infrastructure]] - Current state
+- [[Game State Persistence]] - Browser state management
 
 ## Status
 
