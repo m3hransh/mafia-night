@@ -10,6 +10,7 @@ import (
 )
 
 // SetupTestDB creates a test database client and cleans up after the test
+// Uses sequential cleanup to avoid race conditions
 func SetupTestDB(t *testing.T) *ent.Client {
 	// Use test database URL or default to localhost
 	dbURL := os.Getenv("TEST_DATABASE_URL")
@@ -50,4 +51,5 @@ func CleanupTestDB(t *testing.T, client *ent.Client) {
 	_, _ = client.Player.Delete().Exec(ctx)
 	_, _ = client.Game.Delete().Exec(ctx)
 	_, _ = client.Role.Delete().Exec(ctx)
+	_, _ = client.Admin.Delete().Exec(ctx)
 }
