@@ -84,20 +84,42 @@ export default function RolesPage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {roles.map((role) => (
-            <Link
-              key={role.slug}
-              href={`/role/${role.slug}`}
-              className="bg-black/30 backdrop-blur-md rounded-xl p-6 hover:bg-purple-600/20 transition-all transform hover:scale-105 border border-purple-500/20"
-            >
-              <div className="text-center">
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  {role.name}
-                </h3>
-                <p className="text-sm text-purple-300">View Card</p>
-              </div>
-            </Link>
-          ))}
+          {roles.map((role) => {
+            return (
+              <Link
+                key={role.slug}
+                href={`/role/${role.slug}`}
+                className="bg-black/30 backdrop-blur-md rounded-xl overflow-hidden hover:bg-purple-600/20 transition-all transform hover:scale-105 border border-purple-500/20 relative"
+              >
+                {/* Role Video - Full Card */}
+                <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-purple-900/50 to-black">
+                  <video
+                    src={role.video}
+                    className="w-full h-full object-cover object-top"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onError={(e) => {
+                      // Fallback to gradient background if video fails to load
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  
+                  {/* Gradient overlay for better text visibility */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                  
+                  {/* Role Info Overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4 text-center backdrop-blur-md bg-black/30">
+                    <h3 className="text-xl font-semibold text-white mb-1 drop-shadow-lg">
+                      {role.name}
+                    </h3>
+                    <p className="text-sm text-purple-300 capitalize">{role.team}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </main>

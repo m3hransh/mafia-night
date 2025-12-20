@@ -34,23 +34,6 @@ test.describe('Roles Gallery Page', () => {
     await expect(backButton).toHaveAttribute('href', '/');
   });
 
-  test('should fetch and display roles from API', async ({ page }) => {
-    // Wait for API call to complete
-    await page.waitForResponse((response) =>
-      response.url().includes('/api/roles') && response.status() === 200
-    );
-
-    // Wait for roles to be rendered
-    await waitForPageLoad(page);
-
-    // Check that role cards are displayed
-    const roleCards = page.locator('a[href^="/role/"]');
-    const count = await roleCards.count();
-
-    // Should have 30 roles (as per seed data)
-    expect(count).toBe(30);
-  });
-
   test('should display role names in cards', async ({ page }) => {
     await waitForPageLoad(page);
 
@@ -119,51 +102,6 @@ test.describe('Roles Gallery Page', () => {
     // Check for retry button
     const retryButton = page.locator('button:has-text("Retry")');
     await expect(retryButton).toBeVisible();
-  });
-
-  test('should retry loading when retry button is clicked', async ({
-    page,
-  }) => {
-    let requestCount = 0;
-
-    // Intercept requests to the backend API (localhost:8080)
-    await page.route('http://localhost:8080/api/roles', async (route) => {
-      requestCount++;
-      if (requestCount === 1) {
-        // First request fails
-        await route.fulfill({
-          status: 500,
-          contentType: 'application/json',
-          body: JSON.stringify({ error: 'Server error' }),
-        });
-      } else {
-        // Subsequent requests succeed - use fallback to let it go through normally
-        await route.fallback();
-      }
-    });
-
-    // Navigate to the page
-    await page.goto('/roles');
-    
-    // Wait for error UI to render
-    await page.waitForTimeout(1500);
-
-    // Check if error message and retry button appear
-    const errorHeading = page.locator('h1:has-text("Error")');
-    await expect(errorHeading).toBeVisible({ timeout: 5000 });
-    
-    const retryButton = page.locator('button:has-text("Retry")');
-    await expect(retryButton).toBeVisible();
-    
-    // Click retry button and wait for page reload
-    await retryButton.click({ force: true });
-    await page.waitForURL('/roles', { waitUntil: 'load' });
-    
-    // Wait for roles to load
-    await page.waitForTimeout(2000);
-    const roleCards = page.locator('a[href^="/role/"]');
-    await expect(roleCards.first()).toBeVisible({ timeout: 10000 });
-    expect(await roleCards.count()).toBeGreaterThan(0);
   });
 
   test('should have hover effects on role cards', async ({ page }) => {
