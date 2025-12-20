@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/admin"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
@@ -17,6 +18,66 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	adminFields := schema.Admin{}.Fields()
+	_ = adminFields
+	// adminDescUsername is the schema descriptor for username field.
+	adminDescUsername := adminFields[1].Descriptor()
+	// admin.UsernameValidator is a validator for the "username" field. It is called by the builders before save.
+	admin.UsernameValidator = func() func(string) error {
+		validators := adminDescUsername.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(username string) error {
+			for _, fn := range fns {
+				if err := fn(username); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// adminDescEmail is the schema descriptor for email field.
+	adminDescEmail := adminFields[2].Descriptor()
+	// admin.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	admin.EmailValidator = func() func(string) error {
+		validators := adminDescEmail.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(email string) error {
+			for _, fn := range fns {
+				if err := fn(email); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// adminDescPasswordHash is the schema descriptor for password_hash field.
+	adminDescPasswordHash := adminFields[3].Descriptor()
+	// admin.PasswordHashValidator is a validator for the "password_hash" field. It is called by the builders before save.
+	admin.PasswordHashValidator = adminDescPasswordHash.Validators[0].(func(string) error)
+	// adminDescIsActive is the schema descriptor for is_active field.
+	adminDescIsActive := adminFields[4].Descriptor()
+	// admin.DefaultIsActive holds the default value on creation for the is_active field.
+	admin.DefaultIsActive = adminDescIsActive.Default.(bool)
+	// adminDescCreatedAt is the schema descriptor for created_at field.
+	adminDescCreatedAt := adminFields[5].Descriptor()
+	// admin.DefaultCreatedAt holds the default value on creation for the created_at field.
+	admin.DefaultCreatedAt = adminDescCreatedAt.Default.(func() time.Time)
+	// adminDescUpdatedAt is the schema descriptor for updated_at field.
+	adminDescUpdatedAt := adminFields[6].Descriptor()
+	// admin.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	admin.DefaultUpdatedAt = adminDescUpdatedAt.Default.(func() time.Time)
+	// admin.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	admin.UpdateDefaultUpdatedAt = adminDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// adminDescID is the schema descriptor for id field.
+	adminDescID := adminFields[0].Descriptor()
+	// admin.DefaultID holds the default value on creation for the id field.
+	admin.DefaultID = adminDescID.Default.(func() uuid.UUID)
 	gameFields := schema.Game{}.Fields()
 	_ = gameFields
 	// gameDescModeratorID is the schema descriptor for moderator_id field.

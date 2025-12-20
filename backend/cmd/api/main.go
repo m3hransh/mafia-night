@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 
 	"github.com/mafia-night/backend/ent"
@@ -40,10 +41,12 @@ func main() {
 	// Initialize services
 	gameService := service.NewGameService(client)
 	roleService := service.NewRoleService(client)
+	adminService := service.NewAdminService(client)
 
 	// Initialize handlers
 	gameHandler := handler.NewGameHandler(gameService)
 	roleHandler := handler.NewRoleHandler(roleService)
+	adminHandler := handler.NewAdminHandler(adminService)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -59,7 +62,7 @@ func main() {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Moderator-ID"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Moderator-ID", "X-Admin-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
@@ -89,6 +92,34 @@ func main() {
 			r.Get("/", roleHandler.GetRoles)
 			r.Get("/{slug}", roleHandler.GetRoleBySlug)
 		})
+
+		// Admin routes
+		r.Route("/admin", func(r chi.Router) {
+			// Public admin routes
+			r.Post("/login", adminHandler.Login)
+
+			// Protected admin routes (require authentication)
+			r.Group(func(r chi.Router) {
+				r.Use(adminAuthMiddleware(client))
+
+				// Admin user management
+				r.Route("/users", func(r chi.Router) {
+					r.Post("/", adminHandler.CreateAdmin)
+					r.Get("/", adminHandler.ListAdmins)
+					r.Get("/{id}", adminHandler.GetAdmin)
+					r.Patch("/{id}", adminHandler.UpdateAdmin)
+					r.Delete("/{id}", adminHandler.DeleteAdmin)
+					r.Post("/{id}/change-password", adminHandler.ChangePassword)
+				})
+
+				// Role management
+				r.Route("/roles", func(r chi.Router) {
+					r.Post("/", roleHandler.CreateRole)
+					r.Patch("/{id}", roleHandler.UpdateRole)
+					r.Delete("/{id}", roleHandler.DeleteRole)
+				})
+			})
+		})
 	})
 
 	// Start server
@@ -106,6 +137,37 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status":"healthy"}`))
+}
+
+// adminAuthMiddleware verifies admin authentication token
+func adminAuthMiddleware(client *ent.Client) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token := r.Header.Get("X-Admin-Token")
+			if token == "" {
+				http.Error(w, `{"error":"missing authentication token"}`, http.StatusUnauthorized)
+				return
+			}
+
+			// Parse token as UUID (admin ID)
+			adminID, err := uuid.Parse(token)
+			if err != nil {
+				http.Error(w, `{"error":"invalid authentication token"}`, http.StatusUnauthorized)
+				return
+			}
+
+			// Verify admin exists and is active
+			admin, err := client.Admin.Get(r.Context(), adminID)
+			if err != nil || !admin.IsActive {
+				http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+				return
+			}
+
+			// Add admin ID to context for handlers to use
+			ctx := context.WithValue(r.Context(), "admin_id", adminID)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 // getAllowedOrigins returns the list of allowed CORS origins

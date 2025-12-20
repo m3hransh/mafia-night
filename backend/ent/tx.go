@@ -12,6 +12,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Admin is the client for interacting with the Admin builders.
+	Admin *AdminClient
 	// Game is the client for interacting with the Game builders.
 	Game *GameClient
 	// GameRole is the client for interacting with the GameRole builders.
@@ -151,6 +153,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Admin = NewAdminClient(tx.config)
 	tx.Game = NewGameClient(tx.config)
 	tx.GameRole = NewGameRoleClient(tx.config)
 	tx.Player = NewPlayerClient(tx.config)
@@ -164,7 +167,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Game.QueryXXX(), the query will be executed
+// applies a query, for example: Admin.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

@@ -8,6 +8,35 @@ import (
 )
 
 var (
+	// AdminsColumns holds the columns for the "admins" table.
+	AdminsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "username", Type: field.TypeString, Unique: true, Size: 50},
+		{Name: "email", Type: field.TypeString, Unique: true, Size: 100},
+		{Name: "password_hash", Type: field.TypeString},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "last_login", Type: field.TypeTime, Nullable: true},
+	}
+	// AdminsTable holds the schema information for the "admins" table.
+	AdminsTable = &schema.Table{
+		Name:       "admins",
+		Columns:    AdminsColumns,
+		PrimaryKey: []*schema.Column{AdminsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "admin_username",
+				Unique:  false,
+				Columns: []*schema.Column{AdminsColumns[1]},
+			},
+			{
+				Name:    "admin_email",
+				Unique:  false,
+				Columns: []*schema.Column{AdminsColumns[2]},
+			},
+		},
+	}
 	// GamesColumns holds the columns for the "games" table.
 	GamesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true, Size: 12},
@@ -133,6 +162,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AdminsTable,
 		GamesTable,
 		GameRolesTable,
 		PlayersTable,
