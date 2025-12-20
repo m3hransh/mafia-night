@@ -96,10 +96,21 @@ export function CardScene({ videoSrc, roleName, description }: CardSceneProps) {
       // )}
       */}
       <Canvas>
-        <Suspense fallback={null}>
+        <Suspense
+          fallback={
+            <mesh>
+              <boxGeometry args={[2, 3, 0.1]} />
+              <meshStandardMaterial color="#1e293b" />
+            </mesh>
+          }
+        >
           {/* Camera - zoomed out more on mobile for better margins */}
           <PerspectiveCamera makeDefault position={[0, 0, 6]} fov={isMobile ? 55 : 50} />
-          
+
+          {/* Lighting */}
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[5, 5, 5]} intensity={1} />
+
           {/* The Magic Card */}
           <MagicCard3D
             videoSrc={videoSrc}

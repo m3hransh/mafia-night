@@ -218,7 +218,7 @@ export default function CreateGamePage() {
               <button
                 onClick={createGame}
                 disabled={loading}
-                className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed text-white font-bold text-xl px-12 py-6 rounded-xl transition-all transform hover:scale-105 shadow-2xl"
+                className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed text-white font-bold text-xl px-3 py-3 md:px-12 md:py-6 rounded-xl transition-all transform hover:scale-105 shadow-2xl"
               >
                 {loading ? 'Creating Game...' : 'Create Game'}
               </button>
@@ -316,13 +316,13 @@ export default function CreateGamePage() {
               <button
                 onClick={handleStartRoleSelection}
                 disabled={players.length === 0}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105"
+                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold md:text-lg px-8 py-2 rounded-xl transition-all transform hover:scale-105"
               >
-                Select Roles & Start Game
+                Select Roles
               </button>
               <Link
                 href="/roles"
-                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105 inline-block"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold md:text-lg px-2 md:px-8 py-2 rounded-xl transition-all transform hover:scale-105 inline-block text-center"
               >
                 View Roles
               </Link>

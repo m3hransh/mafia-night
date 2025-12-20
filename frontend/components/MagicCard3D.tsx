@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox, useVideoTexture, Text } from '@react-three/drei';
 import * as THREE from 'three';
+import { optimizeCloudinaryVideo } from '@/lib/cloudinary';
 
 interface MagicCard3DProps {
   videoSrc: string;
@@ -23,24 +24,26 @@ export function MagicCard3D({
   gyroEnabled = false
 }: MagicCard3DProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const spinnerRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
-  
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoOpacity, setVideoOpacity] = useState(0);
+
   // Use gyro data from props if available, otherwise default
   const gyroRotation = gyroData || { beta: 0, gamma: 0 };
-  
-  const videoTexture = useVideoTexture(videoSrc, {
+
+  // Optimize video URL for current device
+  const optimizedVideoSrc = useMemo(() => optimizeCloudinaryVideo(videoSrc), [videoSrc]);
+
+  const videoTexture = useVideoTexture(optimizedVideoSrc, {
     loop: true,
     muted: true,
     start: true,
+    unsuspend: 'loadeddata',
   });
-
-  // Ensure videoTexture is loaded
-  if (!videoTexture) {
-    return null;
-  }
 
   // Smooth mouse tracking
   const targetRotation = useRef({ x: 0, y: 0 });
@@ -52,6 +55,50 @@ export function MagicCard3D({
     };
     checkMobile();
   }, []);
+
+  // Track video loading state and fade in
+  useEffect(() => {
+    if (videoTexture && videoTexture.image) {
+      const video = videoTexture.image as HTMLVideoElement;
+
+      const handleLoadedData = () => {
+        setVideoLoaded(true);
+      };
+
+      const handleCanPlay = () => {
+        // Start fade-in animation
+        const startTime = Date.now();
+        const duration = 800; // 800ms fade-in
+
+        const animate = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          // Ease-out curve for smooth fade
+          const easedProgress = 1 - Math.pow(1 - progress, 3);
+          setVideoOpacity(easedProgress);
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          }
+        };
+        animate();
+      };
+
+      if (video.readyState >= 3) {
+        // Video already loaded
+        handleLoadedData();
+        handleCanPlay();
+      } else {
+        video.addEventListener('loadeddata', handleLoadedData);
+        video.addEventListener('canplay', handleCanPlay);
+      }
+
+      return () => {
+        video.removeEventListener('loadeddata', handleLoadedData);
+        video.removeEventListener('canplay', handleCanPlay);
+      };
+    }
+  }, [videoTexture]);
 
   // Mouse tracking for desktop
   useEffect(() => {
@@ -120,6 +167,11 @@ export function MagicCard3D({
 
       groupRef.current.position.z = position[2] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
+
+    // Animate loading spinner
+    if (spinnerRef.current && !videoLoaded) {
+      spinnerRef.current.rotation.z += delta * 2; // Rotate at 2 radians per second
+    }
   });
 
   const handlePointerOver = () => {
@@ -157,6 +209,7 @@ export function MagicCard3D({
       uniforms: {
         videoTexture: { value: videoTexture },
         textureAspect: { value: 1.0 },
+        opacity: { value: 0.0 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -168,26 +221,27 @@ export function MagicCard3D({
       fragmentShader: `
         uniform sampler2D videoTexture;
         uniform float textureAspect;
+        uniform float opacity;
         varying vec2 vUv;
-        
+
         void main() {
           // Center point of the circle
           vec2 center = vec2(0.5, 0.5);
-          
+
           // Calculate distance from center for circular mask
           float dist = distance(vUv, center);
-          
+
           // Discard fragments outside the circle
           if (dist > 0.5 ) {
             discard;
           }
-          
+
           // Crop a 2:3 (width:height) ratio from the top of the video
           vec2 adjustedUv = vUv;
-          
+
           // Target aspect ratio 2:3 = 0.667 (narrower for better head framing)
           float targetAspect = 1.0;
-          
+
           if (textureAspect < targetAspect) {
             // Video is narrower than 2:3 (like portrait videos)
             // Take full width, crop from bottom
@@ -200,8 +254,9 @@ export function MagicCard3D({
             adjustedUv.x = (vUv.x - 0.5) * widthRatio + 0.5;
           }
           // If textureAspect == targetAspect, no adjustment needed
-          
-          gl_FragColor = texture2D(videoTexture, adjustedUv);
+
+          vec4 videoColor = texture2D(videoTexture, adjustedUv);
+          gl_FragColor = vec4(videoColor.rgb, videoColor.a * opacity);
         }
       `,
       side: THREE.DoubleSide,
@@ -210,7 +265,7 @@ export function MagicCard3D({
     });
 
     // Update aspect ratio when texture loads
-    if (videoTexture.image) {
+    if (videoTexture && videoTexture.image) {
       const aspect = videoTexture.image.videoWidth / videoTexture.image.videoHeight;
       material.uniforms.textureAspect.value = aspect;
     }
@@ -316,14 +371,14 @@ export function MagicCard3D({
 
   // Update aspect ratio dynamically
   useEffect(() => {
-    if (videoTexture.image && circularMaterial) {
+    if (videoTexture && videoTexture.image && circularMaterial) {
       const updateAspect = () => {
         const aspect = videoTexture.image.videoWidth / videoTexture.image.videoHeight;
         if (circularMaterial.uniforms.textureAspect) {
           circularMaterial.uniforms.textureAspect.value = aspect;
         }
       };
-      
+
       if (videoTexture.image.videoWidth) {
         updateAspect();
       } else {
@@ -332,6 +387,13 @@ export function MagicCard3D({
       }
     }
   }, [videoTexture, circularMaterial]);
+
+  // Update video opacity uniform
+  useEffect(() => {
+    if (circularMaterial && circularMaterial.uniforms.opacity) {
+      circularMaterial.uniforms.opacity.value = videoOpacity;
+    }
+  }, [videoOpacity, circularMaterial]);
 
   // Silver/platinum frame color
   const frameColor = '#C0C0C0';
@@ -384,10 +446,25 @@ export function MagicCard3D({
           />
         </RoundedBox>
 
+      {/* Black placeholder circle while video is loading */}
+      {!videoLoaded && (
+        <group position={[0, cardHeight / 2 - circleRadius - padding, 0]}>
+          {/* Black circle background */}
+          <mesh position={[0, 0, 0.15]} renderOrder={996}>
+            <circleGeometry args={[circleRadius, 64]} />
+            <meshBasicMaterial color="#000000" />
+          </mesh>
+
+          {/* Loading spinner ring */}
+        </group>
+      )}
+
       {/* Circular video portrait at top center with padding */}
-      <mesh position={[0, cardHeight / 2 - circleRadius - padding, 0.16]} material={circularMaterial} renderOrder={998}>
-        <planeGeometry args={[videoDisplayWidth, videoDisplayHeight]} />
-      </mesh>
+      {videoTexture && (
+        <mesh position={[0, cardHeight / 2 - circleRadius - padding, 0.16]} material={circularMaterial} renderOrder={998}>
+          <planeGeometry args={[videoDisplayWidth, videoDisplayHeight]} />
+        </mesh>
+      )}
 
       {/* Golden gradient ring around video circle */}
       <mesh position={[0, cardHeight / 2 - circleRadius - padding, 0.17]} material={goldenRingMaterial} renderOrder={997}>

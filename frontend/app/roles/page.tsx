@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { fetchRoles, Role, APIError } from '@/lib/api';
 import { GradientBackground } from '@/components/GradientBackground';
+import { OptimizedVideo } from '@/components/OptimizedVideo';
 
 export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -83,8 +84,11 @@ export default function RolesPage() {
           <p className="text-2xl text-purple-300">Select a Role to View</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {roles.map((role) => {
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-6 gap-2">
+          {roles.map((role, index) => {
+            // Preload first 6 videos (above the fold), lazy load the rest
+            const shouldPreload = index < 6;
+
             return (
               <Link
                 key={role.slug}
@@ -93,28 +97,26 @@ export default function RolesPage() {
               >
                 {/* Role Video - Full Card */}
                 <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-purple-900/50 to-black">
-                  <video
+                  <OptimizedVideo
                     src={role.video}
                     className="w-full h-full object-cover object-top"
                     autoPlay
                     loop
                     muted
                     playsInline
-                    onError={(e) => {
-                      // Fallback to gradient background if video fails to load
-                      e.currentTarget.style.display = 'none';
-                    }}
+                    lazy={!shouldPreload}
+                    preload={shouldPreload ? 'auto' : 'metadata'}
                   />
-                  
+
                   {/* Gradient overlay for better text visibility */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none" />
+
                   {/* Role Info Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 text-center backdrop-blur-md bg-black/30">
-                    <h3 className="text-xl font-semibold text-white mb-1 drop-shadow-lg">
+                  <div className="absolute bottom-0 left-0 right-0 p-2 text-center backdrop-blur-md bg-black/10">
+                    <h3 className="text-sm md:text-xl font-semibold text-white mb-1 drop-shadow-lg">
                       {role.name}
                     </h3>
-                    <p className="text-sm text-purple-300 capitalize">{role.team}</p>
+                    <p className="text-xs text-purple-300 capitalize">{role.team}</p>
                   </div>
                 </div>
               </Link>
