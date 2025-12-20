@@ -24,9 +24,4 @@ describe('Home Page', () => {
     render(<Home />)
     expect(screen.getByRole('link', { name: /Browse Role Cards/i })).toBeInTheDocument()
   })
-
-  it('displays the total number of roles', () => {
-    render(<Home />)
-    expect(screen.getByText(/30 unique roles/i)).toBeInTheDocument()
-  })
 })

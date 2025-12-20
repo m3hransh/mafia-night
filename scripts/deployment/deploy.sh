@@ -72,7 +72,7 @@ echo -e "${YELLOW}Application should be available at: http://$DEPLOY_HOST${NC}"
 # Health check
 echo -e "${YELLOW}Performing health check...${NC}"
 sleep 10
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://$DEPLOY_HOST/health || echo "000")
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://$DEPLOY_HOST/health || echo "000")
 
 if [ "$HTTP_CODE" = "200" ]; then
     echo -e "${GREEN}Health check passed!${NC}"
