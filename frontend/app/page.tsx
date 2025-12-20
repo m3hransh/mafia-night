@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { GradientBackground } from '@/components/GradientBackground';
+import { BuyCoffee } from '@/components/BuyCoffee';
 
 export default function Home() {
   return (
     <main className="relative w-full min-h-screen flex items-center justify-center p-8 overflow-hidden">
       {/* Animated gradient background */}
       <GradientBackground />
+      <BuyCoffee />
 
       <div className="max-w-4xl mx-auto text-center relative z-10">
         <h1 className="text-8xl font-bold text-white mb-6 drop-shadow-2xl animate-pulse-slow">
