@@ -66,6 +66,8 @@ Before restoring any state, the system:
 - `mafia_night_player` - Player game state
 
 ## Links
+- [[ROLE_DISTRIBUTION_FEATURE]] - Role distribution uses same persistence patterns
+- [[CURRENT_FEATURES]] - Overall feature status
 - [[Project Overview]]
 - [[Frontend Architecture]]
 - [[Tech Stack]]

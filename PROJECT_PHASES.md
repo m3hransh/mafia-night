@@ -98,10 +98,10 @@ A web application for managing physical Mafia games with:
 **Goal:** Create system for defining and managing Mafia roles
 
 ### Backend Tests & Implementation:
-- [ ] Test: GET /api/roles - List available roles
-- [ ] Test: Role configuration (Mafia, Doctor, Detective, Villager, etc.)
-- [ ] Test: POST /api/games/:id/roles - Configure roles for game
-- [ ] Test: Validation: roles count matches players count
+- [x] Test: GET /api/roles - List available roles
+- [x] Test: Role configuration (Mafia, Doctor, Detective, Villager, etc.)
+- [x] Test: POST /api/games/:id/roles - Configure roles for game
+- [x] Test: Validation: roles count matches players count
 - [ ] Implement: Predefined role templates
 - [ ] Implement: Custom role configuration
 

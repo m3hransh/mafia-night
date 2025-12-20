@@ -35,6 +35,7 @@ Welcome to the atomic notes knowledge base for Mafia Night! 🎭
 
 ### ✨ Features
 - [[Game State Persistence]] - localStorage and session management
+- [[ROLE_DISTRIBUTION_FEATURE]] - Role distribution system for moderators and players
 
 ### 📈 Development Phases
 - [[Phase 1 - Infrastructure]] - ✅ Complete
@@ -48,6 +49,7 @@ Welcome to the atomic notes knowledge base for Mafia Night! 🎭
 - [[Testing Workflow]] - TDD cycle
 - [[Build Workflow]] - Building the project
 - [[Docker Workflow]] - Using containers
+- [[TESTING_ROLE_DISTRIBUTION]] - Manual and API testing guide for role distribution
 
 ### 📖 Historical Context
 - [[Bazel Migration]] - Why we moved from Bazel to Nix

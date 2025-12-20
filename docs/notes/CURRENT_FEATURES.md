@@ -35,6 +35,11 @@
 ### 🎭 Role Management
 - **30 Unique Roles** - Seeded into database with slug-based URLs
 - **Role Selection Panel** - Moderator can select roles for players
+- **Role Distribution** - Random role assignment to players
+  - Moderator distributes roles after selection
+  - Players automatically see their assigned role card
+  - Roles grouped by team (Mafia/Village/Independent) in moderator view
+  - Transaction-safe assignment with validation
 - **Role Details Page** - View role description, abilities, team
 - **Role Gallery** - Browse all roles with video previews
 
@@ -120,12 +125,19 @@ backend/
 ## Recent Updates (December 20, 2024)
 
 ### Latest Changes
-1. **Game State Persistence** - Added localStorage for moderator/player sessions
-2. **Role Card Videos** - Changed from YouTube thumbnails to direct `.webm` video playback
-3. **Darker Background** - Updated gradient from slate to pure black
-4. **Test Fixes** - Fixed CI test failures with sequential execution
-5. **Buy Me a Coffee** - Added support button with responsive design
-6. **Share Button** - Added native share API for game links
+1. **Role Distribution Feature** - Complete implementation ✨
+   - Backend API endpoints for role distribution
+   - Moderator view: see all role assignments grouped by team
+   - Player view: automatically receive and display assigned role card
+   - Random role shuffling with crypto-secure algorithm
+   - Transaction-safe database operations
+   - Role polling for players (checks every 3 seconds)
+2. **Game State Persistence** - Added localStorage for moderator/player sessions
+3. **Role Card Videos** - Changed from YouTube thumbnails to direct `.webm` video playback
+4. **Darker Background** - Updated gradient from slate to pure black
+5. **Test Fixes** - Fixed CI test failures with sequential execution
+6. **Buy Me a Coffee** - Added support button with responsive design
+7. **Share Button** - Added native share API for game links
 
 ## Next Steps 🚧
 
@@ -133,12 +145,12 @@ backend/
 - [ ] Telegram bot integration for role distribution
 - [ ] WebSocket support for real-time updates (replace polling)
 - [ ] Game status management (start/end game)
-- [ ] Player removal functionality
-- [ ] Role assignment and distribution
-- [ ] Game history and statistics
 - [ ] Multiple game support for moderators
+- [ ] Game history and statistics
 - [ ] Better error handling and user feedback
 - [ ] Offline support with service workers
+- [ ] Role re-distribution capability
+- [ ] Sound effects for role assignment
 
 ### Technical Debt
 - [ ] Replace polling with WebSocket connections
@@ -150,6 +162,8 @@ backend/
 ## Links
 - [[Project Overview]]
 - [[Game State Persistence]]
+- [[ROLE_DISTRIBUTION_FEATURE]]
+- [[TESTING_ROLE_DISTRIBUTION]]
 - [[Tech Stack]]
 - [[Phase 1 - Infrastructure]]
 - [[Testing Workflow]]
