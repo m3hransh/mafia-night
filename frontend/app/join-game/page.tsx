@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GradientBackground } from '@/components/GradientBackground';
+import { savePlayerGame, getPlayerGame, clearPlayerGame } from '@/lib/gameStorage';
 
 interface Player {
   id: string;
@@ -15,6 +16,7 @@ function JoinGameContent() {
   const searchParams = useSearchParams();
   const [gameCode, setGameCode] = useState('');
   const [playerName, setPlayerName] = useState('');
+  const [playerId, setPlayerId] = useState('');
   const [joined, setJoined] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,12 +24,38 @@ function JoinGameContent() {
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+  // Check for existing player session on mount
+  useEffect(() => {
+    const savedPlayer = getPlayerGame();
+    if (savedPlayer) {
+      // Verify player still exists in game
+      fetch(`${API_BASE_URL}/api/games/${savedPlayer.gameId}/players`)
+        .then(res => res.json())
+        .then((playersList: Player[]) => {
+          const playerExists = playersList.find(p => p.id === savedPlayer.playerId);
+          if (playerExists) {
+            // Restore player state
+            setGameCode(savedPlayer.gameId);
+            setPlayerName(savedPlayer.playerName);
+            setPlayerId(savedPlayer.playerId);
+            setJoined(true);
+          } else {
+            // Player not in game anymore
+            clearPlayerGame();
+          }
+        })
+        .catch(() => {
+          clearPlayerGame();
+        });
+    }
+  }, [API_BASE_URL]);
+
   useEffect(() => {
     const code = searchParams.get('code');
-    if (code) {
+    if (code && !gameCode) {
       setGameCode(code);
     }
-  }, [searchParams]);
+  }, [searchParams, gameCode]);
 
   // Poll for players after joining
   useEffect(() => {
@@ -70,7 +98,12 @@ function JoinGameContent() {
         throw new Error(errorData.error || 'Failed to join game');
       }
 
+      const playerData = await response.json();
+      setPlayerId(playerData.id);
       setJoined(true);
+      
+      // Save to localStorage
+      savePlayerGame(gameCode, playerData.id, playerName);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join game');
     } finally {

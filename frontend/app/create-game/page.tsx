@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { GradientBackground } from '@/components/GradientBackground';
 import { RoleSelectionPanel } from '@/components/RoleSelectionPanel';
 import { v4 as uuidv4 } from 'uuid';
+import { saveModeratorGame, getModeratorGame, clearModeratorGame } from '@/lib/gameStorage';
 
 interface Player {
   id: string;
@@ -31,12 +33,37 @@ export default function CreateGamePage() {
   const [gamePhase, setGamePhase] = useState<GamePhase>('not-created');
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const router = useRouter();
 
-  // Generate moderator ID on mount
+  // Check for existing game and restore state on mount
   useEffect(() => {
-    const id = uuidv4();
-    setModeratorId(id);
-  }, []);
+    const savedGame = getModeratorGame();
+    if (savedGame) {
+      // Verify game still exists on backend
+      fetch(`${API_BASE_URL}/api/games/${savedGame.gameId}`)
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          }
+          throw new Error('Game not found');
+        })
+        .then((gameData) => {
+          // Restore game state
+          setGame(gameData);
+          setModeratorId(savedGame.moderatorId);
+          setGamePhase(savedGame.phase);
+        })
+        .catch(() => {
+          // Game doesn't exist anymore, clear storage
+          clearModeratorGame();
+          const id = uuidv4();
+          setModeratorId(id);
+        });
+    } else {
+      const id = uuidv4();
+      setModeratorId(id);
+    }
+  }, [API_BASE_URL]);
 
   // Poll for players when game is created
   useEffect(() => {
@@ -81,6 +108,9 @@ export default function CreateGamePage() {
       const gameData = await response.json();
       setGame(gameData);
       setGamePhase('waiting-for-players');
+      
+      // Save to localStorage
+      saveModeratorGame(gameData.id, moderatorId, 'waiting-for-players');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create game');
     } finally {
@@ -102,8 +132,9 @@ export default function CreateGamePage() {
   };
 
   const handleStartRoleSelection = () => {
-    if (players.length > 0) {
+    if (players.length > 0 && game) {
       setGamePhase('selecting-roles');
+      saveModeratorGame(game.id, moderatorId, 'selecting-roles');
     }
   };
 
@@ -111,12 +142,18 @@ export default function CreateGamePage() {
     // TODO: Send selected roles to backend
     console.log('Selected roles:', selectedRoles);
     setGamePhase('game-started');
+    if (game) {
+      saveModeratorGame(game.id, moderatorId, 'game-started');
+    }
     // Here you would typically send the role selection to the backend
     // and transition to the actual game screen
   };
 
   const handleCancelRoleSelection = () => {
     setGamePhase('waiting-for-players');
+    if (game) {
+      saveModeratorGame(game.id, moderatorId, 'waiting-for-players');
+    }
   };
 
   const shareGame = async () => {
