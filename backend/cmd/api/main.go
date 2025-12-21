@@ -76,6 +76,9 @@ func main() {
 
 	// API routes
 	r.Route("/api", func(r chi.Router) {
+		// WebSocket stats endpoint (for monitoring)
+		r.Get("/ws-stats", wsHandler.HandleWebSocketStats)
+
 		r.Route("/games", func(r chi.Router) {
 			r.Post("/", gameHandler.CreateGame)
 			r.Get("/{id}", gameHandler.GetGame)
