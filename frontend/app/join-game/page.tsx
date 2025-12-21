@@ -7,6 +7,7 @@ import { GradientBackground } from '@/components/GradientBackground';
 import { savePlayerGame, getPlayerGame, clearPlayerGame, validatePlayerGameState } from '@/lib/gameStorage';
 import { removePlayer, getPlayerRole, Role } from '@/lib/api';
 import { OptimizedVideo } from '@/components/OptimizedVideo';
+import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 
 interface Player {
   id: string;
@@ -26,7 +27,6 @@ function JoinGameContent() {
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState('');
   const [assignedRole, setAssignedRole] = useState<Role | null>(null);
-  const [checkingRole, setCheckingRole] = useState(false);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -53,51 +53,40 @@ function JoinGameContent() {
     }
   }, [searchParams, gameCode]);
 
-  // Poll for players after joining
-  useEffect(() => {
-    if (!joined || !gameCode) return;
-
-    const fetchPlayers = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/games/${gameCode}/players`);
-        if (response.ok) {
-          const data = await response.json();
-          setPlayers(data);
+  // WebSocket connection for real-time updates
+  useGameWebSocket({
+    gameId: gameCode,
+    enabled: joined && !assignedRole,
+    onPlayerJoined: (player) => {
+      setPlayers(prev => {
+        if (prev.some(p => p.id === player.id)) return prev;
+        return [...prev, player];
+      });
+    },
+    onPlayerLeft: (playerId) => {
+      setPlayers(prev => prev.filter(p => p.id !== playerId));
+    },
+    onRolesDistributed: async () => {
+      // Check if we got a role
+      if (gameCode && playerId) {
+        try {
+          const role = await getPlayerRole(gameCode, playerId);
+          setAssignedRole(role);
+        } catch (err) {
+          console.error('Error fetching role after distribution:', err);
         }
-      } catch (err) {
-        console.error('Error fetching players:', err);
       }
-    };
-
-    fetchPlayers();
-    const interval = setInterval(fetchPlayers, 2000);
-
-    return () => clearInterval(interval);
-  }, [joined, gameCode, API_BASE_URL]);
-
-  // Poll for role assignment
-  useEffect(() => {
-    if (!joined || !gameCode || !playerId || assignedRole) return;
-
-    const checkForRole = async () => {
-      if (checkingRole) return;
-      
-      setCheckingRole(true);
-      try {
-        const role = await getPlayerRole(gameCode, playerId);
-        setAssignedRole(role);
-      } catch (err) {
-        // Role not assigned yet, continue polling
-      } finally {
-        setCheckingRole(false);
+    },
+    onGameDeleted: () => {
+      clearPlayerGame();
+      router.push('/');
+    },
+    onUpdate: (update) => {
+      if (update.type === 'initial_state' && update.payload?.players) {
+        setPlayers(update.payload.players);
       }
-    };
-
-    checkForRole();
-    const interval = setInterval(checkForRole, 3000);
-
-    return () => clearInterval(interval);
-  }, [joined, gameCode, playerId, assignedRole, checkingRole]);
+    }
+  });
 
   const joinGame = async (e: React.FormEvent) => {
     e.preventDefault();

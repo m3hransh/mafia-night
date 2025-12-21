@@ -8,6 +8,7 @@ import { RoleSelectionPanel } from '@/components/RoleSelectionPanel';
 import { v4 as uuidv4 } from 'uuid';
 import { saveModeratorGame, getModeratorGame, clearModeratorGame, validateModeratorGameState } from '@/lib/gameStorage';
 import { deleteGame, removePlayer, distributeRoles, getGameRoles, PlayerRoleAssignment } from '@/lib/api';
+import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 
 interface Player {
   id: string;
@@ -69,27 +70,34 @@ export default function CreateGamePage() {
     checkSavedGame();
   }, [API_BASE_URL]);
 
-  // Poll for players when game is created
-  useEffect(() => {
-    if (!game) return;
-
-    const fetchPlayers = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/games/${game.id}/players`);
-        if (response.ok) {
-          const data = await response.json();
-          setPlayers(data);
-        }
-      } catch (err) {
-        console.error('Error fetching players:', err);
+  // WebSocket connection for real-time updates
+  useGameWebSocket({
+    gameId: game?.id || '',
+    enabled: !!game && gamePhase !== 'game-started',
+    onPlayerJoined: (player) => {
+      setPlayers(prev => {
+        // Avoid duplicates
+        if (prev.some(p => p.id === player.id)) return prev;
+        return [...prev, player];
+      });
+    },
+    onPlayerLeft: (playerId) => {
+      setPlayers(prev => prev.filter(p => p.id !== playerId));
+    },
+    onRolesDistributed: () => {
+      // Optionally handle role distribution updates
+    },
+    onGameDeleted: () => {
+      clearModeratorGame();
+      router.push('/');
+    },
+    onUpdate: (update) => {
+      // Handle initial state
+      if (update.type === 'initial_state' && update.payload?.players) {
+        setPlayers(update.payload.players);
       }
-    };
-
-    fetchPlayers();
-    const interval = setInterval(fetchPlayers, 2000); // Poll every 2 seconds
-
-    return () => clearInterval(interval);
-  }, [game, API_BASE_URL]);
+    }
+  });
 
   const createGame = async () => {
     setLoading(true);

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Mafia Night Deployment Script
 # This script deploys the application to a DigitalOcean VPS
@@ -67,7 +67,7 @@ ssh $DEPLOY_USER@$DEPLOY_HOST << EOF
 EOF
 
 echo -e "${GREEN}Deployment completed successfully!${NC}"
-echo -e "${YELLOW}Application should be available at: http://$DEPLOY_HOST${NC}"
+echo -e "${YELLOW}Application should be available at: https://$DEPLOY_HOST${NC}"
 
 # Health check
 echo -e "${YELLOW}Performing health check...${NC}"

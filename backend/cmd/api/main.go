@@ -47,6 +47,7 @@ func main() {
 	gameHandler := handler.NewGameHandler(gameService)
 	roleHandler := handler.NewRoleHandler(roleService)
 	adminHandler := handler.NewAdminHandler(adminService)
+	wsHandler := handler.NewWebSocketHandler(gameService)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -79,13 +80,14 @@ func main() {
 			r.Post("/", gameHandler.CreateGame)
 			r.Get("/{id}", gameHandler.GetGame)
 			r.Patch("/{id}", gameHandler.UpdateGameStatus)
-			r.Delete("/{id}", gameHandler.DeleteGame)
-			r.Post("/{id}/join", gameHandler.JoinGame)
+			r.Delete("/{id}", handler.NotifyPlayerUpdate(gameHandler.DeleteGame, wsHandler, handler.GameDeleted))
+			r.Post("/{id}/join", handler.NotifyPlayerUpdate(gameHandler.JoinGame, wsHandler, handler.PlayerJoined))
 			r.Get("/{id}/players", gameHandler.GetPlayers)
-			r.Delete("/{id}/players/{player_id}", gameHandler.RemovePlayer)
-			r.Post("/{id}/distribute-roles", gameHandler.DistributeRoles)
+			r.Delete("/{id}/players/{player_id}", handler.NotifyPlayerUpdate(gameHandler.RemovePlayer, wsHandler, handler.PlayerLeft))
+			r.Post("/{id}/distribute-roles", handler.NotifyPlayerUpdate(gameHandler.DistributeRoles, wsHandler, handler.RolesDistributed))
 			r.Get("/{id}/roles", gameHandler.GetGameRoles)
 			r.Get("/{id}/players/{player_id}/role", gameHandler.GetPlayerRole)
+			r.Get("/{id}/ws", wsHandler.HandleGameWebSocket)
 		})
 
 		r.Route("/roles", func(r chi.Router) {
