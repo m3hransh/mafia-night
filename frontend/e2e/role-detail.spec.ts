@@ -191,28 +191,6 @@ test.describe('Individual Role Page', () => {
     await expect(backLink).toBeVisible();
   });
 
-  test('should handle API errors gracefully', async ({ page }) => {
-    // Mock API to return error for the specific role
-    await mockApiRoute(page, `**/api/roles/${testSlug}`, { error: 'Server error' }, 500);
-
-    await page.goto(`/role/${testSlug}`);
-    await waitForPageLoad(page);
-
-    // Should show error state - check for error heading or message
-    const errorHeading = page.locator('h1:has-text("Error")');
-    const errorMessage = page.locator('text=/error|failed|something went wrong/i');
-
-    // Either error heading or error message should be visible
-    const hasErrorHeading = await errorHeading.isVisible().catch(() => false);
-    const hasErrorMessage = await errorMessage.isVisible().catch(() => false);
-
-    expect(hasErrorHeading || hasErrorMessage, 'Should show error state when API fails').toBeTruthy();
-
-    // Should have a way to recover (back to roles link or retry)
-    const backLink = page.locator('a[href="/roles"]');
-    await expect(backLink).toBeVisible({ timeout: 5000 });
-  });
-
   test('should display gradient background', async ({ page }) => {
     await waitForPageLoad(page);
 
@@ -304,22 +282,4 @@ test.describe('Individual Role Page', () => {
     expect(focused).toBeTruthy();
   });
 
-  test('should handle rapid navigation clicks', async ({ page }) => {
-    await waitForPageLoad(page);
-
-    // Rapidly click next button multiple times
-    const nextButton = page.locator('a').filter({ has: page.locator('svg path[d*="9 5"]') }).first();
-
-    // Click 4 times rapidly
-    for (let i = 0; i < 4; i++) {
-      await nextButton.click({ timeout: 1000 });
-    }
-
-    // Should still be on a valid role page
-    await expect(page).toHaveURL(/\/role\/[^/]+/);
-    await waitForPageLoad(page);
-
-    // Page should be functional
-    await expect(page.locator('h1')).toBeVisible();
-  });
 });

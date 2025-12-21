@@ -30,7 +30,7 @@ export function MagicCard3D({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
-  const [videoOpacity, setVideoOpacity] = useState(0);
+  const fadeStartTime = useRef<number | null>(null);
 
   // Use gyro data from props if available, otherwise default
   const gyroRotation = gyroData || { beta: 0, gamma: 0 };
@@ -42,6 +42,8 @@ export function MagicCard3D({
     loop: true,
     muted: true,
     start: true,
+    playsInline: true,
+    crossOrigin: 'Anonymous',
     unsuspend: 'loadeddata',
   });
 
@@ -67,21 +69,9 @@ export function MagicCard3D({
 
       const handleCanPlay = () => {
         // Start fade-in animation
-        const startTime = Date.now();
-        const duration = 800; // 800ms fade-in
-
-        const animate = () => {
-          const elapsed = Date.now() - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          // Ease-out curve for smooth fade
-          const easedProgress = 1 - Math.pow(1 - progress, 3);
-          setVideoOpacity(easedProgress);
-
-          if (progress < 1) {
-            requestAnimationFrame(animate);
-          }
-        };
-        animate();
+        if (!fadeStartTime.current) {
+          fadeStartTime.current = Date.now();
+        }
       };
 
       if (video.readyState >= 3) {
@@ -171,6 +161,19 @@ export function MagicCard3D({
     // Animate loading spinner
     if (spinnerRef.current && !videoLoaded) {
       spinnerRef.current.rotation.z += delta * 2; // Rotate at 2 radians per second
+    }
+
+    // Handle video fade-in
+    if (fadeStartTime.current && circularMaterial && circularMaterial.uniforms.opacity) {
+      const duration = 800; // 800ms fade-in
+      const elapsed = Date.now() - fadeStartTime.current;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      if (progress <= 1) {
+        // Ease-out curve for smooth fade
+        const easedProgress = 1 - Math.pow(1 - progress, 3);
+        circularMaterial.uniforms.opacity.value = easedProgress;
+      }
     }
   });
 
@@ -369,6 +372,15 @@ export function MagicCard3D({
     });
   }, [mousePosition.x]);
 
+  // Cleanup resources on unmount
+  useEffect(() => {
+    return () => {
+      circularMaterial.dispose();
+      goldenRingMaterial.dispose();
+      videoTexture.dispose();
+    };
+  }, [circularMaterial, goldenRingMaterial, videoTexture]);
+
   // Update aspect ratio dynamically
   useEffect(() => {
     if (videoTexture && videoTexture.image && circularMaterial) {
@@ -387,13 +399,6 @@ export function MagicCard3D({
       }
     }
   }, [videoTexture, circularMaterial]);
-
-  // Update video opacity uniform
-  useEffect(() => {
-    if (circularMaterial && circularMaterial.uniforms.opacity) {
-      circularMaterial.uniforms.opacity.value = videoOpacity;
-    }
-  }, [videoOpacity, circularMaterial]);
 
   // Silver/platinum frame color
   const frameColor = '#C0C0C0';

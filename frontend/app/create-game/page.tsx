@@ -53,7 +53,14 @@ export default function CreateGamePage() {
             const gameData = await res.json();
             setGame(gameData);
             setModeratorId(validatedState.moderatorId);
-            setGamePhase(validatedState.phase);
+            // check if the roles are distributed by api
+            const roles = await getGameRoles(validatedState.gameId, validatedState.moderatorId);
+            if (roles) {
+              setRoleAssignments(roles);
+              setGamePhase('game-started');
+            }else{
+              setGamePhase(validatedState.phase);
+            }
           } else {
             clearModeratorGame();
             setModeratorId(uuidv4());

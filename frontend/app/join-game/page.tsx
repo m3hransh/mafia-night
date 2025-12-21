@@ -40,6 +40,11 @@ function JoinGameContent() {
         setPlayerName(validatedState.playerName);
         setPlayerId(validatedState.playerId);
         setJoined(true);
+
+          const role = await getPlayerRole(validatedState.gameId, validatedState.playerId);
+          if (role) {
+            setAssignedRole(role);
+          }
       }
     };
 
@@ -128,14 +133,10 @@ function JoinGameContent() {
     setLeaving(true);
     setError('');
 
-    try {
-      await removePlayer(gameCode, playerId);
+      // Only moderator can remove player
+      // await removePlayer(gameCode, playerId);
       clearPlayerGame();
       router.push('/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to leave game');
-      setLeaving(false);
-    }
   };
 
   return (
@@ -280,7 +281,7 @@ function JoinGameContent() {
               <>
             {/* Success Message */}
             <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-green-500/30 text-center">
-              <div className="text-6xl mb-4">✓</div>
+              <div className="text-5xl  text-green-500 mb-2">✓</div>
               <h2 className="text-3xl font-bold text-white mb-2">You're In!</h2>
               <p className="text-xl text-purple-300">
                 Welcome to the game, <span className="text-white font-semibold">{playerName}</span>
@@ -305,7 +306,7 @@ function JoinGameContent() {
                       className="bg-black/30 rounded-lg p-4 flex items-center justify-between border border-purple-500/20"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                        <div className="md:w-10 md:h-10 w-5 h-5  text-sm bg-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                           {index + 1}
                         </div>
                         <span className="text-white font-semibold">{player.name}</span>
@@ -313,7 +314,7 @@ function JoinGameContent() {
                           <span className="text-xs bg-purple-500/30 px-2 py-1 rounded-full text-purple-300">You</span>
                         )}
                       </div>
-                      <span className="text-sm text-purple-400">
+                      <span className="text-xs text-purple-400">
                         {new Date(player.created_at).toLocaleTimeString()}
                       </span>
                     </div>

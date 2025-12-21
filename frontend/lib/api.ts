@@ -183,11 +183,11 @@ export async function getGameRoles(gameId: string, moderatorId: string): Promise
 /**
  * Gets the assigned role for a specific player
  */
-export async function getPlayerRole(gameId: string, playerId: string): Promise<Role> {
+export async function getPlayerRole(gameId: string, playerId: string): Promise<Role | null> {
   const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/players/${playerId}/role`);
 
   if (!response.ok) {
-    throw new APIError(response.status, 'Failed to fetch player role');
+    return null;
   }
 
   return response.json();
