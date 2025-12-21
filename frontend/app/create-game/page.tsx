@@ -372,10 +372,11 @@ export default function CreateGamePage() {
             <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
               <h2 className="text-2xl font-bold text-white mb-4">Game Code</h2>
               <div className="flex items-center gap-4">
-                <div className="flex-1 bg-black/50 rounded-lg p-4 font-mono text-2xl text-purple-300 text-center">
+                <div data-testid="game-code" className="flex-1 bg-black/50 rounded-lg p-4 font-mono text-2xl text-purple-300 text-center">
                   {game.id}
                 </div>
                 <button
+                  data-testid="copy-game-code-button"
                   onClick={copyGameCode}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-4 rounded-lg transition-all"
                 >

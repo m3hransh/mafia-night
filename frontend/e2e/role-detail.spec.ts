@@ -191,27 +191,27 @@ test.describe('Individual Role Page', () => {
     await expect(backLink).toBeVisible();
   });
 
-  // test('should handle API errors gracefully', async ({ page }) => {
-  //   // Mock API to return error
-  //   await page.route('**/api/roles/*', async (route) => {
-  //     await route.fulfill({
-  //       status: 500,
-  //       contentType: 'application/json',
-  //       body: JSON.stringify({ error: 'Server error' }),
-  //     });
-  //   });
-  //
-  //   await page.goto(`/role/${testSlug}`);
-  //   await waitForPageLoad(page);
-  //
-  //   // Should show error state
-  //   // Check for any error-related text
-  //   const hasError = await page.locator('text=/error|failed|wrong/i').count() > 0;
-  //   
-  //   // If error handling is implemented, we should see error text
-  //   // If not, the page might show loading state or be empty
-  //   expect(hasError || await page.locator('text=Loading').isVisible()).toBeTruthy();
-  // });
+  test('should handle API errors gracefully', async ({ page }) => {
+    // Mock API to return error for the specific role
+    await mockApiRoute(page, `**/api/roles/${testSlug}`, { error: 'Server error' }, 500);
+
+    await page.goto(`/role/${testSlug}`);
+    await waitForPageLoad(page);
+
+    // Should show error state - check for error heading or message
+    const errorHeading = page.locator('h1:has-text("Error")');
+    const errorMessage = page.locator('text=/error|failed|something went wrong/i');
+
+    // Either error heading or error message should be visible
+    const hasErrorHeading = await errorHeading.isVisible().catch(() => false);
+    const hasErrorMessage = await errorMessage.isVisible().catch(() => false);
+
+    expect(hasErrorHeading || hasErrorMessage, 'Should show error state when API fails').toBeTruthy();
+
+    // Should have a way to recover (back to roles link or retry)
+    const backLink = page.locator('a[href="/roles"]');
+    await expect(backLink).toBeVisible({ timeout: 5000 });
+  });
 
   test('should display gradient background', async ({ page }) => {
     await waitForPageLoad(page);
