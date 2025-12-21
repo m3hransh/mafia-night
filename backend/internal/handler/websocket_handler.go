@@ -42,25 +42,92 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-// isConnectionClosed checks if an error is due to a closed connection
-func isConnectionClosed(err error) bool {
-	if err == nil {
-		return false
+// Client is a middleman between the websocket connection and the hub.
+type Client struct {
+	hub         *WebSocketHub
+	conn        *websocket.Conn
+	send        chan []byte
+	gameID      string
+	remoteAddr  string
+	connectedAt time.Time
+}
+
+// readPump pumps messages from the websocket connection to the hub.
+//
+// The application runs readPump in a per-connection goroutine. The application
+// ensures that there is at most one reader on a connection by executing all
+// reads from this goroutine.
+func (c *Client) readPump() {
+	defer func() {
+		c.hub.unregister <- c
+		c.conn.Close()
+	}()
+	c.conn.SetReadLimit(maxMessageSize)
+	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	for {
+		_, _, err := c.conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("[WebSocket] Unexpected close error: %v", err)
+			}
+			break
+		}
 	}
-	errStr := err.Error()
-	return websocket.IsCloseError(err, websocket.CloseAbnormalClosure, websocket.CloseGoingAway, websocket.CloseNormalClosure) ||
-		errStr == "use of closed network connection" ||
-		errStr == "write tcp: use of closed network connection" ||
-		errStr == "read tcp: use of closed network connection"
+}
+
+// writePump pumps messages from the hub to the websocket connection.
+//
+// A goroutine running writePump is started for each connection. The
+// application ensures that there is at most one writer to a connection by
+// executing all writes from this goroutine.
+func (c *Client) writePump() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.conn.Close()
+	}()
+	for {
+		select {
+		case message, ok := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				// The hub closed the channel.
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := c.conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			w.Write(message)
+
+			// Add queued chat messages to the current websocket message.
+			n := len(c.send)
+			for i := 0; i < n; i++ {
+				w.Write(<-c.send)
+			}
+
+			if err := w.Close(); err != nil {
+				return
+			}
+		case <-ticker.C:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
 }
 
 type GameUpdateType string
 
 const (
-	PlayerJoined    GameUpdateType = "player_joined"
-	PlayerLeft      GameUpdateType = "player_left"
+	PlayerJoined     GameUpdateType = "player_joined"
+	PlayerLeft       GameUpdateType = "player_left"
 	RolesDistributed GameUpdateType = "roles_distributed"
-	GameDeleted     GameUpdateType = "game_deleted"
+	GameDeleted      GameUpdateType = "game_deleted"
 )
 
 type GameUpdate struct {
@@ -71,32 +138,21 @@ type GameUpdate struct {
 
 type WebSocketHub struct {
 	gameService      *service.GameService
-	clients          map[string]map[*websocket.Conn]*clientInfo // gameID -> connections with metadata
+	clients          map[string]map[*Client]bool // gameID -> clients
 	broadcast        chan GameUpdate
-	register         chan *clientSubscription
-	unregister       chan *clientSubscription
+	register         chan *Client
+	unregister       chan *Client
 	mu               sync.RWMutex
 	totalConnections int64 // atomic counter for total connections
-}
-
-type clientInfo struct {
-	connectedAt time.Time
-	remoteAddr  string
-}
-
-type clientSubscription struct {
-	gameID     string
-	conn       *websocket.Conn
-	remoteAddr string
 }
 
 func NewWebSocketHub(gameService *service.GameService) *WebSocketHub {
 	hub := &WebSocketHub{
 		gameService:      gameService,
-		clients:          make(map[string]map[*websocket.Conn]*clientInfo),
+		clients:          make(map[string]map[*Client]bool),
 		broadcast:        make(chan GameUpdate, 256),
-		register:         make(chan *clientSubscription),
-		unregister:       make(chan *clientSubscription),
+		register:         make(chan *Client),
+		unregister:       make(chan *Client),
 		totalConnections: 0,
 	}
 	go hub.run()
@@ -151,7 +207,7 @@ func (h *WebSocketHub) GetConnectionStats() map[string]interface{} {
 func (h *WebSocketHub) run() {
 	for {
 		select {
-		case sub := <-h.register:
+		case client := <-h.register:
 			h.mu.Lock()
 
 			// Check total connection limit
@@ -159,58 +215,53 @@ func (h *WebSocketHub) run() {
 			if currentTotal >= maxTotalConnections {
 				h.mu.Unlock()
 				log.Printf("[WebSocket] Connection limit reached (%d), rejecting new connection from %s for game %s",
-					maxTotalConnections, sub.remoteAddr, sub.gameID)
-				sub.conn.Close()
+					maxTotalConnections, client.remoteAddr, client.gameID)
+				client.conn.Close()
 				continue
 			}
 
 			// Check per-game connection limit
-			if h.clients[sub.gameID] == nil {
-				h.clients[sub.gameID] = make(map[*websocket.Conn]*clientInfo)
-			} else if len(h.clients[sub.gameID]) >= maxConnectionsPerGame {
+			if h.clients[client.gameID] == nil {
+				h.clients[client.gameID] = make(map[*Client]bool)
+			} else if len(h.clients[client.gameID]) >= maxConnectionsPerGame {
 				h.mu.Unlock()
 				log.Printf("[WebSocket] Game connection limit reached (%d) for game %s, rejecting connection from %s",
-					maxConnectionsPerGame, sub.gameID, sub.remoteAddr)
-				sub.conn.Close()
+					maxConnectionsPerGame, client.gameID, client.remoteAddr)
+				client.conn.Close()
 				continue
 			}
 
 			// Register the connection
-			h.clients[sub.gameID][sub.conn] = &clientInfo{
-				connectedAt: time.Now(),
-				remoteAddr:  sub.remoteAddr,
-			}
+			h.clients[client.gameID][client] = true
 			atomic.AddInt64(&h.totalConnections, 1)
 
 			totalConns := atomic.LoadInt64(&h.totalConnections)
-			gameConns := len(h.clients[sub.gameID])
+			gameConns := len(h.clients[client.gameID])
 
 			log.Printf("[WebSocket] Client connected: game=%s, addr=%s, gameConns=%d, totalConns=%d",
-				sub.gameID, sub.remoteAddr, gameConns, totalConns)
+				client.gameID, client.remoteAddr, gameConns, totalConns)
 
 			h.mu.Unlock()
 
-		case sub := <-h.unregister:
+		case client := <-h.unregister:
 			h.mu.Lock()
-			if clients, ok := h.clients[sub.gameID]; ok {
-				if info, ok := clients[sub.conn]; ok {
-					duration := time.Since(info.connectedAt)
-					delete(clients, sub.conn)
+			if clients, ok := h.clients[client.gameID]; ok {
+				if _, ok := clients[client]; ok {
+					duration := time.Since(client.connectedAt)
+					delete(clients, client)
+					close(client.send)
 					atomic.AddInt64(&h.totalConnections, -1)
-
-					// Close the connection (ignore error if already closed)
-					sub.conn.Close()
 
 					totalConns := atomic.LoadInt64(&h.totalConnections)
 					gameConns := len(clients)
 
 					log.Printf("[WebSocket] Client disconnected: game=%s, addr=%s, duration=%v, gameConns=%d, totalConns=%d",
-						sub.gameID, info.remoteAddr, duration, gameConns, totalConns)
+						client.gameID, client.remoteAddr, duration, gameConns, totalConns)
 
 					// Clean up empty game entries
 					if len(clients) == 0 {
-						delete(h.clients, sub.gameID)
-						log.Printf("[WebSocket] Game %s has no more connections, cleaning up", sub.gameID)
+						delete(h.clients, client.gameID)
+						log.Printf("[WebSocket] Game %s has no more connections, cleaning up", client.gameID)
 					}
 				}
 			}
@@ -225,21 +276,24 @@ func (h *WebSocketHub) run() {
 				continue
 			}
 
+			// Marshal once
+			message, err := json.Marshal(update)
+			if err != nil {
+				log.Printf("[WebSocket] Error marshaling update: %v", err)
+				continue
+			}
+
 			successCount := 0
 			failCount := 0
 
-			for conn, info := range clients {
-				conn.SetWriteDeadline(time.Now().Add(writeWait))
-				err := conn.WriteJSON(update)
-				if err != nil {
-					failCount++
-					log.Printf("[WebSocket] Write error for game %s, client %s: %v", update.GameID, info.remoteAddr, err)
-					// Unregister failed connection
-					go func(c *websocket.Conn, addr string) {
-						h.unregister <- &clientSubscription{gameID: update.GameID, conn: c, remoteAddr: addr}
-					}(conn, info.remoteAddr)
-				} else {
+			for client := range clients {
+				select {
+				case client.send <- message:
 					successCount++
+				default:
+					failCount++
+					close(client.send)
+					delete(clients, client)
 				}
 			}
 
@@ -280,37 +334,24 @@ func (h *WebSocketHub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Configure connection limits and handlers BEFORE registering
-	conn.SetReadLimit(maxMessageSize)
-	conn.SetReadDeadline(time.Now().Add(pongWait))
-	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(pongWait))
-		return nil
-	})
-
-	sub := &clientSubscription{
-		gameID:     gameID,
-		conn:       conn,
-		remoteAddr: remoteAddr,
+	client := &Client{
+		hub:         h,
+		conn:        conn,
+		send:        make(chan []byte, 256),
+		gameID:      gameID,
+		remoteAddr:  remoteAddr,
+		connectedAt: time.Now(),
 	}
 
-	// Register the connection (this may reject if limits are exceeded)
-	h.register <- sub
+	// Register the connection
+	client.hub.register <- client
 
-	// Wait a bit to ensure registration completed or was rejected
-	// If rejected, the connection will be closed by the hub
-	time.Sleep(10 * time.Millisecond)
-
-	// Check if connection is still alive before sending initial state
-	if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-		// Connection was rejected or closed
-		log.Printf("[WebSocket] Connection rejected/closed before initial state for game %s, addr %s", gameID, remoteAddr)
-		return
-	}
+	// Allow collection of memory referenced by the caller by doing all work in
+	// new goroutines.
+	go client.writePump()
+	go client.readPump()
 
 	// Send initial game state
-	// Use context.Background() instead of r.Context() because the HTTP request context
-	// is cancelled after the WebSocket upgrade, but we need the context to remain valid
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -326,63 +367,25 @@ func (h *WebSocketHub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 					"created_at": player.CreatedAt,
 				}
 			}
-			conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := conn.WriteJSON(GameUpdate{
+			
+			update := GameUpdate{
 				Type:    "initial_state",
 				GameID:  gameID,
 				Payload: map[string]interface{}{"players": playersJSON},
-			}); err != nil {
-				// Only log if it's not a "connection closed" error
-				if !isConnectionClosed(err) {
-					log.Printf("[WebSocket] Error sending initial state for game %s, addr %s: %v", gameID, remoteAddr, err)
+			}
+			
+			if msg, err := json.Marshal(update); err == nil {
+				select {
+				case client.send <- msg:
+					log.Printf("[WebSocket] Sent initial state to game %s, addr %s: %d players", gameID, remoteAddr, len(players))
+				default:
+					log.Printf("[WebSocket] Failed to send initial state (buffer full)")
 				}
-			} else {
-				log.Printf("[WebSocket] Sent initial state to game %s, addr %s: %d players", gameID, remoteAddr, len(players))
 			}
 		} else {
 			log.Printf("[WebSocket] Error fetching initial players for game %s: %v", gameID, err)
 		}
 	}()
-
-	// Start ping ticker
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ticker.Stop()
-		h.unregister <- sub
-		log.Printf("[WebSocket] Connection handler exiting for game %s, addr %s", gameID, remoteAddr)
-	}()
-
-	// Start goroutine to send pings
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				conn.SetWriteDeadline(time.Now().Add(writeWait))
-				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-					log.Printf("[WebSocket] Ping failed for game %s, addr %s: %v", gameID, remoteAddr, err)
-					return
-				}
-			}
-		}
-	}()
-
-	// Read messages (primarily to detect disconnection and handle pong)
-	for {
-		messageType, message, err := conn.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNormalClosure) {
-				log.Printf("[WebSocket] Unexpected close error for game %s, addr %s: %v", gameID, remoteAddr, err)
-			} else {
-				log.Printf("[WebSocket] Connection closed for game %s, addr %s: %v", gameID, remoteAddr, err)
-			}
-			break
-		}
-
-		// Log received messages for debugging (optional - can be removed in production)
-		if messageType == websocket.TextMessage || messageType == websocket.BinaryMessage {
-			log.Printf("[WebSocket] Received message from game %s, addr %s: type=%d, len=%d", gameID, remoteAddr, messageType, len(message))
-		}
-	}
 }
 
 type WebSocketHandler struct {

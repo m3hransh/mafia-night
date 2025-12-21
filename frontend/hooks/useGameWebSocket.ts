@@ -37,6 +37,21 @@ export function useGameWebSocket({
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Store callbacks in refs to avoid reconnecting when they change
+  const onUpdateRef = useRef(onUpdate);
+  const onPlayerJoinedRef = useRef(onPlayerJoined);
+  const onPlayerLeftRef = useRef(onPlayerLeft);
+  const onRolesDistributedRef = useRef(onRolesDistributed);
+  const onGameDeletedRef = useRef(onGameDeleted);
+
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+    onPlayerJoinedRef.current = onPlayerJoined;
+    onPlayerLeftRef.current = onPlayerLeft;
+    onRolesDistributedRef.current = onRolesDistributed;
+    onGameDeletedRef.current = onGameDeleted;
+  }, [onUpdate, onPlayerJoined, onPlayerLeft, onRolesDistributed, onGameDeleted]);
+
   const connect = useCallback(() => {
     if (!enabled || !gameId) return;
 
@@ -55,7 +70,7 @@ export function useGameWebSocket({
           const update: GameUpdate = JSON.parse(event.data);
           
           // Call generic handler
-          onUpdate?.(update);
+          onUpdateRef.current?.(update);
 
           // Call specific handlers
           switch (update.type) {
@@ -63,16 +78,16 @@ export function useGameWebSocket({
               // Handle initial state if needed
               break;
             case 'player_joined':
-              onPlayerJoined?.(update.payload);
+              onPlayerJoinedRef.current?.(update.payload);
               break;
             case 'player_left':
-              onPlayerLeft?.(update.payload?.player_id);
+              onPlayerLeftRef.current?.(update.payload?.player_id);
               break;
             case 'roles_distributed':
-              onRolesDistributed?.();
+              onRolesDistributedRef.current?.();
               break;
             case 'game_deleted':
-              onGameDeleted?.();
+              onGameDeletedRef.current?.();
               break;
           }
         } catch {
@@ -100,7 +115,7 @@ export function useGameWebSocket({
     } catch {
       setError('Failed to create WebSocket connection');
     }
-  }, [gameId, enabled, onUpdate, onPlayerJoined, onPlayerLeft, onRolesDistributed, onGameDeleted]);
+  }, [gameId, enabled]);
 
   useEffect(() => {
     if (enabled && gameId) {
