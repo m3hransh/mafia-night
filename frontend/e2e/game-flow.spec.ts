@@ -54,13 +54,13 @@ test.describe('Game Flow - Create and Join Game', () => {
       await playerPage.click('button:has-text("Join Game")');
       
       // Wait for player to join
-      await playerPage.waitForTimeout(2000);
+      await playerPage.waitForTimeout(1000);
       
       // Check that player sees "Waiting for game to start" or similar message
       await expect(playerPage.locator('text=/Waiting for|Game Lobby/i')).toBeVisible({ timeout: 5000 });
 
       // Step 3: Moderator should see the player in the list
-      await moderatorPage.waitForTimeout(3000); // Wait for polling to update
+      await moderatorPage.waitForTimeout(1000); // Wait for polling to update
       
       const playerInList = moderatorPage.locator('text=Alice');
       await expect(playerInList).toBeVisible({ timeout: 10000 });
@@ -79,7 +79,7 @@ test.describe('Game Flow - Create and Join Game', () => {
       await player2Page.waitForTimeout(2000);
 
       // Wait for second player to appear in moderator view
-      await moderatorPage.waitForTimeout(3000);
+      await moderatorPage.waitForTimeout(1000);
       await expect(moderatorPage.locator('text=Bob')).toBeVisible({ timeout: 10000 });
       
       // Check updated players count
@@ -91,13 +91,13 @@ test.describe('Game Flow - Create and Join Game', () => {
       await startButton.click();
       
       // Wait for role selection panel to appear
-      await moderatorPage.waitForTimeout(2000);
+      await moderatorPage.waitForTimeout(1000);
       
       // Check that role selection panel is visible
       await expect(moderatorPage.locator('text=/Select Roles|Role Selection/i')).toBeVisible({ timeout: 5000 });
 
       // Wait for roles API to load
-      await moderatorPage.waitForTimeout(3000);
+      await moderatorPage.waitForTimeout(1000);
 
       // Step 6: Select roles (add Mafia role)
       // Find the first role's increment button and click it twice
@@ -119,7 +119,7 @@ test.describe('Game Flow - Create and Join Game', () => {
       await moderatorPage.waitForTimeout(2000);
       
       // Check that game started message appears
-      await expect(moderatorPage.getByText('Game Started')).toBeVisible({ timeout: 5000 });
+      await expect(moderatorPage.getByText('Roles Distributed!')).toBeVisible({ timeout: 5000 });
 
       // Cleanup
       await player2Context.close();
