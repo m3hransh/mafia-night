@@ -7,11 +7,11 @@ import { JoinLobby } from '@/components/JoinLobby';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 import { AssignedRole } from '@/components/AssignedRole';
 import { JoinGameForm } from '@/components/JoinGameForm';
+import { GradientBackground } from './GradientBackground';
 
 export function JoinGameContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const [gameCode, setGameCode] = useState('');
+  const router = useRouter(); const [gameCode, setGameCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [playerId, setPlayerId] = useState('');
   const [joined, setJoined] = useState(false); const [players, setPlayers] = useState<Player[]>([]);
@@ -106,10 +106,10 @@ export function JoinGameContent() {
   };
 
   return (
-    <div className="max-w-4xl w-full mx-auto relative z-10 p-4">
+    <div className="max-w-4xl w-full mx-auto relative z-10">
       {/* Back button */}
       <Link href="/"
-        className="inline-flex items-center gap-2 mb-8 bg-black/30 backdrop-blur-md rounded-full px-5 py-3 hover:bg-purple-600/30 transition-all">
+        className="inline-flex items-center gap-2 mb-4 bg-black/30 backdrop-blur-md rounded-full px-5 py-3 hover:bg-purple-600/30 transition-all">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -117,24 +117,28 @@ export function JoinGameContent() {
         <span className="text-white font-semibold">Home</span>
       </Link>
 
-      <div className="text-center mb-12">
-        <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-2xl">
-          Join Game
-        </h1>
-        <p className="text-xl text-purple-300">Enter the game code to join</p>
-      </div>
 
-      <div className="m-4">
-      {!joined ?
-        <JoinGameForm gameId={gameCode} onJoinGame={joinGameHandler} /> : (
-          <div className="space-y-6">
-            {assignedRole ?
-              <AssignedRole assignedRole={assignedRole} playerName={playerName} leaving={leaving}
-                onLeaveGame={leaveGameHandler} /> :
-              <JoinLobby players={players} playerName={playerName} leaving={leaving} onLeaveGame={leaveGameHandler} />}
-          </div>
+        {assignedRole ? (
+          <>
+          <AssignedRole assignedRole={assignedRole} playerName={playerName} leaving={leaving}
+            onLeaveGame={leaveGameHandler} />
+          </>
+        ) : (
+          <>
+            <div className="text-center mb-12 space-y-6 p-4">
+              <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-2xl">
+                Join Game
+              </h1>
+              <p className="text-xl text-purple-300 mb-4">Enter the game code to join</p>
+            {!joined ? (
+              <JoinGameForm gameId={gameCode} onJoinGame={joinGameHandler} />
+            ) : (
+              <JoinLobby players={players} playerName={playerName} leaving={leaving} onLeaveGame={leaveGameHandler} />
+            )}
+
+            </div>
+          </>
         )}
       </div>
-    </div>
   );
     }

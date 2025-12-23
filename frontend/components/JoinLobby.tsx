@@ -16,7 +16,7 @@ export function JoinLobby({ playerName, players, onLeaveGame, leaving }: JoinLob
       {/* Success Message */}
       <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-green-500/30 text-center">
         <div className="text-5xl  text-green-500 mb-2">✓</div>
-        <h2 className="text-3xl font-bold text-white mb-2">You're In!</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">You're In!</h2>
         <p className="text-xl text-purple-300">
           Welcome to the game, <span className="text-white font-semibold">{playerName}</span>
         </p>
@@ -24,7 +24,7 @@ export function JoinLobby({ playerName, players, onLeaveGame, leaving }: JoinLob
 
       {/* Players List */}
       <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
-        <h2 className="text-2xl font-bold text-white mb-4">
+        <h2 className="text-xl md:text-2xl font-bold text-white mb-4">
           Players in Game ({players.length})
         </h2>
 
@@ -70,7 +70,7 @@ export function JoinLobby({ playerName, players, onLeaveGame, leaving }: JoinLob
 
         {/* Leave Game Button */}
         <button onClick={handleLeaveClick} disabled={leaving}
-          className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg transition-all">
+          className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-semibold px-4 md:px-8 py-3 rounded-lg transition-all">
           {leaving ? 'Leaving...' : 'Leave Game'}
         </button>
       </div>

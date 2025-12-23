@@ -88,7 +88,7 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
     <main className="relative w-full h-screen overflow-hidden">
 
       <GradientBackground />
-      <CardScene videoSrc={role.video} roleName={role.name} description={role.description} />
+      <CardScene videoSrc={role.video} role={role} />
 
       {/* Navigation controls */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex items-center gap-4">

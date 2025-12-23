@@ -5,11 +5,11 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox, useVideoTexture, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { optimizeCloudinaryVideo } from '@/lib/cloudinary';
+import { Role } from '@/lib/api';
 
 interface MagicCard3DProps {
   videoSrc: string;
-  roleName: string;
-  description: string;
+  role: Role;
   position?: [number, number, number];
   gyroData?: { beta: number; gamma: number };
   gyroEnabled?: boolean;
@@ -17,8 +17,7 @@ interface MagicCard3DProps {
 
 export function MagicCard3D({
   videoSrc,
-  roleName,
-  description,
+  role,
   position = [0, 0, 0],
   gyroData,
   gyroEnabled = false
@@ -126,7 +125,7 @@ export function MagicCard3D({
         // gamma controls Y rotation (left-right tilt)
         // beta controls X rotation (front-back tilt)
         const gyroY = (gyroRotation.gamma / 180) * 1.0; // Inverted and scaled
-        const gyroX = (-gyroRotation.beta / 90) * 0.8; // Inverted and scaled
+        // const gyroX = (-gyroRotation.beta / 90) * 0.8; // Inverted and scaled
 
         groupRef.current.rotation.y = THREE.MathUtils.lerp(
           groupRef.current.rotation.y,
@@ -375,11 +374,16 @@ export function MagicCard3D({
   // Cleanup resources on unmount
   useEffect(() => {
     return () => {
-      circularMaterial.dispose();
-      goldenRingMaterial.dispose();
-      videoTexture.dispose();
+      if (circularMaterial) {
+        circularMaterial.dispose();
+      }
+      if (goldenRingMaterial) {
+        goldenRingMaterial.dispose();
+      }
+      // Don't dispose videoTexture - useVideoTexture manages its own lifecycle
     };
-  }, [circularMaterial, goldenRingMaterial, videoTexture]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Update aspect ratio dynamically
   useEffect(() => {
@@ -400,8 +404,19 @@ export function MagicCard3D({
     }
   }, [videoTexture, circularMaterial]);
 
-  // Silver/platinum frame color
-  const frameColor = '#C0C0C0';
+  // Team color mapping
+  const getTeamColor = (team: string): string => {
+    switch (team) {
+      case 'mafia':
+        return '#DC2626'; // Red
+      case 'village':
+        return '#3B82F6'; // Blue
+      case 'independent':
+        return '#10B981'; // Green
+      default:
+        return '#6B7280'; // Gray
+    }
+  };
 
   // Dynamic platinum/silver gradient colors based on mouse position
   const dynamicPlatinumColors = useMemo(() => {
@@ -490,8 +505,52 @@ export function MagicCard3D({
         outlineColor="#000000"
         renderOrder={999}
       >
-        {roleName.toUpperCase()}
+        {role?.name ?  role.name.toUpperCase(): 'UNKNOWN ROLE'}
       </Text>
+
+      {/* Team badge below role name */}
+      {role?.team && (
+        <group position={[0, cardHeight / 2 - (circleRadius * 2) - padding - 0.65, 0.16]}>
+          {/* Badge background - flat with rounded corners */}
+          <mesh>
+            <shapeGeometry args={[(() => {
+              const shape = new THREE.Shape();
+              const width = 1.0;
+              const height = 0.2;
+              const radius = 0.08;
+              const x = -width / 2;
+              const y = -height / 2;
+
+              shape.moveTo(x + radius, y);
+              shape.lineTo(x + width - radius, y);
+              shape.quadraticCurveTo(x + width, y, x + width, y + radius);
+              shape.lineTo(x + width, y + height - radius);
+              shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+              shape.lineTo(x + radius, y + height);
+              shape.quadraticCurveTo(x, y + height, x, y + height - radius);
+              shape.lineTo(x, y + radius);
+              shape.quadraticCurveTo(x, y, x + radius, y);
+
+              return shape;
+            })()]} />
+            <meshBasicMaterial color={getTeamColor(role.team)} transparent opacity={0.9} side={THREE.DoubleSide} />
+          </mesh>
+
+          {/* Team text */}
+          <Text
+            position={[0, 0, 0.001]}
+            fontSize={0.10}
+            color="#FFFFFF"
+            anchorX="center"
+            anchorY="middle"
+            letterSpacing={0.08}
+            font="/fonts/Inter_18pt-Bold.ttf"
+            renderOrder={1000}
+          >
+            {role.team.toUpperCase()}
+          </Text>
+        </group>
+      )}
       </group>
 
       {/* BACK SIDE */}
@@ -539,8 +598,52 @@ export function MagicCard3D({
           font="/fonts/Inter_18pt-Bold.ttf"
           renderOrder={999}
         >
-          {roleName.toUpperCase()}
+        {role?.name ?  role.name.toUpperCase(): 'UNKNOWN ROLE'}
         </Text>
+
+        {/* Team badge below role name */}
+        {role?.team && (
+          <group position={[0, cardHeight / 2 - 0.75, 0.16]}>
+            {/* Badge background - flat with rounded corners */}
+            <mesh>
+              <shapeGeometry args={[(() => {
+                const shape = new THREE.Shape();
+                const width = 0.8;
+                const height = 0.2;
+                const radius = 0.08;
+                const x = -width / 2;
+                const y = -height / 2;
+
+                shape.moveTo(x + radius, y);
+                shape.lineTo(x + width - radius, y);
+                shape.quadraticCurveTo(x + width, y, x + width, y + radius);
+                shape.lineTo(x + width, y + height - radius);
+                shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                shape.lineTo(x + radius, y + height);
+                shape.quadraticCurveTo(x, y + height, x, y + height - radius);
+                shape.lineTo(x, y + radius);
+                shape.quadraticCurveTo(x, y, x + radius, y);
+
+                return shape;
+              })()]} />
+              <meshBasicMaterial color={getTeamColor(role.team)} transparent opacity={0.9} side={THREE.DoubleSide} />
+            </mesh>
+
+            {/* Team text */}
+            <Text
+              position={[0, 0, 0.001]}
+              fontSize={0.10}
+              color="#FFFFFF"
+              anchorX="center"
+              anchorY="middle"
+              letterSpacing={0.08}
+              font="/fonts/Inter_18pt-Bold.ttf"
+              renderOrder={1000}
+            >
+              {role.team.toUpperCase()}
+            </Text>
+          </group>
+        )}
 
         {/* Description text */}
         <Text
@@ -554,7 +657,7 @@ export function MagicCard3D({
           lineHeight={1.4}
           renderOrder={999}
         >
-          {description}
+          {role?.description ? role.description : 'UNKNOWN DESCRIPTION'}
         </Text>
 
         {/* "Click to flip back" hint */}

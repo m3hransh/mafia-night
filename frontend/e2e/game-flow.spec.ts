@@ -242,14 +242,16 @@ test.describe('Game Flow - Create and Join Game', () => {
       await waitForRoleAssignment(player.playerPage);
 
       // Verify role card is displayed
-      await expect(player.playerPage.locator('h2:has-text("Your Role")')).toBeVisible();
+      await expect(player.playerPage.locator('h2:has-text("Your Role!")')).toBeVisible();
 
-      // Check that role description/abilities section exists
-      const descriptionSection = player.playerPage.locator('text=/Description|Role|Abilities/i').first();
-      await expect(descriptionSection).toBeVisible({ timeout: 5000 });
+      // Verify Canvas element is present (3D card with role name and team badge)
+      await expect(player.playerPage.locator('canvas').first()).toBeVisible({ timeout: 5000 });
 
-      // Verify player name is shown in the encouragement message
-      await expect(player.playerPage.locator('text=/Good luck.*TestPlayer/i')).toBeVisible({ timeout: 5000 });
+      // Verify player name is shown in the header card
+      await expect(player.playerPage.locator('text=TestPlayer')).toBeVisible({ timeout: 5000 });
+
+      // Video element is managed by Three.js and may not be immediately in DOM
+      // We already verified Canvas is present which confirms the 3D card loaded
 
       // Verify Leave Game button is available
       await expect(player.playerPage.locator('button:has-text("Leave Game")')).toBeVisible({ timeout: 5000 });

@@ -4,16 +4,15 @@ import { Canvas } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import { MagicCard3D } from './MagicCard3D';
 import { Suspense, useEffect, useState } from 'react';
+import {Role} from "@/lib/api";
 
 interface CardSceneProps {
   videoSrc: string;
-  roleName: string;
-  description: string;
+  role: Role;
 }
 
-export function CardScene({ videoSrc, roleName, description }: CardSceneProps) {
+export function CardScene({ videoSrc, role}: CardSceneProps) {
   const [isMobile, setIsMobile] = useState(false);
-  const [gyroDebug, setGyroDebug] = useState({ beta: 0, gamma: 0 });
   const [needsPermission, setNeedsPermission] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
 
@@ -60,7 +59,6 @@ export function CardScene({ videoSrc, roleName, description }: CardSceneProps) {
       if (now - lastUpdate < throttleMs) return;
       
       if (event.beta !== null && event.gamma !== null) {
-        setGyroDebug({ beta: event.beta, gamma: event.gamma });
         lastUpdate = now;
       }
     };
@@ -73,7 +71,7 @@ export function CardScene({ videoSrc, roleName, description }: CardSceneProps) {
   }, [needsPermission, permissionGranted]);
 
   return (
-    <div className="w-full h-screen bg-gray-950">
+    <div className="w-full h-screen">
       {/* iOS Permission Button */}
       {needsPermission && !permissionGranted && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80">
@@ -86,21 +84,10 @@ export function CardScene({ videoSrc, roleName, description }: CardSceneProps) {
         </div>
       )}
 
-      {/* Debug overlay for mobile 
-      // {isMobile && (
-      //   <div className="absolute top-20 right-4 z-50 bg-black/70 text-white p-3 rounded text-xs">
-      //     <div>Beta: {gyroDebug.beta.toFixed(1)}°</div>
-      //     <div>Gamma: {gyroDebug.gamma.toFixed(1)}°</div>
-      //     <div className="text-[10px] mt-1 text-gray-400">Tilt phone to test</div>
-      //   </div>
-      // )}
-      */}
       <Canvas>
         <Suspense
           fallback={
             <mesh>
-              <boxGeometry args={[2, 3, 0.1]} />
-              <meshStandardMaterial color="#1e293b" />
             </mesh>
           }
         >
@@ -114,10 +101,8 @@ export function CardScene({ videoSrc, roleName, description }: CardSceneProps) {
           {/* The Magic Card */}
           <MagicCard3D
             videoSrc={videoSrc}
-            roleName={roleName}
-            description={description}
+            role={role}
             position={[0, 0, 0]}
-            gyroData={gyroDebug}
             gyroEnabled={isMobile && (!needsPermission || permissionGranted)}
           />
         </Suspense>

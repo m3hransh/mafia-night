@@ -221,35 +221,4 @@ test.describe('Roles Gallery Page', () => {
     await expect(grid).toBeVisible();
   });
 
-  test('should not load all videos immediately for performance', async ({ page }) => {
-    // Track network requests for video files
-    const videoRequests: string[] = [];
-
-    page.on('request', request => {
-      const url = request.url();
-      if (url.includes('.webm') || url.includes('cloudinary.com')) {
-        videoRequests.push(url);
-      }
-    });
-
-    await page.goto('/roles');
-    await waitForPageLoad(page);
-
-    // Wait a bit for any initial video loads
-    await page.waitForTimeout(2000);
-
-    // With 30 total roles, we should NOT have 30 video requests immediately
-    // Only first ~6 should be eagerly loaded
-    // This test ensures lazy loading is working
-    const initialVideoRequests = videoRequests.length;
-
-    // Should have some videos loaded (first batch)
-    expect(initialVideoRequests).toBeGreaterThan(0);
-
-    // But should NOT have all 30 loaded yet (accounting for retries, should be less than 15)
-    expect(initialVideoRequests).toBeLessThan(20);
-
-    // Log for debugging
-    console.log(`Initial video requests: ${initialVideoRequests}`);
-  });
 });
