@@ -193,3 +193,24 @@ export async function getPlayerRole(gameId: string, playerId: string): Promise<R
   return response.json();
 }
 
+export async function joinGame(gameCode: string, playerName: string): Promise<Player> {
+      const response = await fetch(`${API_BASE_URL}/api/games/${gameCode}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: playerName }),
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new APIError(response.status, 'Game not found');
+        }
+       if (response.status == 409){
+         throw new APIError(response.status, 'Player already exists');  
+        }
+        throw new APIError(response.status, 'Failed to join game'); 
+      }
+
+      const player = await response.json();
+      return player;
+}
