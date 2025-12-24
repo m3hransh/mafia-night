@@ -13,6 +13,7 @@ COPY . .
 # Build the applications
 RUN CGO_ENABLED=0 GOOS=linux go build -o api ./cmd/api
 RUN CGO_ENABLED=0 GOOS=linux go build -o seed ./cmd/seed
+RUN CGO_ENABLED=0 GOOS=linux go build -o seed-admin ./cmd/seed-admin
 RUN CGO_ENABLED=0 GOOS=linux go build -o migrate ./cmd/migrate
 
 # Run stage
