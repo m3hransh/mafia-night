@@ -150,9 +150,9 @@ export function MagicCard3D({
       const duration = 800; // 800ms fade-in
       const elapsed = Date.now() - fadeStartTime.current;
       const progress = Math.min(elapsed / duration, 1);
-      
+
+      // Ease-out curve for smooth fade
       if (progress <= 1) {
-        // Ease-out curve for smooth fade
         const easedProgress = 1 - Math.pow(1 - progress, 3);
         circularMaterial.uniforms.opacity.value = easedProgress;
       }
@@ -257,14 +257,6 @@ export function MagicCard3D({
 
     return material;
   }, [videoTexture]);
-
-  // Gradient style configuration (deep purple-black theme)
-  const gradientConfig = {
-    edgeColor: 'vec3(0.08, 0.06, 0.12)', // Deep purple-black
-    centerColor: 'vec3(0.0, 0.0, 0.0)',
-    smoothness: '0.7',
-    edgeFade: '-0.4'
-  };
 
   const goldenRingMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
@@ -591,7 +583,7 @@ export function MagicCard3D({
             <mesh>
               <shapeGeometry args={[(() => {
                 const shape = new THREE.Shape();
-                const width = 0.8;
+                const width = 1.0;
                 const height = 0.2;
                 const radius = 0.08;
                 const x = -width / 2;
@@ -628,20 +620,54 @@ export function MagicCard3D({
           </group>
         )}
 
-        {/* Description text */}
+        {/* Description text - moved up and made more compact */}
         <Text
-          position={[0, 0, 0.16]}
-          fontSize={0.13}
+          position={[0, 0.8, 0.16]}
+          fontSize={0.11}
           color="#C0C0C0"
           anchorX="center"
-          anchorY="middle"
-          maxWidth={cardWidth - (padding * 3)}
+          anchorY="top"
+          maxWidth={cardWidth - (padding * 2.5)}
           textAlign="center"
-          lineHeight={1.4}
+          lineHeight={1.3}
           renderOrder={999}
         >
           {role?.description ? role.description : 'UNKNOWN DESCRIPTION'}
         </Text>
+
+        {/* Abilities list */}
+        {role?.abilities && role.abilities.length > 0 && (
+          <group position={[0, -0.7, 0.16]}>
+            <Text
+              position={[0, 0.12, 0]}
+              fontSize={0.10}
+              color="#E5E4E2"
+              anchorX="center"
+              anchorY="bottom"
+              font="/fonts/Inter_18pt-Bold.ttf"
+              letterSpacing={0.05}
+              renderOrder={999}
+            >
+              ABILITIES
+            </Text>
+            
+            {role.abilities.map((ability, index) => (
+              <Text
+                key={index}
+                position={[0, -index * 0.14, 0]}
+                fontSize={0.10}
+                color="#A0A0A0"
+                anchorX="center"
+                anchorY="top"
+                maxWidth={cardWidth - (padding * 2)}
+                textAlign="center"
+                renderOrder={999}
+              >
+                • {ability}
+              </Text>
+            ))}
+          </group>
+        )}
 
         {/* "Click to flip back" hint */}
         <Text

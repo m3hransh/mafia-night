@@ -56,8 +56,6 @@ export default function CreateGamePage() {
             setModeratorId(validatedState.moderatorId);
             // check if the roles are distributed by api
             const roles = await getGameRoles(validatedState.gameId, validatedState.moderatorId);
-            console.log('Validated state found:', validatedState);
-            console.log('Restored roles:', roles);
             if (roles && roles.length > 0) {
               setRoleAssignments(roles);
               setGamePhase('game-started');
