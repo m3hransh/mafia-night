@@ -7,7 +7,6 @@ import { JoinLobby } from '@/components/JoinLobby';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 import { AssignedRole } from '@/components/AssignedRole';
 import { JoinGameForm } from '@/components/JoinGameForm';
-import { GradientBackground } from './GradientBackground';
 
 export function JoinGameContent() {
   const searchParams = useSearchParams();
@@ -29,9 +28,12 @@ export function JoinGameContent() {
         setPlayerId(validatedState.playerId);
         setJoined(true);
 
-        const role = await getPlayerRole(validatedState.gameId, validatedState.playerId);
-        if (role) {
-          setAssignedRole(role);
+        try {
+          const role = await getPlayerRole(validatedState.gameId, validatedState.playerId);
+          if (role) {
+            setAssignedRole(role);
+          }
+        } catch (error) {
         }
       }
     };

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { AdminSidebar } from './AdminSidebar';
-import { GradientBackground } from '@/components/GradientBackground';
 import { adminLogout } from '@/lib/adminAuth';
 
 interface AdminLayoutProps {
@@ -24,8 +23,6 @@ export function AdminLayout({ children, title, actions }: AdminLayoutProps) {
   return (
     <AdminProtectedRoute>
       <div className="flex h-screen overflow-hidden relative">
-        <GradientBackground />
-        
         {/* Sidebar */}
         <AdminSidebar 
           isOpen={sidebarOpen} 

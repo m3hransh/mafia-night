@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { adminLogin } from '@/lib/adminApi';
 import { isAdminAuthenticated } from '@/lib/adminAuth';
 import { Button } from '@/components/Button';
-import { GradientBackground } from '@/components/GradientBackground';
 
 export default function AdminLoginPage() {
   const router = useRouter();

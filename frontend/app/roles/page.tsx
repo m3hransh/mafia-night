@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { fetchRoles, Role, APIError } from '@/lib/api';
-import { GradientBackground } from '@/components/GradientBackground';
 import { OptimizedVideo } from '@/components/OptimizedVideo';
 
 export default function RolesPage() {
@@ -34,7 +33,6 @@ export default function RolesPage() {
   if (loading) {
     return (
       <main className="relative w-full min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-8">
-        <GradientBackground />
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-6xl font-bold text-white mb-4">Loading roles...</h1>
         </div>
@@ -45,7 +43,6 @@ export default function RolesPage() {
   if (error) {
     return (
       <main className="relative w-full min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-8">
-        <GradientBackground />
         <div className="relative z-10 max-w-7xl mx-auto text-center">
           <h1 className="text-6xl font-bold text-white mb-4">Error</h1>
           <p className="text-xl text-red-400 mb-6">{error}</p>
@@ -61,9 +58,8 @@ export default function RolesPage() {
   }
 
   return (
-    <main className="relative w-full min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-8">
+    <main className="relative w-full min-h-screen p-8">
       {/* Animated gradient background */}
-      <GradientBackground />
 
       <div className="max-w-7xl mx-auto">
         {/* Back to home button */}

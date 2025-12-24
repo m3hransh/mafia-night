@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { GradientBackground } from '@/components/GradientBackground';
 
 export default function Home() {
   return (

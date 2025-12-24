@@ -187,8 +187,8 @@ test.describe('Individual Role Page', () => {
     await expect(errorTitle).toBeVisible();
 
     // Should have back to roles link
-    const backLink = page.locator('a[href="/roles"]');
-    await expect(backLink).toBeVisible();
+    const backLink = page.getByRole('link', { name: 'Back to Roles' });
+    await expect(backLink).toBeVisible({timeout: 2000});
   });
 
   test('should display gradient background', async ({ page }) => {

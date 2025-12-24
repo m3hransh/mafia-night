@@ -260,25 +260,14 @@ export async function waitForRoleAssignment(page: Page, timeout = 30000) {
   // Wait for "Your Role!" heading (increased timeout for WebSocket propagation)
   const roleHeading = page.locator('h2:has-text("Your Role!")');
 
-  // Log current URL for debugging
-  console.log('[waitForRoleAssignment] Current URL:', page.url());
-
   try {
     await roleHeading.waitFor({ state: 'visible', timeout });
   } catch (error) {
     // Enhanced debugging
     const url = page.url();
-    const title = await page.title();
-    const bodyText = await page.locator('body').textContent().catch(() => 'Unable to get body text');
-
-    console.error('[waitForRoleAssignment] Failed to find "Your Role!" heading');
-    console.error('  URL:', url);
-    console.error('  Title:', title);
-    console.error('  Body text (first 500 chars):', bodyText?.substring(0, 500));
 
     // Check if we're still in lobby
     const inLobby = await page.locator('text=/Waiting for|Game Lobby/i').isVisible().catch(() => false);
-    console.error('  Still in lobby?:', inLobby);
 
     throw new Error(`Failed to find "Your Role!" heading after ${timeout}ms. URL: ${url}, In lobby: ${inLobby}`);
   }
@@ -293,8 +282,6 @@ export async function waitForRoleAssignment(page: Page, timeout = 30000) {
     const video = page.locator('video').first();
     await video.waitFor({ state: 'attached', timeout: 3000 });
   } catch {
-    // Video element managed by Three.js may not be in DOM yet
-    console.log('[waitForRoleAssignment] Video element not yet attached, continuing...');
   }
 
   // Return player name from the header card instead of role name

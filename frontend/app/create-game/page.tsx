@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { GradientBackground } from '@/components/GradientBackground';
 import { RoleSelectionPanel } from '@/components/RoleSelectionPanel';
 import { CreateGameInitial, WaitingForPlayers, GameStarted, RoleDistributing } from '@/components';
 import { v4 as uuidv4 } from 'uuid';
@@ -259,7 +258,6 @@ export default function CreateGamePage() {
 
   return (
     <main className="relative w-full min-h-screen p-8">
-      <GradientBackground />
 
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Back button */}

@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { use } from 'react';
 import { fetchRoles, fetchRoleBySlug, Role, APIError } from '@/lib/api';
-import { GradientBackground } from '@/components/GradientBackground';
 
 // Dynamic import to avoid SSR issues with Three.js
 const CardScene = dynamic(() => import('@/components/CardScene').then(mod => ({ default: mod.CardScene })), {
@@ -36,14 +35,14 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
         setAllRoles(rolesData);
       } catch (err) {
         if (err instanceof APIError) {
+          console.log('APIError status:', err.status);
           if (err.status === 404) {
-            notFound();
+            setError('Role not found');
           }
           setError(err.message);
         } else {
           setError('Failed to load role');
         }
-        console.error('Error loading role:', err);
       } finally {
         setLoading(false);
       }
@@ -55,7 +54,6 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
   if (loading) {
     return (
       <main className="relative w-full h-screen overflow-hidden">
-        <GradientBackground />
         <div className="w-full h-screen flex items-center justify-center">
           <div className="text-white text-2xl">Loading magical card...</div>
         </div>
@@ -66,7 +64,6 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
   if (error || !role) {
     return (
       <main className="relative w-full h-screen overflow-hidden">
-        <GradientBackground />
         <div className="w-full h-screen flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-white mb-4">Error</h1>
@@ -86,8 +83,6 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
 
   return (
     <main className="relative w-full h-screen overflow-hidden">
-
-      <GradientBackground />
       <CardScene videoSrc={role.video} role={role} />
 
       {/* Navigation controls */}

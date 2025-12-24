@@ -1,11 +1,8 @@
 'use client'
 
-import { GradientBackground } from '@/components/GradientBackground'
-
 export default function MusicPage() {
   return (
     <div className="min-h-screen bg-black text-white">
-      <GradientBackground />
 
       <div className="relative z-10 container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto">

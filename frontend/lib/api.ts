@@ -34,13 +34,24 @@ export async function fetchRoles(): Promise<Role[]> {
  * Fetches a single role by its slug from the backend API
  */
 export async function fetchRoleBySlug(slug: string): Promise<Role> {
-  const response = await fetch(`${API_BASE_URL}/api/roles/${slug}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/roles/${slug}`);
 
-  if (!response.ok) {
-    throw new APIError(response.status, `Failed to fetch role: ${slug}`);
+    if (!response.ok) {
+      throw new APIError(response.status, `Failed to fetch role: ${slug}`);
+    }
+
+    const data = await response.json();
+    return data as Role; // or add runtime validation here
+  } catch (error) {
+    // Handle network errors or JSON parsing errors
+    if (error instanceof APIError) {
+      throw error; // Re-throw our custom API errors
+    }
+    
+    // Handle fetch network errors or JSON parsing errors
+    throw new APIError(0, `Network error while fetching role: ${slug}`);
   }
-
-  return response.json();
 }
 
 // Game-related types and functions

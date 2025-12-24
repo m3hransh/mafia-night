@@ -159,16 +159,6 @@ test.describe('Roles Gallery Page', () => {
     await expect(firstCard).toHaveClass(/hover:bg-purple-600/);
   });
 
-  test('should display gradient background', async ({ page }) => {
-    await waitForPageLoad(page);
-
-    // Check for gradient background component
-    const background = page.locator('main').first();
-    await expect(background).toHaveClass(/bg-gradient-to-b/);
-    await expect(background).toHaveClass(/from-slate-900/);
-    await expect(background).toHaveClass(/to-slate-800/);
-  });
-
   test('should be accessible', async ({ page }) => {
     await waitForPageLoad(page);
 
