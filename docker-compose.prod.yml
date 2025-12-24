@@ -33,6 +33,7 @@ services:
       DB_USER: ${DB_USER:-mafia_user}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME:-mafia_night}
+      JWT_SECRET: ${JWT_SECRET:-secret}
       DB_SSLMODE: disable
       PORT: 8080
       GIN_MODE: release

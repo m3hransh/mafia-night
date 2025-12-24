@@ -11,16 +11,12 @@ interface MagicCard3DProps {
   videoSrc: string;
   role: Role;
   position?: [number, number, number];
-  gyroData?: { beta: number; gamma: number };
-  gyroEnabled?: boolean;
 }
 
 export function MagicCard3D({
   videoSrc,
   role,
   position = [0, 0, 0],
-  gyroData,
-  gyroEnabled = false
 }: MagicCard3DProps) {
   const groupRef = useRef<THREE.Group>(null);
   const spinnerRef = useRef<THREE.Mesh>(null);
@@ -32,7 +28,6 @@ export function MagicCard3D({
   const fadeStartTime = useRef<number | null>(null);
 
   // Use gyro data from props if available, otherwise default
-  const gyroRotation = gyroData || { beta: 0, gamma: 0 };
 
   // Optimize video URL for current device
   const optimizedVideoSrc = useMemo(() => optimizeCloudinaryVideo(videoSrc), [videoSrc]);
@@ -120,19 +115,7 @@ export function MagicCard3D({
       const flipLerpSpeed = 0.15;
       const tiltLerpSpeed = 0.1;
 
-      if (gyroEnabled && !flipped) {
-        // Mobile: use gyroscope data (inverted for natural feel)
-        // gamma controls Y rotation (left-right tilt)
-        // beta controls X rotation (front-back tilt)
-        const gyroY = (gyroRotation.gamma / 180) * 1.0; // Inverted and scaled
-        // const gyroX = (-gyroRotation.beta / 90) * 0.8; // Inverted and scaled
-
-        groupRef.current.rotation.y = THREE.MathUtils.lerp(
-          groupRef.current.rotation.y,
-          targetRotationY + gyroY,
-          tiltLerpSpeed
-        );
-      } else if (hovered && !flipped) {
+      if (hovered && !flipped) {
         // Desktop: use mouse position
         groupRef.current.rotation.y = THREE.MathUtils.lerp(
           groupRef.current.rotation.y,
