@@ -8,17 +8,22 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent"
+	"github.com/mafia-night/backend/internal/auth"
 	"github.com/mafia-night/backend/internal/service"
 )
 
 // AdminHandler handles admin-related HTTP requests
 type AdminHandler struct {
 	adminService *service.AdminService
+	jwtService   *auth.JWTService
 }
 
 // NewAdminHandler creates a new admin handler
-func NewAdminHandler(adminService *service.AdminService) *AdminHandler {
-	return &AdminHandler{adminService: adminService}
+func NewAdminHandler(adminService *service.AdminService, jwtService *auth.JWTService) *AdminHandler {
+	return &AdminHandler{
+		adminService: adminService,
+		jwtService:   jwtService,
+	}
 }
 
 // Login handles POST /api/admin/login
@@ -43,8 +48,12 @@ func (h *AdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate a simple token (in production, use JWT)
-	token := admin.ID.String()
+	// Generate JWT token
+	token, err := h.jwtService.GenerateToken(admin.ID, admin.Username)
+	if err != nil {
+		ErrorResponse(w, http.StatusInternalServerError, "failed to generate token")
+		return
+	}
 
 	JSONResponse(w, http.StatusOK, map[string]any{
 		"token": token,

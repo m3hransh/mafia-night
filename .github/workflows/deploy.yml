@@ -157,6 +157,7 @@ jobs:
           DEPLOY_USER=${{ secrets.DEPLOY_USER }}
           DEPLOY_HOST=${{ secrets.DEPLOY_HOST }}
           DEPLOY_PATH=${{ secrets.DEPLOY_PATH }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
           EOF
 
       - name: Setup SSH

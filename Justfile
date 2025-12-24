@@ -279,6 +279,13 @@ db-migrate:
 db-seed:
   cd backend && go run ./cmd/seed
 
+db-seed-admin:
+  #!/usr/bin/env bash
+  set -a
+  [ -f .env.production ] && . .env.production
+  set +a
+  cd backend && go run ./cmd/seed-admin
+
 # Reset database (drop + create + seed)
 db-reset: db-drop db-migrate db-seed
 
@@ -297,3 +304,7 @@ db-migrate-prod:
 db-seed-prod:
 	@set -a && . {{justfile_directory()}}/.env.production && set +a && \
 	ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_PATH} && docker compose -f docker-compose.prod.yml exec -T backend ./seed"
+
+db-seed-admin-prod:
+  @set -a && . {{justfile_directory()}}/.env.production && set +a && \
+  ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_PATH} && docker compose -f docker-compose.prod.yml exec -T backend ./seed-admin"
