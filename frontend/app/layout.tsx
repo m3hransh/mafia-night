@@ -22,7 +22,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     siteName: 'Mafia Night',
+    url: '/',
     images: [
+      {
+        url: '/mafia_night_1200x630.png',
+        width: 1200,
+        height: 630,
+        alt: 'Mafia Night Game',
+      },
       {
         url: '/mafia_night.png',
         width: 1024,
@@ -35,7 +42,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Mafia Night',
     description: 'Web application for managing physical Mafia games',
-    images: ['/mafia_night.png'],
+    images: ['/mafia_night_1200x630.png'],
   },
   robots: {
     index: true,
