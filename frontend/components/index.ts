@@ -6,3 +6,4 @@ export { WaitingForPlayers } from './WaitingForPlayers';
 export { GameStarted } from './GameStarted';
 export { RoleDistributing } from './RoleDistributing';
 export { Button } from './Button';
+export { AdminProtectedRoute } from './AdminProtectedRoute';
