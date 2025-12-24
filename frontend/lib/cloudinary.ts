@@ -110,7 +110,7 @@ export function getVideoPoster(videoUrl: string, width = 400): string {
   if (parts.length !== 2) return '';
 
   const [base, pathPart] = parts;
-  const publicIdMatch = pathPart.match(/(?:mafia-roles\/.+)\.webm/);
+  const publicIdMatch = pathPart.match(/(mafia-roles\/.+)\.webm/);
   if (!publicIdMatch) return '';
 
   const publicIdWithoutExt = publicIdMatch[1];
