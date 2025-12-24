@@ -219,7 +219,6 @@ Our REST API structure with Chi:
 
 - **Phase 3:** Game Creation & Management API ← Starting here
 - **Phase 4:** Player Join & Registration API
-- **Phase 7:** Telegram Bot Webhooks
 - **Phase 8:** Moderator Dashboard API
 - **Phase 9:** Player Interface API
 

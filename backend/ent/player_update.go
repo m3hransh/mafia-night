@@ -43,26 +43,6 @@ func (_u *PlayerUpdate) SetNillableName(v *string) *PlayerUpdate {
 	return _u
 }
 
-// SetTelegramID sets the "telegram_id" field.
-func (_u *PlayerUpdate) SetTelegramID(v string) *PlayerUpdate {
-	_u.mutation.SetTelegramID(v)
-	return _u
-}
-
-// SetNillableTelegramID sets the "telegram_id" field if the given value is not nil.
-func (_u *PlayerUpdate) SetNillableTelegramID(v *string) *PlayerUpdate {
-	if v != nil {
-		_u.SetTelegramID(*v)
-	}
-	return _u
-}
-
-// ClearTelegramID clears the value of the "telegram_id" field.
-func (_u *PlayerUpdate) ClearTelegramID() *PlayerUpdate {
-	_u.mutation.ClearTelegramID()
-	return _u
-}
-
 // SetGameID sets the "game_id" field.
 func (_u *PlayerUpdate) SetGameID(v string) *PlayerUpdate {
 	_u.mutation.SetGameID(v)
@@ -178,12 +158,6 @@ func (_u *PlayerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(player.FieldName, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.TelegramID(); ok {
-		_spec.SetField(player.FieldTelegramID, field.TypeString, value)
-	}
-	if _u.mutation.TelegramIDCleared() {
-		_spec.ClearField(player.FieldTelegramID, field.TypeString)
-	}
 	if _u.mutation.GameCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -273,26 +247,6 @@ func (_u *PlayerUpdateOne) SetNillableName(v *string) *PlayerUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
 	}
-	return _u
-}
-
-// SetTelegramID sets the "telegram_id" field.
-func (_u *PlayerUpdateOne) SetTelegramID(v string) *PlayerUpdateOne {
-	_u.mutation.SetTelegramID(v)
-	return _u
-}
-
-// SetNillableTelegramID sets the "telegram_id" field if the given value is not nil.
-func (_u *PlayerUpdateOne) SetNillableTelegramID(v *string) *PlayerUpdateOne {
-	if v != nil {
-		_u.SetTelegramID(*v)
-	}
-	return _u
-}
-
-// ClearTelegramID clears the value of the "telegram_id" field.
-func (_u *PlayerUpdateOne) ClearTelegramID() *PlayerUpdateOne {
-	_u.mutation.ClearTelegramID()
 	return _u
 }
 
@@ -440,12 +394,6 @@ func (_u *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err erro
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(player.FieldName, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.TelegramID(); ok {
-		_spec.SetField(player.FieldTelegramID, field.TypeString, value)
-	}
-	if _u.mutation.TelegramIDCleared() {
-		_spec.ClearField(player.FieldTelegramID, field.TypeString)
 	}
 	if _u.mutation.GameCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -1,6 +1,6 @@
 # Project Overview
 
-**Mafia Night** is a web application for managing physical Mafia games with real-time role distribution via Telegram bot.
+**Mafia Night** is a web application for managing physical Mafia games.
 
 ## Purpose
 
@@ -8,7 +8,6 @@ Replace paper-based role distribution with a digital system that:
 - Creates and manages games
 - Allows players to join with a game ID
 - Distributes roles randomly
-- Delivers roles privately via Telegram
 - Provides moderator dashboard
 
 ## Key Features
@@ -16,7 +15,6 @@ Replace paper-based role distribution with a digital system that:
 - 🎮 **Game Creation** - Moderators create games with unique IDs
 - 👥 **Player Registration** - Players join using game codes
 - 🎲 **Random Roles** - Fair, secret role distribution
-- 📱 **Telegram Integration** - Private role delivery
 - 🎯 **Moderator Dashboard** - Full game visibility
 - ⚡ **Real-time Updates** - Live player status
 - 💾 **State Persistence** - Resume games after refresh/close
@@ -30,12 +28,6 @@ Replace paper-based role distribution with a digital system that:
 │  Next.js    │────▶│  Go API  │────▶│  PostgreSQL  │
 │  Frontend   │◀────│  Backend │◀────│  Database    │
 └─────────────┘     └──────────┘     └──────────────┘
-                          │
-                          │
-                    ┌──────────────┐
-                    │  Telegram    │
-                    │  Bot         │
-                    └──────────────┘
 ```
 
 ## Related Notes

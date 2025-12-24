@@ -61,11 +61,6 @@ func Name(v string) predicate.Player {
 	return predicate.Player(sql.FieldEQ(FieldName, v))
 }
 
-// TelegramID applies equality check predicate on the "telegram_id" field. It's identical to TelegramIDEQ.
-func TelegramID(v string) predicate.Player {
-	return predicate.Player(sql.FieldEQ(FieldTelegramID, v))
-}
-
 // GameID applies equality check predicate on the "game_id" field. It's identical to GameIDEQ.
 func GameID(v string) predicate.Player {
 	return predicate.Player(sql.FieldEQ(FieldGameID, v))
@@ -139,81 +134,6 @@ func NameEqualFold(v string) predicate.Player {
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.Player {
 	return predicate.Player(sql.FieldContainsFold(FieldName, v))
-}
-
-// TelegramIDEQ applies the EQ predicate on the "telegram_id" field.
-func TelegramIDEQ(v string) predicate.Player {
-	return predicate.Player(sql.FieldEQ(FieldTelegramID, v))
-}
-
-// TelegramIDNEQ applies the NEQ predicate on the "telegram_id" field.
-func TelegramIDNEQ(v string) predicate.Player {
-	return predicate.Player(sql.FieldNEQ(FieldTelegramID, v))
-}
-
-// TelegramIDIn applies the In predicate on the "telegram_id" field.
-func TelegramIDIn(vs ...string) predicate.Player {
-	return predicate.Player(sql.FieldIn(FieldTelegramID, vs...))
-}
-
-// TelegramIDNotIn applies the NotIn predicate on the "telegram_id" field.
-func TelegramIDNotIn(vs ...string) predicate.Player {
-	return predicate.Player(sql.FieldNotIn(FieldTelegramID, vs...))
-}
-
-// TelegramIDGT applies the GT predicate on the "telegram_id" field.
-func TelegramIDGT(v string) predicate.Player {
-	return predicate.Player(sql.FieldGT(FieldTelegramID, v))
-}
-
-// TelegramIDGTE applies the GTE predicate on the "telegram_id" field.
-func TelegramIDGTE(v string) predicate.Player {
-	return predicate.Player(sql.FieldGTE(FieldTelegramID, v))
-}
-
-// TelegramIDLT applies the LT predicate on the "telegram_id" field.
-func TelegramIDLT(v string) predicate.Player {
-	return predicate.Player(sql.FieldLT(FieldTelegramID, v))
-}
-
-// TelegramIDLTE applies the LTE predicate on the "telegram_id" field.
-func TelegramIDLTE(v string) predicate.Player {
-	return predicate.Player(sql.FieldLTE(FieldTelegramID, v))
-}
-
-// TelegramIDContains applies the Contains predicate on the "telegram_id" field.
-func TelegramIDContains(v string) predicate.Player {
-	return predicate.Player(sql.FieldContains(FieldTelegramID, v))
-}
-
-// TelegramIDHasPrefix applies the HasPrefix predicate on the "telegram_id" field.
-func TelegramIDHasPrefix(v string) predicate.Player {
-	return predicate.Player(sql.FieldHasPrefix(FieldTelegramID, v))
-}
-
-// TelegramIDHasSuffix applies the HasSuffix predicate on the "telegram_id" field.
-func TelegramIDHasSuffix(v string) predicate.Player {
-	return predicate.Player(sql.FieldHasSuffix(FieldTelegramID, v))
-}
-
-// TelegramIDIsNil applies the IsNil predicate on the "telegram_id" field.
-func TelegramIDIsNil() predicate.Player {
-	return predicate.Player(sql.FieldIsNull(FieldTelegramID))
-}
-
-// TelegramIDNotNil applies the NotNil predicate on the "telegram_id" field.
-func TelegramIDNotNil() predicate.Player {
-	return predicate.Player(sql.FieldNotNull(FieldTelegramID))
-}
-
-// TelegramIDEqualFold applies the EqualFold predicate on the "telegram_id" field.
-func TelegramIDEqualFold(v string) predicate.Player {
-	return predicate.Player(sql.FieldEqualFold(FieldTelegramID, v))
-}
-
-// TelegramIDContainsFold applies the ContainsFold predicate on the "telegram_id" field.
-func TelegramIDContainsFold(v string) predicate.Player {
-	return predicate.Player(sql.FieldContainsFold(FieldTelegramID, v))
 }
 
 // GameIDEQ applies the EQ predicate on the "game_id" field.

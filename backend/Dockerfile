@@ -23,6 +23,7 @@ WORKDIR /app
 # Copy binaries from builder
 COPY --from=builder /app/api .
 COPY --from=builder /app/seed .
+COPY --from=builder /app/seed-admin .
 COPY --from=builder /app/migrate .
 
 EXPOSE 8080

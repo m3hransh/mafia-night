@@ -142,7 +142,6 @@ backend/
 ## Next Steps 🚧
 
 ### Planned Features
-- [ ] Telegram bot integration for role distribution
 - [ ] WebSocket support for real-time updates (replace polling)
 - [ ] Game status management (start/end game)
 - [ ] Multiple game support for moderators

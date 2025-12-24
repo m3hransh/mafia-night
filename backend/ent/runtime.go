@@ -137,11 +137,11 @@ func init() {
 	// player.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	player.NameValidator = playerDescName.Validators[0].(func(string) error)
 	// playerDescGameID is the schema descriptor for game_id field.
-	playerDescGameID := playerFields[3].Descriptor()
+	playerDescGameID := playerFields[2].Descriptor()
 	// player.GameIDValidator is a validator for the "game_id" field. It is called by the builders before save.
 	player.GameIDValidator = playerDescGameID.Validators[0].(func(string) error)
 	// playerDescCreatedAt is the schema descriptor for created_at field.
-	playerDescCreatedAt := playerFields[4].Descriptor()
+	playerDescCreatedAt := playerFields[3].Descriptor()
 	// player.DefaultCreatedAt holds the default value on creation for the created_at field.
 	player.DefaultCreatedAt = playerDescCreatedAt.Default.(func() time.Time)
 	// playerDescID is the schema descriptor for id field.

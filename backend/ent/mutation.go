@@ -1971,7 +1971,6 @@ type PlayerMutation struct {
 	typ              string
 	id               *uuid.UUID
 	name             *string
-	telegram_id      *string
 	created_at       *time.Time
 	clearedFields    map[string]struct{}
 	game             *string
@@ -2121,55 +2120,6 @@ func (m *PlayerMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *PlayerMutation) ResetName() {
 	m.name = nil
-}
-
-// SetTelegramID sets the "telegram_id" field.
-func (m *PlayerMutation) SetTelegramID(s string) {
-	m.telegram_id = &s
-}
-
-// TelegramID returns the value of the "telegram_id" field in the mutation.
-func (m *PlayerMutation) TelegramID() (r string, exists bool) {
-	v := m.telegram_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTelegramID returns the old "telegram_id" field's value of the Player entity.
-// If the Player object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PlayerMutation) OldTelegramID(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTelegramID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTelegramID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTelegramID: %w", err)
-	}
-	return oldValue.TelegramID, nil
-}
-
-// ClearTelegramID clears the value of the "telegram_id" field.
-func (m *PlayerMutation) ClearTelegramID() {
-	m.telegram_id = nil
-	m.clearedFields[player.FieldTelegramID] = struct{}{}
-}
-
-// TelegramIDCleared returns if the "telegram_id" field was cleared in this mutation.
-func (m *PlayerMutation) TelegramIDCleared() bool {
-	_, ok := m.clearedFields[player.FieldTelegramID]
-	return ok
-}
-
-// ResetTelegramID resets all changes to the "telegram_id" field.
-func (m *PlayerMutation) ResetTelegramID() {
-	m.telegram_id = nil
-	delete(m.clearedFields, player.FieldTelegramID)
 }
 
 // SetGameID sets the "game_id" field.
@@ -2344,12 +2294,9 @@ func (m *PlayerMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PlayerMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, player.FieldName)
-	}
-	if m.telegram_id != nil {
-		fields = append(fields, player.FieldTelegramID)
 	}
 	if m.game != nil {
 		fields = append(fields, player.FieldGameID)
@@ -2367,8 +2314,6 @@ func (m *PlayerMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case player.FieldName:
 		return m.Name()
-	case player.FieldTelegramID:
-		return m.TelegramID()
 	case player.FieldGameID:
 		return m.GameID()
 	case player.FieldCreatedAt:
@@ -2384,8 +2329,6 @@ func (m *PlayerMutation) OldField(ctx context.Context, name string) (ent.Value, 
 	switch name {
 	case player.FieldName:
 		return m.OldName(ctx)
-	case player.FieldTelegramID:
-		return m.OldTelegramID(ctx)
 	case player.FieldGameID:
 		return m.OldGameID(ctx)
 	case player.FieldCreatedAt:
@@ -2405,13 +2348,6 @@ func (m *PlayerMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
-		return nil
-	case player.FieldTelegramID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTelegramID(v)
 		return nil
 	case player.FieldGameID:
 		v, ok := value.(string)
@@ -2456,11 +2392,7 @@ func (m *PlayerMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *PlayerMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(player.FieldTelegramID) {
-		fields = append(fields, player.FieldTelegramID)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -2473,11 +2405,6 @@ func (m *PlayerMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *PlayerMutation) ClearField(name string) error {
-	switch name {
-	case player.FieldTelegramID:
-		m.ClearTelegramID()
-		return nil
-	}
 	return fmt.Errorf("unknown Player nullable field %s", name)
 }
 
@@ -2487,9 +2414,6 @@ func (m *PlayerMutation) ResetField(name string) error {
 	switch name {
 	case player.FieldName:
 		m.ResetName()
-		return nil
-	case player.FieldTelegramID:
-		m.ResetTelegramID()
 		return nil
 	case player.FieldGameID:
 		m.ResetGameID()

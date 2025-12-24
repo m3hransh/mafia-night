@@ -4,7 +4,6 @@
 A web application for managing physical Mafia games with:
 - Golang backend API
 - Next.js frontend
-- Telegram bot for role distribution
 - Moderator dashboard for game management
 - Player interface for joining games
 
@@ -35,7 +34,7 @@ A web application for managing physical Mafia games with:
 
 ### Backend Tests & Implementation:
 - [x] Test: Game model (ID, status, created_at, moderator_id)
-- [x] Test: Player model (ID, name, telegram_id, game_id)
+- [x] Test: Player model (ID, name, game_id)
 - [x] Test: Role model (ID, name, team, abilities)
 - [x] Test: GameRole model (game_id, player_id, role_id, assigned_at)
 - [x] Implement: Database migrations (Ent ORM Auto-migration)
@@ -106,11 +105,11 @@ A web application for managing physical Mafia games with:
 - [ ] Implement: Custom role configuration
 
 ### Frontend Tests & Implementation:
-- [ ] Test: Role selection component
-- [ ] Test: Role count vs player count validation
-- [ ] Test: Predefined role templates UI
-- [ ] Implement: Moderator role configuration page
-- [ ] Implement: Role quantity selector
+- [x] Test: Role selection component
+- [x] Test: Role count vs player count validation
+- [x] Test: Predefined role templates UI
+- [x] Implement: Moderator role configuration page
+- [x] Implement: Role quantity selector
 
 ### Deliverables:
 - Role management API
@@ -123,13 +122,13 @@ A web application for managing physical Mafia games with:
 **Goal:** Implement random role assignment system
 
 ### Backend Tests & Implementation:
-- [ ] Test: Random role distribution algorithm
-- [ ] Test: POST /api/games/:id/distribute - Assign roles to players
-- [ ] Test: Role assignment uniqueness
-- [ ] Test: Distribution idempotency (can't redistribute)
-- [ ] Test: Game state transition (pending -> active)
-- [ ] Implement: Secure random role assignment
-- [ ] Implement: Transaction handling for atomic distribution
+- [x] Test: Random role distribution algorithm
+- [x] Test: POST /api/games/:id/distribute - Assign roles to players
+- [x] Test: Role assignment uniqueness
+- [x] Test: Distribution idempotency (can't redistribute)
+- [x] Test: Game state transition (pending -> active)
+- [x] Implement: Secure random role assignment
+- [x] Implement: Transaction handling for atomic distribution
 
 ### Deliverables:
 - Role distribution service with tests
@@ -138,28 +137,7 @@ A web application for managing physical Mafia games with:
 
 ---
 
-## Phase 7: Telegram Bot Integration
-**Goal:** Build Telegram bot for private role delivery
-
-### Backend Tests & Implementation:
-- [ ] Test: Telegram bot webhook handler
-- [ ] Test: /start command - Link player to game
-- [ ] Test: Role notification message formatting
-- [ ] Test: POST /api/games/:id/notify - Send roles via Telegram
-- [ ] Test: Player-Telegram account linking
-- [ ] Implement: Telegram bot setup (BotFather)
-- [ ] Implement: Webhook handlers
-- [ ] Implement: Message templates for roles
-- [ ] Implement: Error handling for failed notifications
-
-### Deliverables:
-- Working Telegram bot
-- Role notification system
-- Player-Telegram linking mechanism
-
----
-
-## Phase 8: Moderator Dashboard
+## Phase 7: Moderator Dashboard
 **Goal:** Create comprehensive moderator interface
 
 ### Frontend Tests & Implementation:
@@ -186,7 +164,7 @@ A web application for managing physical Mafia games with:
 
 ---
 
-## Phase 9: Player Interface & Game Status
+## Phase 8: Player Interface & Game Status
 **Goal:** Build player-facing interface
 
 ### Frontend Tests & Implementation:
@@ -194,10 +172,8 @@ A web application for managing physical Mafia games with:
 - [ ] Test: Player list display (without roles)
 - [ ] Test: Game status indicators
 - [ ] Test: "Waiting for roles" state
-- [ ] Test: Telegram connection prompt
 - [ ] Implement: Game lobby page
 - [ ] Implement: Connection status indicator
-- [ ] Implement: Instructions for Telegram bot
 
 ### Backend Tests & Implementation:
 - [ ] Test: GET /api/games/:id/status - Public game status
@@ -207,11 +183,10 @@ A web application for managing physical Mafia games with:
 ### Deliverables:
 - Player lobby interface
 - Game status page
-- Telegram integration instructions
 
 ---
 
-## Phase 10: Polish, Security & Deployment
+## Phase 9: Polish, Security & Deployment
 **Goal:** Production readiness and deployment
 
 ### Security:
@@ -236,7 +211,6 @@ A web application for managing physical Mafia games with:
 - [ ] Database backup strategy
 - [ ] Monitoring and logging setup
 - [ ] Production deployment (e.g., AWS, DigitalOcean, Railway)
-- [ ] Telegram bot production webhook
 
 ### Documentation:
 - [ ] API documentation complete
@@ -260,7 +234,6 @@ A web application for managing physical Mafia games with:
 - **Database:** PostgreSQL
 - **ORM:** sqlx or GORM
 - **Testing:** testing package + testify
-- **Telegram:** go-telegram-bot-api
 
 ### Frontend:
 - **Framework:** Next.js 14+ (App Router)

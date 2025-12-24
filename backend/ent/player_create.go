@@ -29,20 +29,6 @@ func (_c *PlayerCreate) SetName(v string) *PlayerCreate {
 	return _c
 }
 
-// SetTelegramID sets the "telegram_id" field.
-func (_c *PlayerCreate) SetTelegramID(v string) *PlayerCreate {
-	_c.mutation.SetTelegramID(v)
-	return _c
-}
-
-// SetNillableTelegramID sets the "telegram_id" field if the given value is not nil.
-func (_c *PlayerCreate) SetNillableTelegramID(v *string) *PlayerCreate {
-	if v != nil {
-		_c.SetTelegramID(*v)
-	}
-	return _c
-}
-
 // SetGameID sets the "game_id" field.
 func (_c *PlayerCreate) SetGameID(v string) *PlayerCreate {
 	_c.mutation.SetGameID(v)
@@ -208,10 +194,6 @@ func (_c *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(player.FieldName, field.TypeString, value)
 		_node.Name = value
-	}
-	if value, ok := _c.mutation.TelegramID(); ok {
-		_spec.SetField(player.FieldTelegramID, field.TypeString, value)
-		_node.TelegramID = value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(player.FieldCreatedAt, field.TypeTime, value)

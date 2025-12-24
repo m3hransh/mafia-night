@@ -28,14 +28,12 @@ func TestPlayerRepository_Create(t *testing.T) {
 		Create().
 		SetName("Alice").
 		SetGameID(game.ID).
-		SetTelegramID("telegram123").
 		Save(ctx)
 
 	require.NoError(t, err)
 	assert.NotZero(t, player.ID)
 	assert.Equal(t, "Alice", player.Name)
 	assert.Equal(t, "GAME1", player.GameID)
-	assert.Equal(t, "telegram123", player.TelegramID)
 }
 
 func TestPlayerRepository_UniqueNamePerGame(t *testing.T) {

@@ -351,7 +351,6 @@ Remains at root for:
 As project grows, add notes for:
 - [ ] Database Schema
 - [ ] API Design
-- [ ] Telegram Bot
 - [ ] Role System
 - [ ] Game Lifecycle
 

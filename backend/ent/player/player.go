@@ -17,8 +17,6 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldTelegramID holds the string denoting the telegram_id field in the database.
-	FieldTelegramID = "telegram_id"
 	// FieldGameID holds the string denoting the game_id field in the database.
 	FieldGameID = "game_id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -49,7 +47,6 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
-	FieldTelegramID,
 	FieldGameID,
 	FieldCreatedAt,
 }
@@ -86,11 +83,6 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
-}
-
-// ByTelegramID orders the results by the telegram_id field.
-func ByTelegramID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldTelegramID, opts...).ToFunc()
 }
 
 // ByGameID orders the results by the game_id field.

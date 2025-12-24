@@ -86,10 +86,6 @@ Technologies used in Mafia Night.
 
 ## Future Integrations
 
-### Telegram
-- **go-telegram-bot-api** - Telegram bot SDK
-- Webhook-based communication
-
 ### Migrations
 - **golang-migrate** - Database migrations
 - Version control for schema

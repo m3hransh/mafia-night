@@ -31,7 +31,6 @@ Welcome to the atomic notes knowledge base for Mafia Night! 🎭
 - [[Frontend Architecture]] - Next.js frontend design
 - [[Database Schema]] - Data model (future)
 - [[API Design]] - REST API structure (future)
-- [[Telegram Bot]] - Bot integration (future)
 
 ### ✨ Features
 - [[Game State Persistence]] - localStorage and session management

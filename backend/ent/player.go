@@ -22,8 +22,6 @@ type Player struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// TelegramID holds the value of the "telegram_id" field.
-	TelegramID string `json:"telegram_id,omitempty"`
 	// GameID holds the value of the "game_id" field.
 	GameID string `json:"game_id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -72,7 +70,7 @@ func (*Player) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case player.FieldName, player.FieldTelegramID, player.FieldGameID:
+		case player.FieldName, player.FieldGameID:
 			values[i] = new(sql.NullString)
 		case player.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -104,12 +102,6 @@ func (_m *Player) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				_m.Name = value.String
-			}
-		case player.FieldTelegramID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field telegram_id", values[i])
-			} else if value.Valid {
-				_m.TelegramID = value.String
 			}
 		case player.FieldGameID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -171,9 +163,6 @@ func (_m *Player) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
-	builder.WriteString(", ")
-	builder.WriteString("telegram_id=")
-	builder.WriteString(_m.TelegramID)
 	builder.WriteString(", ")
 	builder.WriteString("game_id=")
 	builder.WriteString(_m.GameID)

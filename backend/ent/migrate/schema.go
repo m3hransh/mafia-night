@@ -107,7 +107,6 @@ var (
 	PlayersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "name", Type: field.TypeString},
-		{Name: "telegram_id", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "game_id", Type: field.TypeString, Size: 12},
 	}
@@ -119,7 +118,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "players_games_players",
-				Columns:    []*schema.Column{PlayersColumns[4]},
+				Columns:    []*schema.Column{PlayersColumns[3]},
 				RefColumns: []*schema.Column{GamesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -128,7 +127,7 @@ var (
 			{
 				Name:    "player_game_id_name",
 				Unique:  true,
-				Columns: []*schema.Column{PlayersColumns[4], PlayersColumns[1]},
+				Columns: []*schema.Column{PlayersColumns[3], PlayersColumns[1]},
 			},
 		},
 	}

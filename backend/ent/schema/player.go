@@ -22,8 +22,6 @@ func (Player) Fields() []ent.Field {
 			Default(uuid.New),
 		field.String("name").
 			NotEmpty(),
-		field.String("telegram_id").
-			Optional(),
 		field.String("game_id").
 			NotEmpty(),
 		field.Time("created_at").

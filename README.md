@@ -1,6 +1,6 @@
 # Mafia Night 🎭
 
-A web application for managing physical Mafia games with real-time role distribution via Telegram bot.
+A web application for managing physical Mafia games.
 
 > **🎉 Now using Nix Flakes!** Pure, reproducible development environment with automatic loading via direnv. No more Bazel complexity!
 
@@ -33,7 +33,6 @@ just dev
 - 🎮 Create and manage Mafia games
 - 👥 Player registration and game joining
 - 🎲 Random role distribution
-- 📱 Private role delivery via Telegram
 - 🎯 Moderator dashboard with full game visibility
 - ⚡ Real-time player updates
 

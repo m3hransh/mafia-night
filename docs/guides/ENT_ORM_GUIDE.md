@@ -503,11 +503,9 @@ game, err := client.Game.Create().
     SetModeratorID(moderatorID).
     AddPlayers(
         client.Player.Create().
-            SetName("Alice").
-            SetTelegramID("alice123"),
+            SetName("Alice"),
         client.Player.Create().
-            SetName("Bob").
-            SetTelegramID("bob456"),
+            SetName("Bob"),
     ).
     Save(ctx)
 ```

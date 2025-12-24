@@ -32,7 +32,6 @@ type Game struct {
 type Player struct {
     ID         uuid.UUID `json:"id"`
     Name       string    `json:"name"`
-    TelegramID string    `json:"telegram_id"`
     GameID     string    `json:"game_id"`
     CreatedAt  time.Time `json:"created_at"`
 }
@@ -66,7 +65,7 @@ type GameRole struct {
 The schema is defined in `backend/ent/schema`.
 
 - **Games**: ID (String/12), Status (Enum), ModeratorID (String), CreatedAt (Time)
-- **Players**: ID (UUID), Name (String), TelegramID (String), GameID (String), CreatedAt (Time)
+- **Players**: ID (UUID), Name (String), GameID (String), CreatedAt (Time)
 - **Roles**: ID (UUID), Name (String), Team (Enum), Abilities (Text)
 - **GameRoles**: GameID (String), PlayerID (UUID), RoleID (UUID), AssignedAt (Time)
 
