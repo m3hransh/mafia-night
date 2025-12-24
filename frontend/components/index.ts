@@ -5,3 +5,4 @@ export { CreateGameInitial } from './CreateGameInitial';
 export { WaitingForPlayers } from './WaitingForPlayers';
 export { GameStarted } from './GameStarted';
 export { RoleDistributing } from './RoleDistributing';
+export { Button } from './Button';

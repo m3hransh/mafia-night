@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { fetchRoles, Role } from '@/lib/api';
+import { Button } from './Button';
 
 interface RoleSelectionPanelProps {
   playerCount: number;
@@ -115,10 +116,13 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
       <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
         <div className="text-center text-red-400">
           <p>{error}</p>
-          <button onClick={onCancel}
-            className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-all">
+          <Button
+            onClick={onCancel}
+            size="md"
+            className="mt-4"
+          >
             Go Back
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -193,14 +197,20 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
       </div>
 
       <div className="mt-8 flex gap-4 justify-center">
-        <button onClick={onCancel}
-          className="bg-gray-600 hover:bg-gray-700 text-white font-bold md:text-lg px-3 py-3 md:px-8 md:py-4 rounded-xl transition-all">
+        <Button
+          onClick={onCancel}
+          variant="secondary"
+        >
           Cancel
-        </button>
-        <button onClick={handleConfirm} disabled={!isValid}
-          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 px-3 text-white font-bold md:text-lg md:px-8 md:py-4 rounded-xl transition-all transform hover:scale-105">
+        </Button>
+        <Button
+          onClick={handleConfirm}
+          disabled={!isValid}
+          variant="primary"
+          scaleOnHover
+        >
           Confirm Selection
-        </button>
+        </Button>
       </div>
     </div>
   );

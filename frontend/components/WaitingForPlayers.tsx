@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Button } from './Button';
 
 interface Player {
   id: string;
@@ -44,28 +45,32 @@ export function WaitingForPlayers({
           <div data-testid="game-code" className="flex-1 bg-black/50 rounded-lg p-4 font-mono text-2xl text-purple-300 text-center">
             {gameId}
           </div>
-          <button
+          <Button
             data-testid="copy-game-code-button"
             onClick={onCopyGameCode}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-4 rounded-lg transition-all"
+            size="lg"
+            className="py-4"
           >
             {copySuccess ? 'Copied!' : 'Copy'}
-          </button>
+          </Button>
         </div>
         <div className="mt-4">
           <p className="text-sm text-purple-300 mb-2">Share this link with players:</p>
           <div className="bg-black/50 rounded-lg p-3 text-sm text-purple-200 break-all mb-3">
             {getJoinUrl()}
           </div>
-          <button
+          <Button
             onClick={onShareGame}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2"
+            variant="success"
+            size="md"
+            fullWidth
+            className="flex items-center justify-center gap-2"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
             Share Game Link
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -102,13 +107,14 @@ export function WaitingForPlayers({
                     </span>
                   </div>
                 </div>
-                <button
+                <Button
                   onClick={() => onRemovePlayer(player.id, player.name)}
                   disabled={removingPlayerId === player.id}
-                  className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white text-sm px-4 py-2 rounded-lg transition-all"
+                  variant="danger"
+                  size="sm"
                 >
                   {removingPlayerId === player.id ? 'Removing...' : 'Remove'}
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -118,30 +124,36 @@ export function WaitingForPlayers({
       {/* Actions */}
       <div className="flex flex-col gap-4">
         <div className="flex gap-4 justify-center">
-          <button
+          <Button
             onClick={onStartRoleSelection}
             disabled={players.length === 0}
-            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold md:text-lg px-8 py-2 rounded-xl transition-all transform hover:scale-105"
+            variant="success"
+            scaleOnHover
           >
             Select Roles
-          </button>
+          </Button>
           <Link
             href="/roles"
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold md:text-lg px-2 md:px-8 py-2 rounded-xl transition-all transform hover:scale-105 inline-block text-center"
+          >
+          <Button
+            variant="primary"
+            scaleOnHover
           >
             View Roles
+          </Button>
           </Link>
         </div>
 
         {/* Close Game Button */}
         <div className="text-center">
-          <button
+          <Button
             onClick={onCloseGame}
             disabled={closing}
-            className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg transition-all"
+            variant="danger"
+            size="lg"
           >
             {closing ? 'Closing Game...' : 'Close Game'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

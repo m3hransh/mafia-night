@@ -1,4 +1,5 @@
 import {Player} from "@/lib/api";
+import { Button } from './Button';
 
 interface JoinLobbyProps {
     playerName: string;
@@ -69,10 +70,14 @@ export function JoinLobby({ playerName, players, onLeaveGame, leaving }: JoinLob
         </div>
 
         {/* Leave Game Button */}
-        <button onClick={handleLeaveClick} disabled={leaving}
-          className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-semibold px-4 md:px-8 py-3 rounded-lg transition-all">
+        <Button
+          onClick={handleLeaveClick}
+          disabled={leaving}
+          variant="danger"
+          size="lg"
+        >
           {leaving ? 'Leaving...' : 'Leave Game'}
-        </button>
+        </Button>
       </div>
     </>
   )

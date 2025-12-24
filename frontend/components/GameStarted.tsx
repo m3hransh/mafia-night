@@ -1,3 +1,5 @@
+import { Button } from './Button';
+
 interface PlayerRoleAssignment {
   player_id: string;
   player_name: string;
@@ -60,13 +62,14 @@ export function GameStarted({ roleAssignments, error, closing, onCloseGame }: Ga
       </div>
 
       <div className="flex gap-4 justify-center">
-        <button
+        <Button
           onClick={onCloseGame}
           disabled={closing}
-          className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-bold px-8 py-3 rounded-xl transition-all"
+          variant="danger"
+          size="lg"
         >
           {closing ? 'Closing...' : 'End Game'}
-        </button>
+        </Button>
       </div>
     </div>
   );

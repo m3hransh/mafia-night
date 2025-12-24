@@ -1,3 +1,5 @@
+import { Button } from './Button';
+
 interface CreateGameInitialProps {
   loading: boolean;
   error: string;
@@ -18,13 +20,15 @@ export function CreateGameInitial({ loading, error, onCreateGame }: CreateGameIn
           </div>
         )}
 
-        <button
+        <Button
           onClick={onCreateGame}
           disabled={loading}
-          className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed text-white font-bold text-xl px-3 py-3 md:px-12 md:py-6 rounded-xl transition-all transform hover:scale-105 shadow-2xl"
+          size="xl"
+          scaleOnHover
+          className="shadow-2xl"
         >
           {loading ? 'Creating Game...' : 'Create Game'}
-        </button>
+        </Button>
       </div>
     </div>
   );

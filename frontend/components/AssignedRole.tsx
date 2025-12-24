@@ -1,5 +1,6 @@
 import { Role } from "@/lib/api";
 import { CardScene } from "./CardScene";
+import { Button } from './Button';
 
 interface AssignedRoleProps {
   assignedRole: Role;
@@ -39,18 +40,16 @@ export function AssignedRole({ assignedRole, playerName, leaving, onLeaveGame }:
 
       {/* Leave button */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-        <button
+        <Button
           onClick={handleLeaveClick}
           disabled={leaving}
-          className="bg-red-600/90 hover:bg-red-700 disabled:bg-red-800/50 disabled:cursor-not-allowed
-                     text-white font-semibold px-4 md:px-8 py-4 rounded-xl
-                     backdrop-blur-sm border border-red-400/30
-                     transition-all duration-200
-                     hover:scale-105 hover:shadow-lg hover:shadow-red-500/50
-                     active:scale-95"
+          variant="danger"
+          size="lg"
+          scaleOnHover
+          className="backdrop-blur-sm border border-red-400/30 hover:shadow-lg hover:shadow-red-500/50 active:scale-95"
         >
           {leaving ? 'Leaving...' : 'Leave Game'}
-        </button>
+        </Button>
       </div>
     </>
   )
