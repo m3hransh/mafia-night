@@ -76,6 +76,7 @@
             gh
             just
             mkcert
+            imagemagick
 
             # Formatters & Linters
             gofumpt

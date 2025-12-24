@@ -12,7 +12,10 @@ export const metadata: Metadata = {
   keywords: ['mafia', 'mafia game', 'party game', 'social deduction', 'board game', 'role playing'],
   authors: [{ name: 'Mafia Night Team' }],
   creator: 'Mafia Night Team',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.NEXT_PUBLIC_API_URL ? new URL(process.env.NEXT_PUBLIC_API_URL).origin : 'http://localhost:3000')
+  ),
   openGraph: {
     title: 'Mafia Night',
     description: 'Web application for managing physical Mafia games',
@@ -22,8 +25,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: '/mafia_night.png',
-        width: 1200,
-        height: 630,
+        width: 1024,
+        height: 1536,
         alt: 'Mafia Night Game',
       },
     ],

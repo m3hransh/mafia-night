@@ -1,6 +1,5 @@
 import { Role } from "@/lib/api";
 import { CardScene } from "./CardScene";
-import { GradientBackground } from "./GradientBackground";
 
 interface AssignedRoleProps {
   assignedRole: Role;
