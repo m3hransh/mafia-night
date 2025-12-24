@@ -207,11 +207,14 @@ func getAllowedOrigins() []string {
 
 ## Related Documentation
 
-- [API Integration Guide](API_INTEGRATION.md) - Full API setup
-- [Deployment Guide](../DEPLOYMENT.md) - Production deployment
-- [Environment Variables](.env.production.example) - All config options
+- [[API_INTEGRATION]] - Full API setup and integration guide
+- [[DEPLOYMENT]] - Production deployment guide
+- [[GITHUB_ACTIONS_SETUP]] - CI/CD and environment variables
+- [[TESTING]] - Backend testing with CORS
 
 ---
+
+#cors #security #configuration #deployment #api
 
 **Quick Reference:**
 - Development: No config needed, uses localhost

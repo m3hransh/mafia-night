@@ -229,7 +229,7 @@ Compare to paid SSL: $50-200/year 💰
 ## Complete Documentation
 
 For detailed information, see:
-- [docs/notes/deployment/SSL Setup.md](docs/notes/deployment/SSL%20Setup.md)
+- [[SSL Setup]]
 
 ## Support
 

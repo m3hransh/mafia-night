@@ -4,64 +4,38 @@ Welcome to the atomic notes knowledge base for Mafia Night! 🎭
 
 ## Navigation
 
-### 📚 Core Concepts
-- [[Project Overview]] - What is Mafia Night?
+### 📚 Core Features & Status
 - [[CURRENT_FEATURES]] - Feature status and roadmap
-- [[Tech Stack]] - Technologies used
-- [[TDD Approach]] - Test-Driven Development methodology
-- [[Project Structure]] - Codebase organization
+- [[3d-magic-cards]] - 3D magic card implementation
+- [[VIDEO_OPTIMIZATION]] - Video loading optimization techniques
+- [[ADMIN_SYSTEM_IMPLEMENTATION]] - Admin system features
 
-### 🛠️ Tools & Technologies
-- [[Nix Flakes]] - Development environment
-- [[direnv]] - Automatic environment loading
-- [[Just]] - Command runner
-- [[Docker Compose]] - Container orchestration
-- [[PostgreSQL]] - Database
-- [[Go Language]] - Backend language
-- [[Next.js]] - Frontend framework
+### 🏗️ Infrastructure & Testing
+- [[TESTING]] - Backend testing guide (Go tests, database setup)
+- [[DEPLOYMENT]] - Production deployment guide
+- [[SSL_SETUP]] - SSL/HTTPS configuration
+- [[MIGRATION_TO_NIX_FLAKES]] - Bazel to Nix migration story
 
-### ⚙️ Setup & Configuration
-- [[Quick Start]] - Get started in minutes
-- [[Installing Nix]] - Nix installation guide
-- [[Environment Setup]] - direnv configuration
-- [[Running Tests]] - Test execution
+### 🔌 Integration & Configuration
+- [[API_INTEGRATION]] - Frontend-backend API integration
+- [[CORS_SETUP]] - CORS configuration for dev and production
+- [[GITHUB_ACTIONS_SETUP]] - CI/CD pipeline setup
 
-### 🏗️ Architecture
-- [[Backend Architecture]] - Go backend design
-- [[Frontend Architecture]] - Next.js frontend design
-- [[Database Schema]] - Data model (future)
-- [[API Design]] - REST API structure (future)
+### 📖 Project Organization
+- [[STRUCTURE]] - Atomic notes structure map
+- [[ATOMIC_NOTES_SUMMARY]] - Documentation organization summary
+- [[ORGANIZATION_SUMMARY]] - Historical organization notes
 
-### ✨ Features
-- [[Game State Persistence]] - localStorage and session management
-- [[ROLE_DISTRIBUTION_FEATURE]] - Role distribution system for moderators and players
+## Using This Documentation
 
-### 📈 Development Phases
-- [[Phase 1 - Infrastructure]] - ✅ Complete
-- [[Phase 2 - Database Layer]] - Next up
-- [[Phase 3 - Game API]] - Planned
-- [[Phase 4 - Player Join]] - Planned
-- [[Phase 5 - Role Management]] - Planned
-
-### 🔄 Workflows
-- [[Development Workflow]] - Daily development
-- [[Testing Workflow]] - TDD cycle
-- [[Build Workflow]] - Building the project
-- [[Docker Workflow]] - Using containers
-- [[TESTING_ROLE_DISTRIBUTION]] - Manual and API testing guide for role distribution
-
-### 📖 Historical Context
-- [[Bazel Migration]] - Why we moved from Bazel to Nix
-
-## Using This Vault
-
-Each note is **atomic** - focused on one concept. Notes link to each other using `[[Note Name]]` syntax.
+Notes link to each other using `[[Note Name]]` syntax for easy navigation.
 
 ### Tips
-- Start with [[Project Overview]]
-- New to the project? Read [[Quick Start]]
-- Confused about tools? Check the Tools & Technologies section
-- Want to contribute? Read [[Development Workflow]] and [[TDD Approach]]
+- Start with [[CURRENT_FEATURES]] to see what's implemented
+- Setting up? Read [[DEPLOYMENT]] and [[TESTING]]
+- Working with API? Check [[API_INTEGRATION]] and [[CORS_SETUP]]
+- Need CI/CD? See [[GITHUB_ACTIONS_SETUP]]
+- Optimizing videos? Read [[VIDEO_OPTIMIZATION]]
 
 ## Obsidian Features
 

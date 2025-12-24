@@ -635,11 +635,11 @@ For predictable user flows:
 
 ## Related Documentation
 
-- [[Cloudinary Transformation API]]
-- [[Next.js Image Optimization]]
-- [[Three.js Performance Best Practices]]
-- [[Core Web Vitals Guide]]
-- [[Progressive Enhancement Patterns]]
+- [[3d-magic-cards]] - 3D card implementation with video loading
+- [[CURRENT_FEATURES]] - Current features including video cards
+- [Cloudinary Transformation API](https://cloudinary.com/documentation/video_transformation_reference)
+- [Next.js Image Optimization](https://nextjs.org/docs/app/building-your-application/optimizing/images)
+- [Three.js Performance](https://docs.pmnd.rs/react-three-fiber/advanced/performance)
 
 ---
 

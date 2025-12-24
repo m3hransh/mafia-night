@@ -332,8 +332,18 @@ Current test performance:
 
 Test coverage: Run `just test-backend-coverage` to see current coverage.
 
-## Resources
+## Related Documentation
+
+- [[CURRENT_FEATURES]] - Current feature implementation status
+- [[API_INTEGRATION]] - Frontend-backend integration
+- [[GITHUB_ACTIONS_SETUP]] - CI/CD pipeline setup
+
+## External Resources
 
 - [Go Testing Best Practices](https://go.dev/doc/tutorial/add-a-test)
 - [Testify Documentation](https://github.com/stretchr/testify)
 - [Ent Testing Guide](https://entgo.io/docs/testing/)
+
+---
+
+#testing #backend #go #database #ci-cd

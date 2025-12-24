@@ -295,9 +295,9 @@ just clean-all           # Clean everything
 
 ## Documentation
 
-- **[docs/NIX_FLAKES_GUIDE.md](docs/NIX_FLAKES_GUIDE.md)** - Complete guide
-- **[README.md](README.md)** - Updated with Nix instructions
-- **[Justfile](Justfile)** - All available commands
+- **[[NIX_FLAKES_GUIDE]]** - Complete guide
+- **[[README]]** - Updated with Nix instructions
+- **[[Justfile]]** - All available commands
 
 ---
 

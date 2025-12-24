@@ -276,4 +276,16 @@ curl -X POST http://localhost:8080/api/games \
 
 ---
 
+## Related Documentation
+
+- [[CORS_SETUP]] - Detailed CORS configuration
+- [[DEPLOYMENT]] - Production deployment guide
+- [[TESTING]] - Backend testing guide
+- [[GITHUB_ACTIONS_SETUP]] - CI/CD setup
+- [[CURRENT_FEATURES]] - Current features and API endpoints
+
+---
+
+#api #integration #cors #frontend #backend
+
 Built with Next.js 16, Go 1.25, and PostgreSQL

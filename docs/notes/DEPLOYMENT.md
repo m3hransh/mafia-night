@@ -354,9 +354,9 @@ Update `nginx/nginx.conf` to use HTTPS configuration.
 ## Documentation
 
 Detailed guides:
-- [DigitalOcean Deployment](docs/notes/deployment/DigitalOcean%20Deployment.md) - Complete deployment guide
-- [CI/CD Pipeline](docs/notes/deployment/CI-CD%20Pipeline.md) - Automation details
-- [Docker Compose](docs/notes/tools/Docker%20Compose.md) - Container orchestration
+- [[DigitalOcean Deployment]] - Complete deployment guide
+- [[CI-CD Pipeline]] - Automation details
+- [[Docker Compose]] - Container orchestration
 
 ## Security Checklist
 

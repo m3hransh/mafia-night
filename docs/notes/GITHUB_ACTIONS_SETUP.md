@@ -321,12 +321,15 @@ Configure in: **Settings** → **Notifications**
 
 ## Related Documentation
 
-- [Deployment Guide](../DEPLOYMENT.md) - Manual deployment
-- [CI/CD Pipeline](./notes/deployment/CI-CD%20Pipeline.md) - Detailed workflow
-- [CORS Setup](./CORS_SETUP.md) - CORS configuration guide
-- [API Integration](./API_INTEGRATION.md) - Frontend-backend integration
+- [[DEPLOYMENT]] - Manual deployment guide
+- [[CORS_SETUP]] - CORS configuration guide
+- [[API_INTEGRATION]] - Frontend-backend integration
+- [[SSL_SETUP]] - SSL/HTTPS setup
+- [[TESTING]] - Backend testing in CI/CD
 
 ---
+
+#ci-cd #github-actions #deployment #automation #testing
 
 **Quick Reference:**
 
