@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { GradientBackground } from '@/components/GradientBackground';
 import { RoleSelectionPanel } from '@/components/RoleSelectionPanel';
+import { CreateGameInitial, WaitingForPlayers, GameStarted, RoleDistributing } from '@/components';
 import { v4 as uuidv4 } from 'uuid';
 import { saveModeratorGame, getModeratorGame, clearModeratorGame, validateModeratorGameState } from '@/lib/gameStorage';
 import { deleteGame, removePlayer, distributeRoles, getGameRoles, PlayerRoleAssignment } from '@/lib/api';
@@ -55,10 +56,12 @@ export default function CreateGamePage() {
             setModeratorId(validatedState.moderatorId);
             // check if the roles are distributed by api
             const roles = await getGameRoles(validatedState.gameId, validatedState.moderatorId);
-            if (roles) {
+            console.log('Validated state found:', validatedState);
+            console.log('Restored roles:', roles);
+            if (roles && roles.length > 0) {
               setRoleAssignments(roles);
               setGamePhase('game-started');
-            }else{
+            } else {
               setGamePhase(validatedState.phase);
             }
           } else {
@@ -280,37 +283,14 @@ export default function CreateGamePage() {
         </div>
 
         {!game ? (
-          <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
-            <div className="text-center">
-              <p className="text-purple-200 mb-6">
-                Click the button below to create a new game. You'll get a unique game code that players can use to join.
-              </p>
-
-              {error && (
-                <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
-                  {error}
-                </div>
-              )}
-
-              <button
-                onClick={createGame}
-                disabled={loading}
-                className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed text-white font-bold text-xl px-3 py-3 md:px-12 md:py-6 rounded-xl transition-all transform hover:scale-105 shadow-2xl"
-              >
-                {loading ? 'Creating Game...' : 'Create Game'}
-              </button>
-            </div>
-          </div>
+          <CreateGameInitial
+            loading={loading}
+            error={error}
+            onCreateGame={createGame}
+          />
         ) : gamePhase === 'selecting-roles' ? (
           distributingRoles ? (
-            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 text-center">
-              <div className="text-white text-2xl mb-4">Distributing roles...</div>
-              <div className="flex justify-center gap-2">
-                <div className="animate-pulse w-3 h-3 bg-purple-500 rounded-full"></div>
-                <div className="animate-pulse w-3 h-3 bg-purple-500 rounded-full" style={{ animationDelay: '0.2s' }}></div>
-                <div className="animate-pulse w-3 h-3 bg-purple-500 rounded-full" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-            </div>
+            <RoleDistributing />
           ) : (
             <RoleSelectionPanel
               playerCount={players.length}
@@ -319,170 +299,25 @@ export default function CreateGamePage() {
             />
           )
         ) : gamePhase === 'game-started' ? (
-          <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
-            <h2 className="text-3xl font-bold text-white mb-4 text-center">Roles Distributed!</h2>
-            <p className="text-purple-300 mb-6 text-center">All players have been assigned their roles.</p>
-            
-            {error && (
-              <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
-                {error}
-              </div>
-            )}
-
-            {/* Display role assignments by team */}
-            <div className="space-y-6 mb-8">
-              {['mafia', 'village', 'independent'].map(team => {
-                const teamAssignments = roleAssignments.filter(a => a.team === team);
-                if (teamAssignments.length === 0) return null;
-
-                const teamColors = {
-                  mafia: { bg: 'bg-red-900/30', border: 'border-red-500/30', text: 'text-red-400', label: 'Mafia Team' },
-                  village: { bg: 'bg-green-900/30', border: 'border-green-500/30', text: 'text-green-400', label: 'Village Team' },
-                  independent: { bg: 'bg-yellow-900/30', border: 'border-yellow-500/30', text: 'text-yellow-400', label: 'Independent' },
-                };
-
-                const colors = teamColors[team as keyof typeof teamColors];
-
-                return (
-                  <div key={team} className={`${colors.bg} ${colors.border} border rounded-xl p-6`}>
-                    <h3 className={`text-2xl font-bold ${colors.text} mb-4`}>
-                      {colors.label} ({teamAssignments.length})
-                    </h3>
-                    <div className="space-y-3">
-                      {teamAssignments.map(assignment => (
-                        <div key={assignment.player_id} className="bg-black/40 rounded-lg p-4 flex items-center gap-4">
-                          <div className="flex-1">
-                            <div className="text-white font-semibold">{assignment.player_name}</div>
-                            <div className={`text-sm ${colors.text}`}>{assignment.role_name}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={closeGame}
-                disabled={closing}
-                className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-bold px-8 py-3 rounded-xl transition-all"
-              >
-                {closing ? 'Closing...' : 'End Game'}
-              </button>
-            </div>
-          </div>
+          <GameStarted
+            roleAssignments={roleAssignments}
+            error={error}
+            closing={closing}
+            onCloseGame={closeGame}
+          />
         ) : (
-          <div className="space-y-6">
-            {/* Game Code */}
-            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
-              <h2 className="text-2xl font-bold text-white mb-4">Game Code</h2>
-              <div className="flex items-center gap-4">
-                <div data-testid="game-code" className="flex-1 bg-black/50 rounded-lg p-4 font-mono text-2xl text-purple-300 text-center">
-                  {game.id}
-                </div>
-                <button
-                  data-testid="copy-game-code-button"
-                  onClick={copyGameCode}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-4 rounded-lg transition-all"
-                >
-                  {copySuccess ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-              <div className="mt-4">
-                <p className="text-sm text-purple-300 mb-2">Share this link with players:</p>
-                <div className="bg-black/50 rounded-lg p-3 text-sm text-purple-200 break-all mb-3">
-                  {getJoinUrl()}
-                </div>
-                <button
-                  onClick={shareGame}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
-                  Share Game Link
-                </button>
-              </div>
-            </div>
-
-            {/* Players List */}
-            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Players ({players.length})
-              </h2>
-
-              {players.length === 0 ? (
-                <div className="text-center py-8 text-purple-300">
-                  <p>Waiting for players to join...</p>
-                  <div className="mt-4">
-                    <div className="animate-pulse inline-block w-3 h-3 bg-purple-500 rounded-full mx-1"></div>
-                    <div className="animate-pulse inline-block w-3 h-3 bg-purple-500 rounded-full mx-1" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="animate-pulse inline-block w-3 h-3 bg-purple-500 rounded-full mx-1" style={{ animationDelay: '0.4s' }}></div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {players.map((player, index) => (
-                    <div
-                      key={player.id}
-                      className="bg-black/30 rounded-lg p-4 flex items-center justify-between border border-purple-500/20"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <span className="text-white font-semibold block">{player.name}</span>
-                          <span className="text-xs text-purple-400">
-                            Joined {new Date(player.created_at).toLocaleTimeString()}
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleRemovePlayer(player.id, player.name)}
-                        disabled={removingPlayerId === player.id}
-                        className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white text-sm px-4 py-2 rounded-lg transition-all"
-                      >
-                        {removingPlayerId === player.id ? 'Removing...' : 'Remove'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col gap-4">
-              <div className="flex gap-4 justify-center">
-                <button
-                  onClick={handleStartRoleSelection}
-                  disabled={players.length === 0}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold md:text-lg px-8 py-2 rounded-xl transition-all transform hover:scale-105"
-                >
-                  Select Roles
-                </button>
-                <Link
-                  href="/roles"
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold md:text-lg px-2 md:px-8 py-2 rounded-xl transition-all transform hover:scale-105 inline-block text-center"
-                >
-                  View Roles
-                </Link>
-              </div>
-
-              {/* Close Game Button */}
-              <div className="text-center">
-                <button
-                  onClick={closeGame}
-                  disabled={closing}
-                  className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg transition-all"
-                >
-                  {closing ? 'Closing Game...' : 'Close Game'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <WaitingForPlayers
+            gameId={game.id}
+            players={players}
+            removingPlayerId={removingPlayerId}
+            copySuccess={copySuccess}
+            closing={closing}
+            onCopyGameCode={copyGameCode}
+            onShareGame={shareGame}
+            onRemovePlayer={handleRemovePlayer}
+            onStartRoleSelection={handleStartRoleSelection}
+            onCloseGame={closeGame}
+          />
         )}
       </div>
     </main>
