@@ -1,4 +1,5 @@
 'use client'
+import SpotifyEmbedPlayer from '@/components/SpotifyEmbedPlayer';
 
 export default function MusicPage() {
   return (
@@ -10,7 +11,9 @@ export default function MusicPage() {
             Mafia Night Music
           </h1>
 
-          <div className="bg-black/30 backdrop-blur-md rounded-xl border border-purple-500/20 p-8 space-y-6">
+
+          <SpotifyEmbedPlayer spotifyUri="spotify:album:7hUCt0iIBB5YP9a8FALtiG" theme="dark" />
+          <div className="bg-black/30 backdrop-blur-md rounded-xl border border-purple-500/20 p-8 mt-6 space-y-6">
             <section>
               <h2 className="text-2xl font-bold text-purple-400 mb-4">Atmosphere & Soundtracks</h2>
               <p className="text-white/80 leading-relaxed mb-6">
