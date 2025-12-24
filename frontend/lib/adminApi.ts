@@ -1,6 +1,7 @@
 // Admin API client functions
 
 import { getAdminToken, saveAdminToken, saveAdminUser, removeAdminToken, AdminUser, LoginResponse } from './adminAuth';
+import { Role } from './api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -136,5 +137,56 @@ export async function changePassword(id: string, oldPassword: string, newPasswor
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to change password');
+  }
+}
+
+// Role Management
+export async function listRoles(): Promise<Role[]> {
+  const response = await adminFetch('/api/admin/roles');
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch roles');
+  }
+
+  return response.json();
+}
+
+export async function createRole(role: Omit<Role, 'id'>): Promise<Role> {
+  const response = await adminFetch('/api/admin/roles', {
+    method: 'POST',
+    body: JSON.stringify(role),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create role');
+  }
+
+  return response.json();
+}
+
+export async function updateRole(id: string, role: Partial<Role>): Promise<Role> {
+  const response = await adminFetch(`/api/admin/roles/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(role),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update role');
+  }
+
+  return response.json();
+}
+
+export async function deleteRole(id: string): Promise<void> {
+  const response = await adminFetch(`/api/admin/roles/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete role');
   }
 }

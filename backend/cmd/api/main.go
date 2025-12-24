@@ -127,6 +127,7 @@ func main() {
 
 				// Role management
 				r.Route("/roles", func(r chi.Router) {
+					r.Get("/", roleHandler.GetRoles) // Admin can also list roles in full
 					r.Post("/", roleHandler.CreateRole)
 					r.Patch("/{id}", roleHandler.UpdateRole)
 					r.Delete("/{id}", roleHandler.DeleteRole)

@@ -1,24 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
-import { GradientBackground } from '@/components/GradientBackground';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/Button';
-import { getAdminUser, adminLogout, AdminUser } from '@/lib/adminAuth';
+import { getAdminUser, AdminUser } from '@/lib/adminAuth';
 import { listAdmins, createAdmin, deleteAdmin, updateAdmin } from '@/lib/adminApi';
-import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminCreateForm } from '@/components/admin/AdminCreateForm';
 import { AdminList } from '@/components/admin/AdminList';
 
 export default function AdminDashboardPage() {
-  return (
-    <AdminProtectedRoute>
-      <AdminDashboardContent />
-    </AdminProtectedRoute>
-  );
-}
-
-function AdminDashboardContent() {
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,60 +63,45 @@ function AdminDashboardContent() {
     }
   };
 
-  const handleLogout = () => {
-    if (confirm('Are you sure you want to logout?')) {
-      adminLogout();
-    }
-  };
-
   return (
-    <main className="relative w-full min-h-screen p-4 md:p-8">
-      <GradientBackground />
+    <AdminLayout 
+      title="Admin Management"
+      actions={
+        !showCreateForm && (
+          <Button
+            onClick={() => setShowCreateForm(true)}
+            variant="success"
+            size="lg"
+            className="w-full md:w-auto"
+          >
+            Create New Admin
+          </Button>
+        )
+      }
+    >
+      {/* Error Display */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm md:text-base">
+          {error}
+        </div>
+      )}
 
-      <div className="max-w-6xl mx-auto relative z-10">
-        <AdminHeader 
-          currentUser={currentUser} 
-          onLogout={handleLogout} 
+      {/* Create Admin Form */}
+      {showCreateForm && (
+        <AdminCreateForm 
+          onCreate={handleCreateAdmin} 
+          onCancel={() => setShowCreateForm(false)} 
         />
+      )}
 
-        {/* Error Display */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm md:text-base">
-            {error}
-          </div>
-        )}
-
-        {/* Actions */}
-        {!showCreateForm && (
-          <div className="mb-6">
-            <Button
-              onClick={() => setShowCreateForm(true)}
-              variant="success"
-              size="lg"
-              className="w-full md:w-auto"
-            >
-              Create New Admin
-            </Button>
-          </div>
-        )}
-
-        {/* Create Admin Form */}
-        {showCreateForm && (
-          <AdminCreateForm 
-            onCreate={handleCreateAdmin} 
-            onCancel={() => setShowCreateForm(false)} 
-          />
-        )}
-
-        {/* Admins List */}
-        <AdminList 
-          admins={admins}
-          currentUser={currentUser}
-          loading={loading}
-          onToggleActive={handleToggleActive}
-          onDelete={handleDeleteAdmin}
-        />
-      </div>
-    </main>
+      {/* Admins List */}
+      <AdminList 
+        admins={admins}
+        currentUser={currentUser}
+        loading={loading}
+        onToggleActive={handleToggleActive}
+        onDelete={handleDeleteAdmin}
+      />
+    </AdminLayout>
   );
 }
