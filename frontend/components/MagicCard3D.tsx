@@ -562,8 +562,8 @@ export function MagicCard3D({
 
         {/* Role name at top */}
         <Text
-          position={[0, cardHeight / 2 - 0.3, 0.16]}
-          fontSize={0.20}
+          position={[0, cardHeight / 2 - 0.2, 0.16]}
+          fontSize={0.15}
           color="#E5E4E2"
           anchorX="center"
           anchorY="top"
@@ -578,7 +578,7 @@ export function MagicCard3D({
 
         {/* Team badge below role name */}
         {role?.team && (
-          <group position={[0, cardHeight / 2 - 0.75, 0.16]}>
+          <group position={[0, cardHeight / 2 - 0.60, 0.16]}>
             {/* Badge background - flat with rounded corners */}
             <mesh>
               <shapeGeometry args={[(() => {
@@ -622,12 +622,12 @@ export function MagicCard3D({
 
         {/* Description text - moved up and made more compact */}
         <Text
-          position={[0, 0.8, 0.16]}
-          fontSize={0.11}
+          position={[0, 0.9, 0.16]}
+          fontSize={0.10}
           color="#C0C0C0"
           anchorX="center"
           anchorY="top"
-          maxWidth={cardWidth - (padding * 2.5)}
+          maxWidth={cardWidth - (padding * 1.5)}
           textAlign="center"
           lineHeight={1.3}
           renderOrder={999}
@@ -637,9 +637,9 @@ export function MagicCard3D({
 
         {/* Abilities list */}
         {role?.abilities && role.abilities.length > 0 && (
-          <group position={[0, -0.7, 0.16]}>
+          <group position={[0, -0.6, 0.16]}>
             <Text
-              position={[0, 0.12, 0]}
+              position={[0, 0.10, 0]}
               fontSize={0.10}
               color="#E5E4E2"
               anchorX="center"
@@ -654,13 +654,14 @@ export function MagicCard3D({
             {role.abilities.map((ability, index) => (
               <Text
                 key={index}
-                position={[0, -index * 0.14, 0]}
+                position={[0, -index * 0.25, 0]}
                 fontSize={0.10}
                 color="#A0A0A0"
                 anchorX="center"
                 anchorY="top"
-                maxWidth={cardWidth - (padding * 2)}
+                maxWidth={cardWidth - (padding * 1.5)}
                 textAlign="center"
+                lineHeight={1.3}
                 renderOrder={999}
               >
                 • {ability}
@@ -671,9 +672,9 @@ export function MagicCard3D({
 
         {/* "Click to flip back" hint */}
         <Text
-          position={[0, -cardHeight / 2 + 0.3, 0.16]}
-          fontSize={0.12}
-          color="#888888"
+          position={[0, -cardHeight / 2 + 0.15, 0.16]}
+          fontSize={0.10}
+          color="#FFFFFF"
           anchorX="center"
           anchorY="bottom"
           renderOrder={999}

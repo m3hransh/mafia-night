@@ -10,11 +10,6 @@ import { fetchRoles, fetchRoleBySlug, Role, APIError } from '@/lib/api';
 // Dynamic import to avoid SSR issues with Three.js
 const CardScene = dynamic(() => import('@/components/CardScene').then(mod => ({ default: mod.CardScene })), {
   ssr: false,
-  loading: () => (
-    <div className="w-full h-screen flex items-center justify-center from-slate-900 to-slate-900">
-      <div className="text-white text-2xl">Loading magical card...</div>
-    </div>
-  ),
 });
 
 export default function RolePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -54,9 +49,6 @@ export default function RolePage({ params }: { params: Promise<{ slug: string }>
   if (loading) {
     return (
       <main className="relative w-full h-screen overflow-hidden">
-        <div className="w-full h-screen flex items-center justify-center">
-          <div className="text-white text-2xl">Loading magical card...</div>
-        </div>
       </main>
     );
   }
