@@ -20,3 +20,9 @@ type Player func(*sql.Selector)
 
 // Role is the predicate function for role builders.
 type Role func(*sql.Selector)
+
+// RoleTemplate is the predicate function for roletemplate builders.
+type RoleTemplate func(*sql.Selector)
+
+// RoleTemplateRole is the predicate function for roletemplaterole builders.
+type RoleTemplateRole func(*sql.Selector)

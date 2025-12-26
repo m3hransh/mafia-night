@@ -159,6 +159,67 @@ var (
 			},
 		},
 	}
+	// RoleTemplatesColumns holds the columns for the "role_templates" table.
+	RoleTemplatesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString, Unique: true, Size: 100},
+		{Name: "player_count", Type: field.TypeInt},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// RoleTemplatesTable holds the schema information for the "role_templates" table.
+	RoleTemplatesTable = &schema.Table{
+		Name:       "role_templates",
+		Columns:    RoleTemplatesColumns,
+		PrimaryKey: []*schema.Column{RoleTemplatesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "roletemplate_player_count",
+				Unique:  false,
+				Columns: []*schema.Column{RoleTemplatesColumns[2]},
+			},
+			{
+				Name:    "roletemplate_name",
+				Unique:  false,
+				Columns: []*schema.Column{RoleTemplatesColumns[1]},
+			},
+		},
+	}
+	// RoleTemplateRolesColumns holds the columns for the "role_template_roles" table.
+	RoleTemplateRolesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "count", Type: field.TypeInt},
+		{Name: "role_id", Type: field.TypeUUID},
+		{Name: "role_template_id", Type: field.TypeUUID},
+	}
+	// RoleTemplateRolesTable holds the schema information for the "role_template_roles" table.
+	RoleTemplateRolesTable = &schema.Table{
+		Name:       "role_template_roles",
+		Columns:    RoleTemplateRolesColumns,
+		PrimaryKey: []*schema.Column{RoleTemplateRolesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "role_template_roles_roles_template_roles",
+				Columns:    []*schema.Column{RoleTemplateRolesColumns[2]},
+				RefColumns: []*schema.Column{RolesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "role_template_roles_role_templates_template_roles",
+				Columns:    []*schema.Column{RoleTemplateRolesColumns[3]},
+				RefColumns: []*schema.Column{RoleTemplatesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "roletemplaterole_role_template_id_role_id",
+				Unique:  true,
+				Columns: []*schema.Column{RoleTemplateRolesColumns[3], RoleTemplateRolesColumns[2]},
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AdminsTable,
@@ -166,6 +227,8 @@ var (
 		GameRolesTable,
 		PlayersTable,
 		RolesTable,
+		RoleTemplatesTable,
+		RoleTemplateRolesTable,
 	}
 )
 
@@ -174,4 +237,6 @@ func init() {
 	GameRolesTable.ForeignKeys[1].RefTable = PlayersTable
 	GameRolesTable.ForeignKeys[2].RefTable = RolesTable
 	PlayersTable.ForeignKeys[0].RefTable = GamesTable
+	RoleTemplateRolesTable.ForeignKeys[0].RefTable = RolesTable
+	RoleTemplateRolesTable.ForeignKeys[1].RefTable = RoleTemplatesTable
 }

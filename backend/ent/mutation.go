@@ -18,6 +18,8 @@ import (
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/predicate"
 	"github.com/mafia-night/backend/ent/role"
+	"github.com/mafia-night/backend/ent/roletemplate"
+	"github.com/mafia-night/backend/ent/roletemplaterole"
 )
 
 const (
@@ -29,11 +31,13 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAdmin    = "Admin"
-	TypeGame     = "Game"
-	TypeGameRole = "GameRole"
-	TypePlayer   = "Player"
-	TypeRole     = "Role"
+	TypeAdmin            = "Admin"
+	TypeGame             = "Game"
+	TypeGameRole         = "GameRole"
+	TypePlayer           = "Player"
+	TypeRole             = "Role"
+	TypeRoleTemplate     = "RoleTemplate"
+	TypeRoleTemplateRole = "RoleTemplateRole"
 )
 
 // AdminMutation represents an operation that mutates the Admin nodes in the graph.
@@ -2520,23 +2524,26 @@ func (m *PlayerMutation) ResetEdge(name string) error {
 // RoleMutation represents an operation that mutates the Role nodes in the graph.
 type RoleMutation struct {
 	config
-	op                Op
-	typ               string
-	id                *uuid.UUID
-	name              *string
-	slug              *string
-	video             *string
-	team              *role.Team
-	description       *string
-	abilities         *[]string
-	appendabilities   []string
-	clearedFields     map[string]struct{}
-	game_roles        map[int]struct{}
-	removedgame_roles map[int]struct{}
-	clearedgame_roles bool
-	done              bool
-	oldValue          func(context.Context) (*Role, error)
-	predicates        []predicate.Role
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	name                  *string
+	slug                  *string
+	video                 *string
+	team                  *role.Team
+	description           *string
+	abilities             *[]string
+	appendabilities       []string
+	clearedFields         map[string]struct{}
+	game_roles            map[int]struct{}
+	removedgame_roles     map[int]struct{}
+	clearedgame_roles     bool
+	template_roles        map[int]struct{}
+	removedtemplate_roles map[int]struct{}
+	clearedtemplate_roles bool
+	done                  bool
+	oldValue              func(context.Context) (*Role, error)
+	predicates            []predicate.Role
 }
 
 var _ ent.Mutation = (*RoleMutation)(nil)
@@ -2955,6 +2962,60 @@ func (m *RoleMutation) ResetGameRoles() {
 	m.removedgame_roles = nil
 }
 
+// AddTemplateRoleIDs adds the "template_roles" edge to the RoleTemplateRole entity by ids.
+func (m *RoleMutation) AddTemplateRoleIDs(ids ...int) {
+	if m.template_roles == nil {
+		m.template_roles = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.template_roles[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTemplateRoles clears the "template_roles" edge to the RoleTemplateRole entity.
+func (m *RoleMutation) ClearTemplateRoles() {
+	m.clearedtemplate_roles = true
+}
+
+// TemplateRolesCleared reports if the "template_roles" edge to the RoleTemplateRole entity was cleared.
+func (m *RoleMutation) TemplateRolesCleared() bool {
+	return m.clearedtemplate_roles
+}
+
+// RemoveTemplateRoleIDs removes the "template_roles" edge to the RoleTemplateRole entity by IDs.
+func (m *RoleMutation) RemoveTemplateRoleIDs(ids ...int) {
+	if m.removedtemplate_roles == nil {
+		m.removedtemplate_roles = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.template_roles, ids[i])
+		m.removedtemplate_roles[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTemplateRoles returns the removed IDs of the "template_roles" edge to the RoleTemplateRole entity.
+func (m *RoleMutation) RemovedTemplateRolesIDs() (ids []int) {
+	for id := range m.removedtemplate_roles {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TemplateRolesIDs returns the "template_roles" edge IDs in the mutation.
+func (m *RoleMutation) TemplateRolesIDs() (ids []int) {
+	for id := range m.template_roles {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTemplateRoles resets all changes to the "template_roles" edge.
+func (m *RoleMutation) ResetTemplateRoles() {
+	m.template_roles = nil
+	m.clearedtemplate_roles = false
+	m.removedtemplate_roles = nil
+}
+
 // Where appends a list predicates to the RoleMutation builder.
 func (m *RoleMutation) Where(ps ...predicate.Role) {
 	m.predicates = append(m.predicates, ps...)
@@ -3188,9 +3249,12 @@ func (m *RoleMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RoleMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.game_roles != nil {
 		edges = append(edges, role.EdgeGameRoles)
+	}
+	if m.template_roles != nil {
+		edges = append(edges, role.EdgeTemplateRoles)
 	}
 	return edges
 }
@@ -3205,15 +3269,24 @@ func (m *RoleMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case role.EdgeTemplateRoles:
+		ids := make([]ent.Value, 0, len(m.template_roles))
+		for id := range m.template_roles {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RoleMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedgame_roles != nil {
 		edges = append(edges, role.EdgeGameRoles)
+	}
+	if m.removedtemplate_roles != nil {
+		edges = append(edges, role.EdgeTemplateRoles)
 	}
 	return edges
 }
@@ -3228,15 +3301,24 @@ func (m *RoleMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case role.EdgeTemplateRoles:
+		ids := make([]ent.Value, 0, len(m.removedtemplate_roles))
+		for id := range m.removedtemplate_roles {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RoleMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedgame_roles {
 		edges = append(edges, role.EdgeGameRoles)
+	}
+	if m.clearedtemplate_roles {
+		edges = append(edges, role.EdgeTemplateRoles)
 	}
 	return edges
 }
@@ -3247,6 +3329,8 @@ func (m *RoleMutation) EdgeCleared(name string) bool {
 	switch name {
 	case role.EdgeGameRoles:
 		return m.clearedgame_roles
+	case role.EdgeTemplateRoles:
+		return m.clearedtemplate_roles
 	}
 	return false
 }
@@ -3266,6 +3350,1278 @@ func (m *RoleMutation) ResetEdge(name string) error {
 	case role.EdgeGameRoles:
 		m.ResetGameRoles()
 		return nil
+	case role.EdgeTemplateRoles:
+		m.ResetTemplateRoles()
+		return nil
 	}
 	return fmt.Errorf("unknown Role edge %s", name)
+}
+
+// RoleTemplateMutation represents an operation that mutates the RoleTemplate nodes in the graph.
+type RoleTemplateMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	name                  *string
+	player_count          *int
+	addplayer_count       *int
+	description           *string
+	created_at            *time.Time
+	updated_at            *time.Time
+	clearedFields         map[string]struct{}
+	template_roles        map[int]struct{}
+	removedtemplate_roles map[int]struct{}
+	clearedtemplate_roles bool
+	done                  bool
+	oldValue              func(context.Context) (*RoleTemplate, error)
+	predicates            []predicate.RoleTemplate
+}
+
+var _ ent.Mutation = (*RoleTemplateMutation)(nil)
+
+// roletemplateOption allows management of the mutation configuration using functional options.
+type roletemplateOption func(*RoleTemplateMutation)
+
+// newRoleTemplateMutation creates new mutation for the RoleTemplate entity.
+func newRoleTemplateMutation(c config, op Op, opts ...roletemplateOption) *RoleTemplateMutation {
+	m := &RoleTemplateMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRoleTemplate,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRoleTemplateID sets the ID field of the mutation.
+func withRoleTemplateID(id uuid.UUID) roletemplateOption {
+	return func(m *RoleTemplateMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RoleTemplate
+		)
+		m.oldValue = func(ctx context.Context) (*RoleTemplate, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RoleTemplate.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRoleTemplate sets the old RoleTemplate of the mutation.
+func withRoleTemplate(node *RoleTemplate) roletemplateOption {
+	return func(m *RoleTemplateMutation) {
+		m.oldValue = func(context.Context) (*RoleTemplate, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RoleTemplateMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RoleTemplateMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of RoleTemplate entities.
+func (m *RoleTemplateMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RoleTemplateMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RoleTemplateMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RoleTemplate.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *RoleTemplateMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *RoleTemplateMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the RoleTemplate entity.
+// If the RoleTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleTemplateMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *RoleTemplateMutation) ResetName() {
+	m.name = nil
+}
+
+// SetPlayerCount sets the "player_count" field.
+func (m *RoleTemplateMutation) SetPlayerCount(i int) {
+	m.player_count = &i
+	m.addplayer_count = nil
+}
+
+// PlayerCount returns the value of the "player_count" field in the mutation.
+func (m *RoleTemplateMutation) PlayerCount() (r int, exists bool) {
+	v := m.player_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlayerCount returns the old "player_count" field's value of the RoleTemplate entity.
+// If the RoleTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleTemplateMutation) OldPlayerCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlayerCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlayerCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlayerCount: %w", err)
+	}
+	return oldValue.PlayerCount, nil
+}
+
+// AddPlayerCount adds i to the "player_count" field.
+func (m *RoleTemplateMutation) AddPlayerCount(i int) {
+	if m.addplayer_count != nil {
+		*m.addplayer_count += i
+	} else {
+		m.addplayer_count = &i
+	}
+}
+
+// AddedPlayerCount returns the value that was added to the "player_count" field in this mutation.
+func (m *RoleTemplateMutation) AddedPlayerCount() (r int, exists bool) {
+	v := m.addplayer_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPlayerCount resets all changes to the "player_count" field.
+func (m *RoleTemplateMutation) ResetPlayerCount() {
+	m.player_count = nil
+	m.addplayer_count = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *RoleTemplateMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *RoleTemplateMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the RoleTemplate entity.
+// If the RoleTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleTemplateMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *RoleTemplateMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[roletemplate.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *RoleTemplateMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[roletemplate.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *RoleTemplateMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, roletemplate.FieldDescription)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RoleTemplateMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RoleTemplateMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RoleTemplate entity.
+// If the RoleTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleTemplateMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RoleTemplateMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RoleTemplateMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RoleTemplateMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RoleTemplate entity.
+// If the RoleTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleTemplateMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RoleTemplateMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddTemplateRoleIDs adds the "template_roles" edge to the RoleTemplateRole entity by ids.
+func (m *RoleTemplateMutation) AddTemplateRoleIDs(ids ...int) {
+	if m.template_roles == nil {
+		m.template_roles = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.template_roles[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTemplateRoles clears the "template_roles" edge to the RoleTemplateRole entity.
+func (m *RoleTemplateMutation) ClearTemplateRoles() {
+	m.clearedtemplate_roles = true
+}
+
+// TemplateRolesCleared reports if the "template_roles" edge to the RoleTemplateRole entity was cleared.
+func (m *RoleTemplateMutation) TemplateRolesCleared() bool {
+	return m.clearedtemplate_roles
+}
+
+// RemoveTemplateRoleIDs removes the "template_roles" edge to the RoleTemplateRole entity by IDs.
+func (m *RoleTemplateMutation) RemoveTemplateRoleIDs(ids ...int) {
+	if m.removedtemplate_roles == nil {
+		m.removedtemplate_roles = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.template_roles, ids[i])
+		m.removedtemplate_roles[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTemplateRoles returns the removed IDs of the "template_roles" edge to the RoleTemplateRole entity.
+func (m *RoleTemplateMutation) RemovedTemplateRolesIDs() (ids []int) {
+	for id := range m.removedtemplate_roles {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TemplateRolesIDs returns the "template_roles" edge IDs in the mutation.
+func (m *RoleTemplateMutation) TemplateRolesIDs() (ids []int) {
+	for id := range m.template_roles {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTemplateRoles resets all changes to the "template_roles" edge.
+func (m *RoleTemplateMutation) ResetTemplateRoles() {
+	m.template_roles = nil
+	m.clearedtemplate_roles = false
+	m.removedtemplate_roles = nil
+}
+
+// Where appends a list predicates to the RoleTemplateMutation builder.
+func (m *RoleTemplateMutation) Where(ps ...predicate.RoleTemplate) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RoleTemplateMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RoleTemplateMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RoleTemplate, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RoleTemplateMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RoleTemplateMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RoleTemplate).
+func (m *RoleTemplateMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RoleTemplateMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.name != nil {
+		fields = append(fields, roletemplate.FieldName)
+	}
+	if m.player_count != nil {
+		fields = append(fields, roletemplate.FieldPlayerCount)
+	}
+	if m.description != nil {
+		fields = append(fields, roletemplate.FieldDescription)
+	}
+	if m.created_at != nil {
+		fields = append(fields, roletemplate.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, roletemplate.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RoleTemplateMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case roletemplate.FieldName:
+		return m.Name()
+	case roletemplate.FieldPlayerCount:
+		return m.PlayerCount()
+	case roletemplate.FieldDescription:
+		return m.Description()
+	case roletemplate.FieldCreatedAt:
+		return m.CreatedAt()
+	case roletemplate.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RoleTemplateMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case roletemplate.FieldName:
+		return m.OldName(ctx)
+	case roletemplate.FieldPlayerCount:
+		return m.OldPlayerCount(ctx)
+	case roletemplate.FieldDescription:
+		return m.OldDescription(ctx)
+	case roletemplate.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case roletemplate.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown RoleTemplate field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RoleTemplateMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case roletemplate.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case roletemplate.FieldPlayerCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlayerCount(v)
+		return nil
+	case roletemplate.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case roletemplate.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case roletemplate.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RoleTemplate field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RoleTemplateMutation) AddedFields() []string {
+	var fields []string
+	if m.addplayer_count != nil {
+		fields = append(fields, roletemplate.FieldPlayerCount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RoleTemplateMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case roletemplate.FieldPlayerCount:
+		return m.AddedPlayerCount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RoleTemplateMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case roletemplate.FieldPlayerCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPlayerCount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RoleTemplate numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RoleTemplateMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(roletemplate.FieldDescription) {
+		fields = append(fields, roletemplate.FieldDescription)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RoleTemplateMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RoleTemplateMutation) ClearField(name string) error {
+	switch name {
+	case roletemplate.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
+	return fmt.Errorf("unknown RoleTemplate nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RoleTemplateMutation) ResetField(name string) error {
+	switch name {
+	case roletemplate.FieldName:
+		m.ResetName()
+		return nil
+	case roletemplate.FieldPlayerCount:
+		m.ResetPlayerCount()
+		return nil
+	case roletemplate.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case roletemplate.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case roletemplate.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RoleTemplate field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RoleTemplateMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.template_roles != nil {
+		edges = append(edges, roletemplate.EdgeTemplateRoles)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RoleTemplateMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case roletemplate.EdgeTemplateRoles:
+		ids := make([]ent.Value, 0, len(m.template_roles))
+		for id := range m.template_roles {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RoleTemplateMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedtemplate_roles != nil {
+		edges = append(edges, roletemplate.EdgeTemplateRoles)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RoleTemplateMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case roletemplate.EdgeTemplateRoles:
+		ids := make([]ent.Value, 0, len(m.removedtemplate_roles))
+		for id := range m.removedtemplate_roles {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RoleTemplateMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedtemplate_roles {
+		edges = append(edges, roletemplate.EdgeTemplateRoles)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RoleTemplateMutation) EdgeCleared(name string) bool {
+	switch name {
+	case roletemplate.EdgeTemplateRoles:
+		return m.clearedtemplate_roles
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RoleTemplateMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown RoleTemplate unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RoleTemplateMutation) ResetEdge(name string) error {
+	switch name {
+	case roletemplate.EdgeTemplateRoles:
+		m.ResetTemplateRoles()
+		return nil
+	}
+	return fmt.Errorf("unknown RoleTemplate edge %s", name)
+}
+
+// RoleTemplateRoleMutation represents an operation that mutates the RoleTemplateRole nodes in the graph.
+type RoleTemplateRoleMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int
+	count                *int
+	addcount             *int
+	clearedFields        map[string]struct{}
+	role_template        *uuid.UUID
+	clearedrole_template bool
+	role                 *uuid.UUID
+	clearedrole          bool
+	done                 bool
+	oldValue             func(context.Context) (*RoleTemplateRole, error)
+	predicates           []predicate.RoleTemplateRole
+}
+
+var _ ent.Mutation = (*RoleTemplateRoleMutation)(nil)
+
+// roletemplateroleOption allows management of the mutation configuration using functional options.
+type roletemplateroleOption func(*RoleTemplateRoleMutation)
+
+// newRoleTemplateRoleMutation creates new mutation for the RoleTemplateRole entity.
+func newRoleTemplateRoleMutation(c config, op Op, opts ...roletemplateroleOption) *RoleTemplateRoleMutation {
+	m := &RoleTemplateRoleMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRoleTemplateRole,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRoleTemplateRoleID sets the ID field of the mutation.
+func withRoleTemplateRoleID(id int) roletemplateroleOption {
+	return func(m *RoleTemplateRoleMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RoleTemplateRole
+		)
+		m.oldValue = func(ctx context.Context) (*RoleTemplateRole, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RoleTemplateRole.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRoleTemplateRole sets the old RoleTemplateRole of the mutation.
+func withRoleTemplateRole(node *RoleTemplateRole) roletemplateroleOption {
+	return func(m *RoleTemplateRoleMutation) {
+		m.oldValue = func(context.Context) (*RoleTemplateRole, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RoleTemplateRoleMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RoleTemplateRoleMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RoleTemplateRoleMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RoleTemplateRoleMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RoleTemplateRole.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetRoleTemplateID sets the "role_template_id" field.
+func (m *RoleTemplateRoleMutation) SetRoleTemplateID(u uuid.UUID) {
+	m.role_template = &u
+}
+
+// RoleTemplateID returns the value of the "role_template_id" field in the mutation.
+func (m *RoleTemplateRoleMutation) RoleTemplateID() (r uuid.UUID, exists bool) {
+	v := m.role_template
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoleTemplateID returns the old "role_template_id" field's value of the RoleTemplateRole entity.
+// If the RoleTemplateRole object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleTemplateRoleMutation) OldRoleTemplateID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoleTemplateID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoleTemplateID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoleTemplateID: %w", err)
+	}
+	return oldValue.RoleTemplateID, nil
+}
+
+// ResetRoleTemplateID resets all changes to the "role_template_id" field.
+func (m *RoleTemplateRoleMutation) ResetRoleTemplateID() {
+	m.role_template = nil
+}
+
+// SetRoleID sets the "role_id" field.
+func (m *RoleTemplateRoleMutation) SetRoleID(u uuid.UUID) {
+	m.role = &u
+}
+
+// RoleID returns the value of the "role_id" field in the mutation.
+func (m *RoleTemplateRoleMutation) RoleID() (r uuid.UUID, exists bool) {
+	v := m.role
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoleID returns the old "role_id" field's value of the RoleTemplateRole entity.
+// If the RoleTemplateRole object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleTemplateRoleMutation) OldRoleID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoleID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoleID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoleID: %w", err)
+	}
+	return oldValue.RoleID, nil
+}
+
+// ResetRoleID resets all changes to the "role_id" field.
+func (m *RoleTemplateRoleMutation) ResetRoleID() {
+	m.role = nil
+}
+
+// SetCount sets the "count" field.
+func (m *RoleTemplateRoleMutation) SetCount(i int) {
+	m.count = &i
+	m.addcount = nil
+}
+
+// Count returns the value of the "count" field in the mutation.
+func (m *RoleTemplateRoleMutation) Count() (r int, exists bool) {
+	v := m.count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCount returns the old "count" field's value of the RoleTemplateRole entity.
+// If the RoleTemplateRole object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleTemplateRoleMutation) OldCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCount: %w", err)
+	}
+	return oldValue.Count, nil
+}
+
+// AddCount adds i to the "count" field.
+func (m *RoleTemplateRoleMutation) AddCount(i int) {
+	if m.addcount != nil {
+		*m.addcount += i
+	} else {
+		m.addcount = &i
+	}
+}
+
+// AddedCount returns the value that was added to the "count" field in this mutation.
+func (m *RoleTemplateRoleMutation) AddedCount() (r int, exists bool) {
+	v := m.addcount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCount resets all changes to the "count" field.
+func (m *RoleTemplateRoleMutation) ResetCount() {
+	m.count = nil
+	m.addcount = nil
+}
+
+// ClearRoleTemplate clears the "role_template" edge to the RoleTemplate entity.
+func (m *RoleTemplateRoleMutation) ClearRoleTemplate() {
+	m.clearedrole_template = true
+	m.clearedFields[roletemplaterole.FieldRoleTemplateID] = struct{}{}
+}
+
+// RoleTemplateCleared reports if the "role_template" edge to the RoleTemplate entity was cleared.
+func (m *RoleTemplateRoleMutation) RoleTemplateCleared() bool {
+	return m.clearedrole_template
+}
+
+// RoleTemplateIDs returns the "role_template" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RoleTemplateID instead. It exists only for internal usage by the builders.
+func (m *RoleTemplateRoleMutation) RoleTemplateIDs() (ids []uuid.UUID) {
+	if id := m.role_template; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRoleTemplate resets all changes to the "role_template" edge.
+func (m *RoleTemplateRoleMutation) ResetRoleTemplate() {
+	m.role_template = nil
+	m.clearedrole_template = false
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (m *RoleTemplateRoleMutation) ClearRole() {
+	m.clearedrole = true
+	m.clearedFields[roletemplaterole.FieldRoleID] = struct{}{}
+}
+
+// RoleCleared reports if the "role" edge to the Role entity was cleared.
+func (m *RoleTemplateRoleMutation) RoleCleared() bool {
+	return m.clearedrole
+}
+
+// RoleIDs returns the "role" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RoleID instead. It exists only for internal usage by the builders.
+func (m *RoleTemplateRoleMutation) RoleIDs() (ids []uuid.UUID) {
+	if id := m.role; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRole resets all changes to the "role" edge.
+func (m *RoleTemplateRoleMutation) ResetRole() {
+	m.role = nil
+	m.clearedrole = false
+}
+
+// Where appends a list predicates to the RoleTemplateRoleMutation builder.
+func (m *RoleTemplateRoleMutation) Where(ps ...predicate.RoleTemplateRole) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RoleTemplateRoleMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RoleTemplateRoleMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RoleTemplateRole, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RoleTemplateRoleMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RoleTemplateRoleMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RoleTemplateRole).
+func (m *RoleTemplateRoleMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RoleTemplateRoleMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.role_template != nil {
+		fields = append(fields, roletemplaterole.FieldRoleTemplateID)
+	}
+	if m.role != nil {
+		fields = append(fields, roletemplaterole.FieldRoleID)
+	}
+	if m.count != nil {
+		fields = append(fields, roletemplaterole.FieldCount)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RoleTemplateRoleMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case roletemplaterole.FieldRoleTemplateID:
+		return m.RoleTemplateID()
+	case roletemplaterole.FieldRoleID:
+		return m.RoleID()
+	case roletemplaterole.FieldCount:
+		return m.Count()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RoleTemplateRoleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case roletemplaterole.FieldRoleTemplateID:
+		return m.OldRoleTemplateID(ctx)
+	case roletemplaterole.FieldRoleID:
+		return m.OldRoleID(ctx)
+	case roletemplaterole.FieldCount:
+		return m.OldCount(ctx)
+	}
+	return nil, fmt.Errorf("unknown RoleTemplateRole field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RoleTemplateRoleMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case roletemplaterole.FieldRoleTemplateID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoleTemplateID(v)
+		return nil
+	case roletemplaterole.FieldRoleID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoleID(v)
+		return nil
+	case roletemplaterole.FieldCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RoleTemplateRole field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RoleTemplateRoleMutation) AddedFields() []string {
+	var fields []string
+	if m.addcount != nil {
+		fields = append(fields, roletemplaterole.FieldCount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RoleTemplateRoleMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case roletemplaterole.FieldCount:
+		return m.AddedCount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RoleTemplateRoleMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case roletemplaterole.FieldCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RoleTemplateRole numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RoleTemplateRoleMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RoleTemplateRoleMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RoleTemplateRoleMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown RoleTemplateRole nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RoleTemplateRoleMutation) ResetField(name string) error {
+	switch name {
+	case roletemplaterole.FieldRoleTemplateID:
+		m.ResetRoleTemplateID()
+		return nil
+	case roletemplaterole.FieldRoleID:
+		m.ResetRoleID()
+		return nil
+	case roletemplaterole.FieldCount:
+		m.ResetCount()
+		return nil
+	}
+	return fmt.Errorf("unknown RoleTemplateRole field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RoleTemplateRoleMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.role_template != nil {
+		edges = append(edges, roletemplaterole.EdgeRoleTemplate)
+	}
+	if m.role != nil {
+		edges = append(edges, roletemplaterole.EdgeRole)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RoleTemplateRoleMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case roletemplaterole.EdgeRoleTemplate:
+		if id := m.role_template; id != nil {
+			return []ent.Value{*id}
+		}
+	case roletemplaterole.EdgeRole:
+		if id := m.role; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RoleTemplateRoleMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RoleTemplateRoleMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RoleTemplateRoleMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedrole_template {
+		edges = append(edges, roletemplaterole.EdgeRoleTemplate)
+	}
+	if m.clearedrole {
+		edges = append(edges, roletemplaterole.EdgeRole)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RoleTemplateRoleMutation) EdgeCleared(name string) bool {
+	switch name {
+	case roletemplaterole.EdgeRoleTemplate:
+		return m.clearedrole_template
+	case roletemplaterole.EdgeRole:
+		return m.clearedrole
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RoleTemplateRoleMutation) ClearEdge(name string) error {
+	switch name {
+	case roletemplaterole.EdgeRoleTemplate:
+		m.ClearRoleTemplate()
+		return nil
+	case roletemplaterole.EdgeRole:
+		m.ClearRole()
+		return nil
+	}
+	return fmt.Errorf("unknown RoleTemplateRole unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RoleTemplateRoleMutation) ResetEdge(name string) error {
+	switch name {
+	case roletemplaterole.EdgeRoleTemplate:
+		m.ResetRoleTemplate()
+		return nil
+	case roletemplaterole.EdgeRole:
+		m.ResetRole()
+		return nil
+	}
+	return fmt.Errorf("unknown RoleTemplateRole edge %s", name)
 }

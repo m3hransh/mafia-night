@@ -43,6 +43,7 @@ func (Role) Fields() []ent.Field {
 func (Role) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("game_roles", GameRole.Type),
+		edge.To("template_roles", RoleTemplateRole.Type),
 	}
 }
 

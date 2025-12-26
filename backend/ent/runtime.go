@@ -11,6 +11,8 @@ import (
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/role"
+	"github.com/mafia-night/backend/ent/roletemplate"
+	"github.com/mafia-night/backend/ent/roletemplaterole"
 	"github.com/mafia-night/backend/ent/schema"
 )
 
@@ -208,4 +210,48 @@ func init() {
 	roleDescID := roleFields[0].Descriptor()
 	// role.DefaultID holds the default value on creation for the id field.
 	role.DefaultID = roleDescID.Default.(func() uuid.UUID)
+	roletemplateFields := schema.RoleTemplate{}.Fields()
+	_ = roletemplateFields
+	// roletemplateDescName is the schema descriptor for name field.
+	roletemplateDescName := roletemplateFields[1].Descriptor()
+	// roletemplate.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	roletemplate.NameValidator = func() func(string) error {
+		validators := roletemplateDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// roletemplateDescPlayerCount is the schema descriptor for player_count field.
+	roletemplateDescPlayerCount := roletemplateFields[2].Descriptor()
+	// roletemplate.PlayerCountValidator is a validator for the "player_count" field. It is called by the builders before save.
+	roletemplate.PlayerCountValidator = roletemplateDescPlayerCount.Validators[0].(func(int) error)
+	// roletemplateDescCreatedAt is the schema descriptor for created_at field.
+	roletemplateDescCreatedAt := roletemplateFields[4].Descriptor()
+	// roletemplate.DefaultCreatedAt holds the default value on creation for the created_at field.
+	roletemplate.DefaultCreatedAt = roletemplateDescCreatedAt.Default.(func() time.Time)
+	// roletemplateDescUpdatedAt is the schema descriptor for updated_at field.
+	roletemplateDescUpdatedAt := roletemplateFields[5].Descriptor()
+	// roletemplate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	roletemplate.DefaultUpdatedAt = roletemplateDescUpdatedAt.Default.(func() time.Time)
+	// roletemplate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	roletemplate.UpdateDefaultUpdatedAt = roletemplateDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// roletemplateDescID is the schema descriptor for id field.
+	roletemplateDescID := roletemplateFields[0].Descriptor()
+	// roletemplate.DefaultID holds the default value on creation for the id field.
+	roletemplate.DefaultID = roletemplateDescID.Default.(func() uuid.UUID)
+	roletemplateroleFields := schema.RoleTemplateRole{}.Fields()
+	_ = roletemplateroleFields
+	// roletemplateroleDescCount is the schema descriptor for count field.
+	roletemplateroleDescCount := roletemplateroleFields[2].Descriptor()
+	// roletemplaterole.CountValidator is a validator for the "count" field. It is called by the builders before save.
+	roletemplaterole.CountValidator = roletemplateroleDescCount.Validators[0].(func(int) error)
 }

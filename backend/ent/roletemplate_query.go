@@ -13,81 +13,57 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/predicate"
-	"github.com/mafia-night/backend/ent/role"
+	"github.com/mafia-night/backend/ent/roletemplate"
 	"github.com/mafia-night/backend/ent/roletemplaterole"
 )
 
-// RoleQuery is the builder for querying Role entities.
-type RoleQuery struct {
+// RoleTemplateQuery is the builder for querying RoleTemplate entities.
+type RoleTemplateQuery struct {
 	config
 	ctx               *QueryContext
-	order             []role.OrderOption
+	order             []roletemplate.OrderOption
 	inters            []Interceptor
-	predicates        []predicate.Role
-	withGameRoles     *GameRoleQuery
+	predicates        []predicate.RoleTemplate
 	withTemplateRoles *RoleTemplateRoleQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the RoleQuery builder.
-func (_q *RoleQuery) Where(ps ...predicate.Role) *RoleQuery {
+// Where adds a new predicate for the RoleTemplateQuery builder.
+func (_q *RoleTemplateQuery) Where(ps ...predicate.RoleTemplate) *RoleTemplateQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *RoleQuery) Limit(limit int) *RoleQuery {
+func (_q *RoleTemplateQuery) Limit(limit int) *RoleTemplateQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *RoleQuery) Offset(offset int) *RoleQuery {
+func (_q *RoleTemplateQuery) Offset(offset int) *RoleTemplateQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *RoleQuery) Unique(unique bool) *RoleQuery {
+func (_q *RoleTemplateQuery) Unique(unique bool) *RoleTemplateQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *RoleQuery) Order(o ...role.OrderOption) *RoleQuery {
+func (_q *RoleTemplateQuery) Order(o ...roletemplate.OrderOption) *RoleTemplateQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
-// QueryGameRoles chains the current query on the "game_roles" edge.
-func (_q *RoleQuery) QueryGameRoles() *GameRoleQuery {
-	query := (&GameRoleClient{config: _q.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := _q.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(role.Table, role.FieldID, selector),
-			sqlgraph.To(gamerole.Table, gamerole.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, role.GameRolesTable, role.GameRolesColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryTemplateRoles chains the current query on the "template_roles" edge.
-func (_q *RoleQuery) QueryTemplateRoles() *RoleTemplateRoleQuery {
+func (_q *RoleTemplateQuery) QueryTemplateRoles() *RoleTemplateRoleQuery {
 	query := (&RoleTemplateRoleClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -98,9 +74,9 @@ func (_q *RoleQuery) QueryTemplateRoles() *RoleTemplateRoleQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(role.Table, role.FieldID, selector),
+			sqlgraph.From(roletemplate.Table, roletemplate.FieldID, selector),
 			sqlgraph.To(roletemplaterole.Table, roletemplaterole.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, role.TemplateRolesTable, role.TemplateRolesColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, roletemplate.TemplateRolesTable, roletemplate.TemplateRolesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -108,21 +84,21 @@ func (_q *RoleQuery) QueryTemplateRoles() *RoleTemplateRoleQuery {
 	return query
 }
 
-// First returns the first Role entity from the query.
-// Returns a *NotFoundError when no Role was found.
-func (_q *RoleQuery) First(ctx context.Context) (*Role, error) {
+// First returns the first RoleTemplate entity from the query.
+// Returns a *NotFoundError when no RoleTemplate was found.
+func (_q *RoleTemplateQuery) First(ctx context.Context) (*RoleTemplate, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{role.Label}
+		return nil, &NotFoundError{roletemplate.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *RoleQuery) FirstX(ctx context.Context) *Role {
+func (_q *RoleTemplateQuery) FirstX(ctx context.Context) *RoleTemplate {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -130,22 +106,22 @@ func (_q *RoleQuery) FirstX(ctx context.Context) *Role {
 	return node
 }
 
-// FirstID returns the first Role ID from the query.
-// Returns a *NotFoundError when no Role ID was found.
-func (_q *RoleQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+// FirstID returns the first RoleTemplate ID from the query.
+// Returns a *NotFoundError when no RoleTemplate ID was found.
+func (_q *RoleTemplateQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{role.Label}
+		err = &NotFoundError{roletemplate.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *RoleQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (_q *RoleTemplateQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -153,10 +129,10 @@ func (_q *RoleQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// Only returns a single Role entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Role entity is found.
-// Returns a *NotFoundError when no Role entities are found.
-func (_q *RoleQuery) Only(ctx context.Context) (*Role, error) {
+// Only returns a single RoleTemplate entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one RoleTemplate entity is found.
+// Returns a *NotFoundError when no RoleTemplate entities are found.
+func (_q *RoleTemplateQuery) Only(ctx context.Context) (*RoleTemplate, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -165,14 +141,14 @@ func (_q *RoleQuery) Only(ctx context.Context) (*Role, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{role.Label}
+		return nil, &NotFoundError{roletemplate.Label}
 	default:
-		return nil, &NotSingularError{role.Label}
+		return nil, &NotSingularError{roletemplate.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *RoleQuery) OnlyX(ctx context.Context) *Role {
+func (_q *RoleTemplateQuery) OnlyX(ctx context.Context) *RoleTemplate {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -180,10 +156,10 @@ func (_q *RoleQuery) OnlyX(ctx context.Context) *Role {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Role ID in the query.
-// Returns a *NotSingularError when more than one Role ID is found.
+// OnlyID is like Only, but returns the only RoleTemplate ID in the query.
+// Returns a *NotSingularError when more than one RoleTemplate ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *RoleQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *RoleTemplateQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -192,15 +168,15 @@ func (_q *RoleQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{role.Label}
+		err = &NotFoundError{roletemplate.Label}
 	default:
-		err = &NotSingularError{role.Label}
+		err = &NotSingularError{roletemplate.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *RoleQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (_q *RoleTemplateQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -208,18 +184,18 @@ func (_q *RoleQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// All executes the query and returns a list of Roles.
-func (_q *RoleQuery) All(ctx context.Context) ([]*Role, error) {
+// All executes the query and returns a list of RoleTemplates.
+func (_q *RoleTemplateQuery) All(ctx context.Context) ([]*RoleTemplate, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Role, *RoleQuery]()
-	return withInterceptors[[]*Role](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*RoleTemplate, *RoleTemplateQuery]()
+	return withInterceptors[[]*RoleTemplate](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *RoleQuery) AllX(ctx context.Context) []*Role {
+func (_q *RoleTemplateQuery) AllX(ctx context.Context) []*RoleTemplate {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -227,20 +203,20 @@ func (_q *RoleQuery) AllX(ctx context.Context) []*Role {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Role IDs.
-func (_q *RoleQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+// IDs executes the query and returns a list of RoleTemplate IDs.
+func (_q *RoleTemplateQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(role.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(roletemplate.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *RoleQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (_q *RoleTemplateQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -249,16 +225,16 @@ func (_q *RoleQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (_q *RoleQuery) Count(ctx context.Context) (int, error) {
+func (_q *RoleTemplateQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*RoleQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*RoleTemplateQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *RoleQuery) CountX(ctx context.Context) int {
+func (_q *RoleTemplateQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -267,7 +243,7 @@ func (_q *RoleQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *RoleQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *RoleTemplateQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -280,7 +256,7 @@ func (_q *RoleQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *RoleQuery) ExistX(ctx context.Context) bool {
+func (_q *RoleTemplateQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -288,19 +264,18 @@ func (_q *RoleQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the RoleQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the RoleTemplateQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *RoleQuery) Clone() *RoleQuery {
+func (_q *RoleTemplateQuery) Clone() *RoleTemplateQuery {
 	if _q == nil {
 		return nil
 	}
-	return &RoleQuery{
+	return &RoleTemplateQuery{
 		config:            _q.config,
 		ctx:               _q.ctx.Clone(),
-		order:             append([]role.OrderOption{}, _q.order...),
+		order:             append([]roletemplate.OrderOption{}, _q.order...),
 		inters:            append([]Interceptor{}, _q.inters...),
-		predicates:        append([]predicate.Role{}, _q.predicates...),
-		withGameRoles:     _q.withGameRoles.Clone(),
+		predicates:        append([]predicate.RoleTemplate{}, _q.predicates...),
 		withTemplateRoles: _q.withTemplateRoles.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -308,20 +283,9 @@ func (_q *RoleQuery) Clone() *RoleQuery {
 	}
 }
 
-// WithGameRoles tells the query-builder to eager-load the nodes that are connected to
-// the "game_roles" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *RoleQuery) WithGameRoles(opts ...func(*GameRoleQuery)) *RoleQuery {
-	query := (&GameRoleClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	_q.withGameRoles = query
-	return _q
-}
-
 // WithTemplateRoles tells the query-builder to eager-load the nodes that are connected to
 // the "template_roles" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *RoleQuery) WithTemplateRoles(opts ...func(*RoleTemplateRoleQuery)) *RoleQuery {
+func (_q *RoleTemplateQuery) WithTemplateRoles(opts ...func(*RoleTemplateRoleQuery)) *RoleTemplateQuery {
 	query := (&RoleTemplateRoleClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -340,15 +304,15 @@ func (_q *RoleQuery) WithTemplateRoles(opts ...func(*RoleTemplateRoleQuery)) *Ro
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Role.Query().
-//		GroupBy(role.FieldName).
+//	client.RoleTemplate.Query().
+//		GroupBy(roletemplate.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *RoleQuery) GroupBy(field string, fields ...string) *RoleGroupBy {
+func (_q *RoleTemplateQuery) GroupBy(field string, fields ...string) *RoleTemplateGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &RoleGroupBy{build: _q}
+	grbuild := &RoleTemplateGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = role.Label
+	grbuild.label = roletemplate.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -362,23 +326,23 @@ func (_q *RoleQuery) GroupBy(field string, fields ...string) *RoleGroupBy {
 //		Name string `json:"name,omitempty"`
 //	}
 //
-//	client.Role.Query().
-//		Select(role.FieldName).
+//	client.RoleTemplate.Query().
+//		Select(roletemplate.FieldName).
 //		Scan(ctx, &v)
-func (_q *RoleQuery) Select(fields ...string) *RoleSelect {
+func (_q *RoleTemplateQuery) Select(fields ...string) *RoleTemplateSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &RoleSelect{RoleQuery: _q}
-	sbuild.label = role.Label
+	sbuild := &RoleTemplateSelect{RoleTemplateQuery: _q}
+	sbuild.label = roletemplate.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a RoleSelect configured with the given aggregations.
-func (_q *RoleQuery) Aggregate(fns ...AggregateFunc) *RoleSelect {
+// Aggregate returns a RoleTemplateSelect configured with the given aggregations.
+func (_q *RoleTemplateQuery) Aggregate(fns ...AggregateFunc) *RoleTemplateSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *RoleQuery) prepareQuery(ctx context.Context) error {
+func (_q *RoleTemplateQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -390,7 +354,7 @@ func (_q *RoleQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !role.ValidColumn(f) {
+		if !roletemplate.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -404,20 +368,19 @@ func (_q *RoleQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *RoleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Role, error) {
+func (_q *RoleTemplateQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*RoleTemplate, error) {
 	var (
-		nodes       = []*Role{}
+		nodes       = []*RoleTemplate{}
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
-			_q.withGameRoles != nil,
+		loadedTypes = [1]bool{
 			_q.withTemplateRoles != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Role).scanValues(nil, columns)
+		return (*RoleTemplate).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Role{config: _q.config}
+		node := &RoleTemplate{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -431,26 +394,19 @@ func (_q *RoleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Role, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withGameRoles; query != nil {
-		if err := _q.loadGameRoles(ctx, query, nodes,
-			func(n *Role) { n.Edges.GameRoles = []*GameRole{} },
-			func(n *Role, e *GameRole) { n.Edges.GameRoles = append(n.Edges.GameRoles, e) }); err != nil {
-			return nil, err
-		}
-	}
 	if query := _q.withTemplateRoles; query != nil {
 		if err := _q.loadTemplateRoles(ctx, query, nodes,
-			func(n *Role) { n.Edges.TemplateRoles = []*RoleTemplateRole{} },
-			func(n *Role, e *RoleTemplateRole) { n.Edges.TemplateRoles = append(n.Edges.TemplateRoles, e) }); err != nil {
+			func(n *RoleTemplate) { n.Edges.TemplateRoles = []*RoleTemplateRole{} },
+			func(n *RoleTemplate, e *RoleTemplateRole) { n.Edges.TemplateRoles = append(n.Edges.TemplateRoles, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *RoleQuery) loadGameRoles(ctx context.Context, query *GameRoleQuery, nodes []*Role, init func(*Role), assign func(*Role, *GameRole)) error {
+func (_q *RoleTemplateQuery) loadTemplateRoles(ctx context.Context, query *RoleTemplateRoleQuery, nodes []*RoleTemplate, init func(*RoleTemplate), assign func(*RoleTemplate, *RoleTemplateRole)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Role)
+	nodeids := make(map[uuid.UUID]*RoleTemplate)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -459,57 +415,27 @@ func (_q *RoleQuery) loadGameRoles(ctx context.Context, query *GameRoleQuery, no
 		}
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(gamerole.FieldRoleID)
-	}
-	query.Where(predicate.GameRole(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(role.GameRolesColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.RoleID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "role_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (_q *RoleQuery) loadTemplateRoles(ctx context.Context, query *RoleTemplateRoleQuery, nodes []*Role, init func(*Role), assign func(*Role, *RoleTemplateRole)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Role)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(roletemplaterole.FieldRoleID)
+		query.ctx.AppendFieldOnce(roletemplaterole.FieldRoleTemplateID)
 	}
 	query.Where(predicate.RoleTemplateRole(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(role.TemplateRolesColumn), fks...))
+		s.Where(sql.InValues(s.C(roletemplate.TemplateRolesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.RoleID
+		fk := n.RoleTemplateID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "role_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "role_template_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
 	return nil
 }
 
-func (_q *RoleQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *RoleTemplateQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	_spec.Node.Columns = _q.ctx.Fields
 	if len(_q.ctx.Fields) > 0 {
@@ -518,8 +444,8 @@ func (_q *RoleQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *RoleQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(role.Table, role.Columns, sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID))
+func (_q *RoleTemplateQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(roletemplate.Table, roletemplate.Columns, sqlgraph.NewFieldSpec(roletemplate.FieldID, field.TypeUUID))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -528,9 +454,9 @@ func (_q *RoleQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, role.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, roletemplate.FieldID)
 		for i := range fields {
-			if fields[i] != role.FieldID {
+			if fields[i] != roletemplate.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -558,12 +484,12 @@ func (_q *RoleQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *RoleQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *RoleTemplateQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(role.Table)
+	t1 := builder.Table(roletemplate.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = role.Columns
+		columns = roletemplate.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -590,28 +516,28 @@ func (_q *RoleQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// RoleGroupBy is the group-by builder for Role entities.
-type RoleGroupBy struct {
+// RoleTemplateGroupBy is the group-by builder for RoleTemplate entities.
+type RoleTemplateGroupBy struct {
 	selector
-	build *RoleQuery
+	build *RoleTemplateQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *RoleGroupBy) Aggregate(fns ...AggregateFunc) *RoleGroupBy {
+func (_g *RoleTemplateGroupBy) Aggregate(fns ...AggregateFunc) *RoleTemplateGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *RoleGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *RoleTemplateGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*RoleQuery, *RoleGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*RoleTemplateQuery, *RoleTemplateGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *RoleGroupBy) sqlScan(ctx context.Context, root *RoleQuery, v any) error {
+func (_g *RoleTemplateGroupBy) sqlScan(ctx context.Context, root *RoleTemplateQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -638,28 +564,28 @@ func (_g *RoleGroupBy) sqlScan(ctx context.Context, root *RoleQuery, v any) erro
 	return sql.ScanSlice(rows, v)
 }
 
-// RoleSelect is the builder for selecting fields of Role entities.
-type RoleSelect struct {
-	*RoleQuery
+// RoleTemplateSelect is the builder for selecting fields of RoleTemplate entities.
+type RoleTemplateSelect struct {
+	*RoleTemplateQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *RoleSelect) Aggregate(fns ...AggregateFunc) *RoleSelect {
+func (_s *RoleTemplateSelect) Aggregate(fns ...AggregateFunc) *RoleTemplateSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *RoleSelect) Scan(ctx context.Context, v any) error {
+func (_s *RoleTemplateSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*RoleQuery, *RoleSelect](ctx, _s.RoleQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*RoleTemplateQuery, *RoleTemplateSelect](ctx, _s.RoleTemplateQuery, _s, _s.inters, v)
 }
 
-func (_s *RoleSelect) sqlScan(ctx context.Context, root *RoleQuery, v any) error {
+func (_s *RoleTemplateSelect) sqlScan(ctx context.Context, root *RoleTemplateQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

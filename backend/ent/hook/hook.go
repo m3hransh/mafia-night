@@ -69,6 +69,30 @@ func (f RoleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RoleMutation", m)
 }
 
+// The RoleTemplateFunc type is an adapter to allow the use of ordinary
+// function as RoleTemplate mutator.
+type RoleTemplateFunc func(context.Context, *ent.RoleTemplateMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RoleTemplateFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RoleTemplateMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RoleTemplateMutation", m)
+}
+
+// The RoleTemplateRoleFunc type is an adapter to allow the use of ordinary
+// function as RoleTemplateRole mutator.
+type RoleTemplateRoleFunc func(context.Context, *ent.RoleTemplateRoleMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RoleTemplateRoleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RoleTemplateRoleMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RoleTemplateRoleMutation", m)
+}
+
 // Condition is a hook condition function.
 type Condition func(context.Context, ent.Mutation) bool
 

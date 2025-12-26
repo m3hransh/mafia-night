@@ -29,6 +29,8 @@ const (
 	FieldAbilities = "abilities"
 	// EdgeGameRoles holds the string denoting the game_roles edge name in mutations.
 	EdgeGameRoles = "game_roles"
+	// EdgeTemplateRoles holds the string denoting the template_roles edge name in mutations.
+	EdgeTemplateRoles = "template_roles"
 	// Table holds the table name of the role in the database.
 	Table = "roles"
 	// GameRolesTable is the table that holds the game_roles relation/edge.
@@ -38,6 +40,13 @@ const (
 	GameRolesInverseTable = "game_roles"
 	// GameRolesColumn is the table column denoting the game_roles relation/edge.
 	GameRolesColumn = "role_id"
+	// TemplateRolesTable is the table that holds the template_roles relation/edge.
+	TemplateRolesTable = "role_template_roles"
+	// TemplateRolesInverseTable is the table name for the RoleTemplateRole entity.
+	// It exists in this package in order to avoid circular dependency with the "roletemplaterole" package.
+	TemplateRolesInverseTable = "role_template_roles"
+	// TemplateRolesColumn is the table column denoting the template_roles relation/edge.
+	TemplateRolesColumn = "role_id"
 )
 
 // Columns holds all SQL columns for role fields.
@@ -142,10 +151,31 @@ func ByGameRoles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newGameRolesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByTemplateRolesCount orders the results by template_roles count.
+func ByTemplateRolesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTemplateRolesStep(), opts...)
+	}
+}
+
+// ByTemplateRoles orders the results by template_roles terms.
+func ByTemplateRoles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTemplateRolesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newGameRolesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GameRolesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, GameRolesTable, GameRolesColumn),
+	)
+}
+func newTemplateRolesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TemplateRolesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TemplateRolesTable, TemplateRolesColumn),
 	)
 }

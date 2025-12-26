@@ -397,6 +397,29 @@ func HasGameRolesWith(preds ...predicate.GameRole) predicate.Role {
 	})
 }
 
+// HasTemplateRoles applies the HasEdge predicate on the "template_roles" edge.
+func HasTemplateRoles() predicate.Role {
+	return predicate.Role(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, TemplateRolesTable, TemplateRolesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTemplateRolesWith applies the HasEdge predicate on the "template_roles" edge with a given conditions (other predicates).
+func HasTemplateRolesWith(preds ...predicate.RoleTemplateRole) predicate.Role {
+	return predicate.Role(func(s *sql.Selector) {
+		step := newTemplateRolesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Role) predicate.Role {
 	return predicate.Role(sql.AndPredicates(predicates...))

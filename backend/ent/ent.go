@@ -17,6 +17,8 @@ import (
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/role"
+	"github.com/mafia-night/backend/ent/roletemplate"
+	"github.com/mafia-night/backend/ent/roletemplaterole"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -77,11 +79,13 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			admin.Table:    admin.ValidColumn,
-			game.Table:     game.ValidColumn,
-			gamerole.Table: gamerole.ValidColumn,
-			player.Table:   player.ValidColumn,
-			role.Table:     role.ValidColumn,
+			admin.Table:            admin.ValidColumn,
+			game.Table:             game.ValidColumn,
+			gamerole.Table:         gamerole.ValidColumn,
+			player.Table:           player.ValidColumn,
+			role.Table:             role.ValidColumn,
+			roletemplate.Table:     roletemplate.ValidColumn,
+			roletemplaterole.Table: roletemplaterole.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

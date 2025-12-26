@@ -22,6 +22,10 @@ type Tx struct {
 	Player *PlayerClient
 	// Role is the client for interacting with the Role builders.
 	Role *RoleClient
+	// RoleTemplate is the client for interacting with the RoleTemplate builders.
+	RoleTemplate *RoleTemplateClient
+	// RoleTemplateRole is the client for interacting with the RoleTemplateRole builders.
+	RoleTemplateRole *RoleTemplateRoleClient
 
 	// lazily loaded.
 	client     *Client
@@ -158,6 +162,8 @@ func (tx *Tx) init() {
 	tx.GameRole = NewGameRoleClient(tx.config)
 	tx.Player = NewPlayerClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)
+	tx.RoleTemplate = NewRoleTemplateClient(tx.config)
+	tx.RoleTemplateRole = NewRoleTemplateRoleClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

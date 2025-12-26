@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/role"
+	"github.com/mafia-night/backend/ent/roletemplaterole"
 )
 
 // RoleCreate is the builder for creating a Role entity.
@@ -92,6 +93,21 @@ func (_c *RoleCreate) AddGameRoles(v ...*GameRole) *RoleCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddGameRoleIDs(ids...)
+}
+
+// AddTemplateRoleIDs adds the "template_roles" edge to the RoleTemplateRole entity by IDs.
+func (_c *RoleCreate) AddTemplateRoleIDs(ids ...int) *RoleCreate {
+	_c.mutation.AddTemplateRoleIDs(ids...)
+	return _c
+}
+
+// AddTemplateRoles adds the "template_roles" edges to the RoleTemplateRole entity.
+func (_c *RoleCreate) AddTemplateRoles(v ...*RoleTemplateRole) *RoleCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddTemplateRoleIDs(ids...)
 }
 
 // Mutation returns the RoleMutation object of the builder.
@@ -237,6 +253,22 @@ func (_c *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(gamerole.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TemplateRolesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   role.TemplateRolesTable,
+			Columns: []string{role.TemplateRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(roletemplaterole.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

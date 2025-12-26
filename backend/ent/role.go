@@ -40,9 +40,11 @@ type Role struct {
 type RoleEdges struct {
 	// GameRoles holds the value of the game_roles edge.
 	GameRoles []*GameRole `json:"game_roles,omitempty"`
+	// TemplateRoles holds the value of the template_roles edge.
+	TemplateRoles []*RoleTemplateRole `json:"template_roles,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // GameRolesOrErr returns the GameRoles value or an error if the edge
@@ -52,6 +54,15 @@ func (e RoleEdges) GameRolesOrErr() ([]*GameRole, error) {
 		return e.GameRoles, nil
 	}
 	return nil, &NotLoadedError{edge: "game_roles"}
+}
+
+// TemplateRolesOrErr returns the TemplateRoles value or an error if the edge
+// was not loaded in eager-loading.
+func (e RoleEdges) TemplateRolesOrErr() ([]*RoleTemplateRole, error) {
+	if e.loadedTypes[1] {
+		return e.TemplateRoles, nil
+	}
+	return nil, &NotLoadedError{edge: "template_roles"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -140,6 +151,11 @@ func (_m *Role) Value(name string) (ent.Value, error) {
 // QueryGameRoles queries the "game_roles" edge of the Role entity.
 func (_m *Role) QueryGameRoles() *GameRoleQuery {
 	return NewRoleClient(_m.config).QueryGameRoles(_m)
+}
+
+// QueryTemplateRoles queries the "template_roles" edge of the Role entity.
+func (_m *Role) QueryTemplateRoles() *RoleTemplateRoleQuery {
+	return NewRoleClient(_m.config).QueryTemplateRoles(_m)
 }
 
 // Update returns a builder for updating this Role.

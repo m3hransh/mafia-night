@@ -14,6 +14,7 @@ import (
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/predicate"
 	"github.com/mafia-night/backend/ent/role"
+	"github.com/mafia-night/backend/ent/roletemplaterole"
 )
 
 // RoleUpdate is the builder for updating Role entities.
@@ -138,6 +139,21 @@ func (_u *RoleUpdate) AddGameRoles(v ...*GameRole) *RoleUpdate {
 	return _u.AddGameRoleIDs(ids...)
 }
 
+// AddTemplateRoleIDs adds the "template_roles" edge to the RoleTemplateRole entity by IDs.
+func (_u *RoleUpdate) AddTemplateRoleIDs(ids ...int) *RoleUpdate {
+	_u.mutation.AddTemplateRoleIDs(ids...)
+	return _u
+}
+
+// AddTemplateRoles adds the "template_roles" edges to the RoleTemplateRole entity.
+func (_u *RoleUpdate) AddTemplateRoles(v ...*RoleTemplateRole) *RoleUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTemplateRoleIDs(ids...)
+}
+
 // Mutation returns the RoleMutation object of the builder.
 func (_u *RoleUpdate) Mutation() *RoleMutation {
 	return _u.mutation
@@ -162,6 +178,27 @@ func (_u *RoleUpdate) RemoveGameRoles(v ...*GameRole) *RoleUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveGameRoleIDs(ids...)
+}
+
+// ClearTemplateRoles clears all "template_roles" edges to the RoleTemplateRole entity.
+func (_u *RoleUpdate) ClearTemplateRoles() *RoleUpdate {
+	_u.mutation.ClearTemplateRoles()
+	return _u
+}
+
+// RemoveTemplateRoleIDs removes the "template_roles" edge to RoleTemplateRole entities by IDs.
+func (_u *RoleUpdate) RemoveTemplateRoleIDs(ids ...int) *RoleUpdate {
+	_u.mutation.RemoveTemplateRoleIDs(ids...)
+	return _u
+}
+
+// RemoveTemplateRoles removes "template_roles" edges to RoleTemplateRole entities.
+func (_u *RoleUpdate) RemoveTemplateRoles(v ...*RoleTemplateRole) *RoleUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTemplateRoleIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -302,6 +339,51 @@ func (_u *RoleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.TemplateRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   role.TemplateRolesTable,
+			Columns: []string{role.TemplateRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(roletemplaterole.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTemplateRolesIDs(); len(nodes) > 0 && !_u.mutation.TemplateRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   role.TemplateRolesTable,
+			Columns: []string{role.TemplateRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(roletemplaterole.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TemplateRolesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   role.TemplateRolesTable,
+			Columns: []string{role.TemplateRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(roletemplaterole.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{role.Label}
@@ -431,6 +513,21 @@ func (_u *RoleUpdateOne) AddGameRoles(v ...*GameRole) *RoleUpdateOne {
 	return _u.AddGameRoleIDs(ids...)
 }
 
+// AddTemplateRoleIDs adds the "template_roles" edge to the RoleTemplateRole entity by IDs.
+func (_u *RoleUpdateOne) AddTemplateRoleIDs(ids ...int) *RoleUpdateOne {
+	_u.mutation.AddTemplateRoleIDs(ids...)
+	return _u
+}
+
+// AddTemplateRoles adds the "template_roles" edges to the RoleTemplateRole entity.
+func (_u *RoleUpdateOne) AddTemplateRoles(v ...*RoleTemplateRole) *RoleUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTemplateRoleIDs(ids...)
+}
+
 // Mutation returns the RoleMutation object of the builder.
 func (_u *RoleUpdateOne) Mutation() *RoleMutation {
 	return _u.mutation
@@ -455,6 +552,27 @@ func (_u *RoleUpdateOne) RemoveGameRoles(v ...*GameRole) *RoleUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveGameRoleIDs(ids...)
+}
+
+// ClearTemplateRoles clears all "template_roles" edges to the RoleTemplateRole entity.
+func (_u *RoleUpdateOne) ClearTemplateRoles() *RoleUpdateOne {
+	_u.mutation.ClearTemplateRoles()
+	return _u
+}
+
+// RemoveTemplateRoleIDs removes the "template_roles" edge to RoleTemplateRole entities by IDs.
+func (_u *RoleUpdateOne) RemoveTemplateRoleIDs(ids ...int) *RoleUpdateOne {
+	_u.mutation.RemoveTemplateRoleIDs(ids...)
+	return _u
+}
+
+// RemoveTemplateRoles removes "template_roles" edges to RoleTemplateRole entities.
+func (_u *RoleUpdateOne) RemoveTemplateRoles(v ...*RoleTemplateRole) *RoleUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTemplateRoleIDs(ids...)
 }
 
 // Where appends a list predicates to the RoleUpdate builder.
@@ -618,6 +736,51 @@ func (_u *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(gamerole.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TemplateRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   role.TemplateRolesTable,
+			Columns: []string{role.TemplateRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(roletemplaterole.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTemplateRolesIDs(); len(nodes) > 0 && !_u.mutation.TemplateRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   role.TemplateRolesTable,
+			Columns: []string{role.TemplateRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(roletemplaterole.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TemplateRolesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   role.TemplateRolesTable,
+			Columns: []string{role.TemplateRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(roletemplaterole.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
