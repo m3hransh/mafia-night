@@ -50,6 +50,8 @@ func CleanupTestDB(t *testing.T, client *ent.Client) {
 	_, _ = client.GameRole.Delete().Exec(ctx)
 	_, _ = client.Player.Delete().Exec(ctx)
 	_, _ = client.Game.Delete().Exec(ctx)
+	_, _ = client.RoleTemplateRole.Delete().Exec(ctx)
+	_, _ = client.RoleTemplate.Delete().Exec(ctx)
 	_, _ = client.Role.Delete().Exec(ctx)
 	_, _ = client.Admin.Delete().Exec(ctx)
 }

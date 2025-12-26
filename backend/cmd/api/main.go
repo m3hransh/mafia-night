@@ -41,6 +41,7 @@ func main() {
 	// Initialize services
 	gameService := service.NewGameService(client)
 	roleService := service.NewRoleService(client)
+	roleTemplateService := service.NewRoleTemplateService(client)
 	adminService := service.NewAdminService(client)
 
 	// Initialize JWT service
@@ -54,6 +55,7 @@ func main() {
 	// Initialize handlers
 	gameHandler := handler.NewGameHandler(gameService)
 	roleHandler := handler.NewRoleHandler(roleService)
+	roleTemplateHandler := handler.NewRoleTemplateHandler(roleTemplateService)
 	adminHandler := handler.NewAdminHandler(adminService, jwtService)
 	wsHandler := handler.NewWebSocketHandler(gameService)
 
@@ -106,6 +108,11 @@ func main() {
 			r.Get("/{slug}", roleHandler.GetRoleBySlug)
 		})
 
+		r.Route("/role-templates", func(r chi.Router) {
+			r.Get("/", roleTemplateHandler.GetRoleTemplates)
+			r.Get("/{id}", roleTemplateHandler.GetRoleTemplateByID)
+		})
+
 		// Admin routes
 		r.Route("/admin", func(r chi.Router) {
 			// Public admin routes
@@ -131,6 +138,13 @@ func main() {
 					r.Post("/", roleHandler.CreateRole)
 					r.Patch("/{id}", roleHandler.UpdateRole)
 					r.Delete("/{id}", roleHandler.DeleteRole)
+				})
+
+				// Role template management
+				r.Route("/role-templates", func(r chi.Router) {
+					r.Post("/", roleTemplateHandler.CreateRoleTemplate)
+					r.Patch("/{id}", roleTemplateHandler.UpdateRoleTemplate)
+					r.Delete("/{id}", roleTemplateHandler.DeleteRoleTemplate)
 				})
 			})
 		})
