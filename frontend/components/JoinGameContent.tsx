@@ -16,25 +16,33 @@ export function JoinGameContent() {
   const [joined, setJoined] = useState(false); const [players, setPlayers] = useState<Player[]>([]);
   const [leaving, setLeaving] = useState(false);
   const [assignedRole, setAssignedRole] = useState<Role | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check for existing player session on mount with backend validation
   useEffect(() => {
     const checkSavedPlayer = async () => {
-      const validatedState = await validatePlayerGameState();
-      if (validatedState) {
-        // Restore player state
-        setGameCode(validatedState.gameId);
-        setPlayerName(validatedState.playerName);
-        setPlayerId(validatedState.playerId);
-        setJoined(true);
+      try {
+        const validatedState = await validatePlayerGameState();
+        if (validatedState) {
+          // Restore player state
+          setGameCode(validatedState.gameId);
+          setPlayerName(validatedState.playerName);
+          setPlayerId(validatedState.playerId);
+          setJoined(true);
 
-        try {
-          const role = await getPlayerRole(validatedState.gameId, validatedState.playerId);
-          if (role) {
-            setAssignedRole(role);
+          try {
+            const role = await getPlayerRole(validatedState.gameId, validatedState.playerId);
+            if (role) {
+              setAssignedRole(role);
+            }
+          } catch (error) {
+            console.error('Error fetching role:', error);
           }
-        } catch (error) {
         }
+      } catch (error) {
+        console.error('Error validating player state:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -106,6 +114,15 @@ export function JoinGameContent() {
     clearPlayerGame();
     router.push('/');
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl w-full mx-auto relative z-10 flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500 mb-6"></div>
+        <h2 className="text-2xl font-bold text-white animate-pulse">Loading Game State...</h2>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl w-full mx-auto relative z-10">

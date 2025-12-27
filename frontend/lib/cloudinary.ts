@@ -74,10 +74,13 @@ export function optimizeCloudinaryVideo(
   const [base, pathPart] = parts;
 
   // Remove existing transformations to get the public ID
-  const publicIdMatch = pathPart.match(/(?:mafia-roles\/.+\.webm)/);
+  // Match any path ending in a video extension, optionally preceded by version
+  const publicIdMatch = pathPart.match(/(?:v\d+\/)?(.+\.(?:webm|mp4|mov|mkv))$/i);
   if (!publicIdMatch) return videoUrl;
 
-  const publicId = publicIdMatch[0];
+  // Force .mp4 extension for the output URL to ensure iOS compatibility
+  // (Cloudinary handles the actual conversion via f_mp4/f_auto)
+  const publicId = publicIdMatch[1]
 
   // Build optimized transformations
   const width = options.width || preset.width;
@@ -86,12 +89,17 @@ export function optimizeCloudinaryVideo(
     ? `q_auto:${options.quality}`
     : preset.quality;
 
+  // For better iOS compatibility, use H.264 codec and mp4 format on mobile
+  const isMobile = device === 'mobile' || device === 'tablet';
+  const format = isMobile ? 'f_mp4' : 'f_auto';
+  const codec = 'vc_auto'; // Let Cloudinary decide the best codec (usually H.264 for MP4)
+
   const transformations = [
     quality,
-    'f_auto', // Auto format
+    'f_auto',
     `w_${width}`, // Width
     `br_${bitrate}`, // Bitrate
-    'vc_auto', // Video codec auto
+    codec, // Video codec
   ].join(',');
 
   return `${base}/upload/${transformations}/${publicId}`;

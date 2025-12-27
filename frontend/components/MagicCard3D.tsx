@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RoundedBox, useVideoTexture, Text } from '@react-three/drei';
+import { RoundedBox, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { optimizeCloudinaryVideo } from '@/lib/cloudinary';
 import { Role } from '@/lib/api';
@@ -25,6 +25,7 @@ export function MagicCard3D({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoTexture, setVideoTexture] = useState<THREE.VideoTexture | null>(null);
   const fadeStartTime = useRef<number | null>(null);
 
   // Use gyro data from props if available, otherwise default
@@ -32,14 +33,65 @@ export function MagicCard3D({
   // Optimize video URL for current device
   const optimizedVideoSrc = useMemo(() => optimizeCloudinaryVideo(videoSrc), [videoSrc]);
 
-  const videoTexture = useVideoTexture(optimizedVideoSrc, {
-    loop: true,
-    muted: true,
-    start: true,
-    playsInline: true,
-    crossOrigin: 'Anonymous',
-    unsuspend: 'loadeddata',
-  });
+  // Manual video texture loading to avoid Suspense issues on iOS
+  useEffect(() => {
+    if (!optimizedVideoSrc) return;
+
+    const video = document.createElement('video');
+    
+    // Set attributes BEFORE src
+    video.crossOrigin = 'Anonymous';
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.preload = 'auto';
+    
+    video.src = optimizedVideoSrc;
+    video.load(); // Explicit load
+    
+    // Create texture immediately
+    const texture = new THREE.VideoTexture(video);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.format = THREE.RGBAFormat;
+    
+    setVideoTexture(texture);
+
+    const handleLoadedData = () => {
+      setVideoLoaded(true);
+      if (!fadeStartTime.current) {
+        fadeStartTime.current = Date.now();
+      }
+    };
+
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('error', (e) => {
+      console.error('Video load error:', video.error, video.src);
+    });
+    
+    // Attempt to play with proper promise handling
+    let mounted = true;
+    const playVideo = async () => {
+      try {
+        await video.play();
+      } catch (err) {
+        if (mounted) {
+          console.warn('Video autoplay failed:', err);
+        }
+      }
+    };
+    playVideo();
+
+    return () => {
+      mounted = false;
+      video.removeEventListener('loadeddata', handleLoadedData);
+      video.pause();
+      video.removeAttribute('src');
+      texture.dispose();
+    };
+  }, [optimizedVideoSrc]);
 
   // Smooth mouse tracking
   const targetRotation = useRef({ x: 0, y: 0 });
@@ -51,38 +103,6 @@ export function MagicCard3D({
     };
     checkMobile();
   }, []);
-
-  // Track video loading state and fade in
-  useEffect(() => {
-    if (videoTexture && videoTexture.image) {
-      const video = videoTexture.image as HTMLVideoElement;
-
-      const handleLoadedData = () => {
-        setVideoLoaded(true);
-      };
-
-      const handleCanPlay = () => {
-        // Start fade-in animation
-        if (!fadeStartTime.current) {
-          fadeStartTime.current = Date.now();
-        }
-      };
-
-      if (video.readyState >= 3) {
-        // Video already loaded
-        handleLoadedData();
-        handleCanPlay();
-      } else {
-        video.addEventListener('loadeddata', handleLoadedData);
-        video.addEventListener('canplay', handleCanPlay);
-      }
-
-      return () => {
-        video.removeEventListener('loadeddata', handleLoadedData);
-        video.removeEventListener('canplay', handleCanPlay);
-      };
-    }
-  }, [videoTexture]);
 
   // Mouse tracking for desktop
   useEffect(() => {
@@ -147,7 +167,7 @@ export function MagicCard3D({
 
     // Handle video fade-in
     if (fadeStartTime.current && circularMaterial && circularMaterial.uniforms.opacity) {
-      const duration = 800; // 800ms fade-in
+      const duration = 500; // 500ms fade-in (reduced from 800ms)
       const elapsed = Date.now() - fadeStartTime.current;
       const progress = Math.min(elapsed / duration, 1);
 
@@ -251,8 +271,11 @@ export function MagicCard3D({
 
     // Update aspect ratio when texture loads
     if (videoTexture && videoTexture.image) {
-      const aspect = videoTexture.image.videoWidth / videoTexture.image.videoHeight;
-      material.uniforms.textureAspect.value = aspect;
+      const video = videoTexture.image as HTMLVideoElement;
+      if (video.videoWidth && video.videoHeight) {
+        const aspect = video.videoWidth / video.videoHeight;
+        material.uniforms.textureAspect.value = aspect;
+      }
     }
 
     return material;
@@ -355,7 +378,6 @@ export function MagicCard3D({
       if (goldenRingMaterial) {
         goldenRingMaterial.dispose();
       }
-      // Don't dispose videoTexture - useVideoTexture manages its own lifecycle
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -363,18 +385,22 @@ export function MagicCard3D({
   // Update aspect ratio dynamically
   useEffect(() => {
     if (videoTexture && videoTexture.image && circularMaterial) {
+      const video = videoTexture.image as HTMLVideoElement;
+      
       const updateAspect = () => {
-        const aspect = videoTexture.image.videoWidth / videoTexture.image.videoHeight;
-        if (circularMaterial.uniforms.textureAspect) {
-          circularMaterial.uniforms.textureAspect.value = aspect;
+        if (video.videoWidth && video.videoHeight) {
+          const aspect = video.videoWidth / video.videoHeight;
+          if (circularMaterial.uniforms.textureAspect) {
+            circularMaterial.uniforms.textureAspect.value = aspect;
+          }
         }
       };
 
-      if (videoTexture.image.videoWidth) {
+      if (video.videoWidth) {
         updateAspect();
       } else {
-        videoTexture.image.addEventListener('loadedmetadata', updateAspect);
-        return () => videoTexture.image?.removeEventListener('loadedmetadata', updateAspect);
+        video.addEventListener('loadedmetadata', updateAspect);
+        return () => video.removeEventListener('loadedmetadata', updateAspect);
       }
     }
   }, [videoTexture, circularMaterial]);

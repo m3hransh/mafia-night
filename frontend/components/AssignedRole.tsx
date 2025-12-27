@@ -1,6 +1,13 @@
+'use client';
+
 import { Role } from "@/lib/api";
-import { CardScene } from "./CardScene";
+import dynamic from 'next/dynamic';
 import { Button } from './Button';
+
+const CardScene = dynamic(() => import('./CardScene').then(mod => ({ default: mod.CardScene })), {
+  ssr: false,
+  loading: () => <div className="w-full h-screen" />,
+});
 
 interface AssignedRoleProps {
   assignedRole: Role;
