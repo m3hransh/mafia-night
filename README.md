@@ -56,36 +56,34 @@ just dev
 - **Task Runner:** Just (modern command runner)
 - **Auto-load:** direnv (automatic environment)
 - **Containerization:** Docker + Docker Compose
-- **CI/CD:** GitHub Actions (coming soon)
+- **CI/CD:** GitHub Actions
 
 ## Project Structure
 
 ```
-mafia-night/
-├── WORKSPACE                 # Bazel workspace configuration
-├── BUILD.bazel              # Root build file
-├── .bazelversion            # Bazel version lock
-├── docker-compose.yml       # Docker orchestration
-├── PROJECT_PHASES.md        # Development roadmap
-│
-├── backend/                 # Go backend
-│   ├── BUILD.bazel
-│   ├── go.mod
-│   ├── ent/                # Generated Ent ORM code
-│   │   ├── schema/         # Database schema definitions
-│   │   └── ...
-│   ├── cmd/api/            # Main application
-│   │   ├── main.go
-│   │   ├── main_test.go
-│   │   └── BUILD.bazel
-│   ├── internal/           # Private packages
-│   │   ├── models/
-│   │   ├── repository/
-│   │   ├── service/
-│   │   └── handler/
-│   └── pkg/                # Public packages
-│
-└── frontend/               # Next.js frontend
+├── backend
+│   ├── bin
+│   ├── cmd
+│   ├── db
+│   ├── Dockerfile
+│   ├── ent
+│   ├── go.mod
+│   ├── go.sum
+│   ├── internal
+│   ├── migrations
+│   └── pkg
+├── docs/
+├── frontend/
+├── nginx/
+└── scripts/
+├── docker-compose.prod.yml
+├── docker-compose.yml
+├── flake.lock
+├── flake.nix
+├── Justfile
+├── LICENSE
+├── PROJECT_PHASES.md
+├── README.md
 ```
 
 ## Getting Started
@@ -253,16 +251,8 @@ See [PROJECT_PHASES.md](./PROJECT_PHASES.md) for detailed development roadmap.
 **Current Phase:** 🚧 Phase 2 - Core Domain Models & Database Layer (In Progress)
 
 ## Environment Variables
-
-### Backend
 ```env
-DATABASE_URL=postgres://mafia_user:mafia_pass@localhost:5432/mafia_night?sslmode=disable
-PORT=8080
-```
-
-### Frontend
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
+cat .env.production.example > .env.production
 ```
 
 ## Contributing
@@ -278,7 +268,7 @@ MIT
 
 ## Authors
 
-- Your Name - Initial work
+- Mehran Shahidi
 
 ---
 
