@@ -142,6 +142,8 @@ func main() {
 
 				// Role template management
 				r.Route("/role-templates", func(r chi.Router) {
+					r.Get("/", roleTemplateHandler.GetRoleTemplates)
+					r.Get("/{id}", roleTemplateHandler.GetRoleTemplateByID)
 					r.Post("/", roleTemplateHandler.CreateRoleTemplate)
 					r.Patch("/{id}", roleTemplateHandler.UpdateRoleTemplate)
 					r.Delete("/{id}", roleTemplateHandler.DeleteRoleTemplate)
