@@ -133,7 +133,7 @@ const (
 type GameUpdate struct {
 	Type    GameUpdateType `json:"type"`
 	GameID  string         `json:"game_id"`
-	Payload interface{}    `json:"payload,omitempty"`
+	Payload any    `json:"payload,omitempty"`
 }
 
 type WebSocketHub struct {
@@ -186,7 +186,7 @@ func (h *WebSocketHub) logConnectionStats() {
 }
 
 // GetConnectionStats returns current connection statistics
-func (h *WebSocketHub) GetConnectionStats() map[string]interface{} {
+func (h *WebSocketHub) GetConnectionStats() map[string]any {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
@@ -197,7 +197,7 @@ func (h *WebSocketHub) GetConnectionStats() map[string]interface{} {
 		gameStats[gameID] = len(clients)
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"total_connections": totalConns,
 		"active_games":      len(h.clients),
 		"games":             gameStats,
@@ -305,7 +305,7 @@ func (h *WebSocketHub) run() {
 	}
 }
 
-func (h *WebSocketHub) BroadcastToGame(gameID string, updateType GameUpdateType, payload interface{}) {
+func (h *WebSocketHub) BroadcastToGame(gameID string, updateType GameUpdateType, payload any) {
 	h.broadcast <- GameUpdate{
 		Type:    updateType,
 		GameID:  gameID,
@@ -371,7 +371,7 @@ func (h *WebSocketHub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 			update := GameUpdate{
 				Type:    "initial_state",
 				GameID:  gameID,
-				Payload: map[string]interface{}{"players": playersJSON},
+				Payload: map[string]any{"players": playersJSON},
 			}
 			
 			if msg, err := json.Marshal(update); err == nil {

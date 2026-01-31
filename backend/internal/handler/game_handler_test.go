@@ -75,7 +75,7 @@ func TestGetGameHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 
-		var response map[string]interface{}
+		var response map[string]any
 		err = json.NewDecoder(rr.Body).Decode(&response)
 		require.NoError(t, err)
 
@@ -123,7 +123,7 @@ func TestUpdateGameStatusHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 
-		var response map[string]interface{}
+		var response map[string]any
 		json.NewDecoder(rr.Body).Decode(&response)
 		assert.Equal(t, "active", response["status"])
 	})
