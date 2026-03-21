@@ -10,6 +10,21 @@ export interface Role {
   abilities?: string[];
 }
 
+export interface RoleTemplate {
+  id: string;
+  name: string;
+  player_count: number;
+  description: string;
+  created_at: string;
+  updated_at: string;
+  roles: SelectedRole[];
+}
+
+interface SelectedRole {
+  count: number;
+  role: Role
+}
+
 export class APIError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -25,6 +40,19 @@ export async function fetchRoles(): Promise<Role[]> {
 
   if (!response.ok) {
     throw new APIError(response.status, 'Failed to fetch roles');
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetches all role templates from the backend API
+ */
+export async function fetchRoleTemplates(): Promise<RoleTemplate[]> {
+  const response = await fetch(`${API_BASE_URL}/api/role-templates`);
+
+  if (!response.ok) {
+    throw new APIError(response.status, 'Failed to fetch role templates');
   }
 
   return response.json();

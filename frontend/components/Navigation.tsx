@@ -22,6 +22,9 @@ export default function Navigation() {
 
   if (isAdmin) {
     navLinks.push({ href: '/admin/dashboard', label: 'Dashboard' })
+    navLinks.push({ href: '/admin/logout', label: 'Logout' })
+  } else {
+    navLinks.push({ href: 'admin/login', label: 'Login' })
   }
 
   return (

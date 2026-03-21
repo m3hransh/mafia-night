@@ -126,7 +126,6 @@ export function WaitingForPlayers({
         <div className="flex gap-4 justify-center">
           <Button
             onClick={onStartRoleSelection}
-            disabled={players.length === 0}
             variant="success"
             scaleOnHover
           >

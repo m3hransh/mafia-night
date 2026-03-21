@@ -44,6 +44,7 @@
     "@types/testing-library__jest-dom": "^5.14.9",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.22",
+    "baseline-browser-mapping": "^2.10.10",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.5",
     "jest": "^30.2.0",

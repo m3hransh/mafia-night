@@ -191,3 +191,92 @@ export async function deleteRole(id: string): Promise<void> {
     throw new Error(error.error || 'Failed to delete role');
   }
 }
+
+// Role Template Management
+export interface RoleTemplate {
+  id: string;
+  name: string;
+  player_count: number;
+  description: string;
+  created_at: string;
+  updated_at: string;
+  roles: Array<{
+    role_id?: string;
+    count: number;
+    role?: Role;
+  }>;
+}
+
+export async function listRoleTemplates(): Promise<RoleTemplate[]> {
+  const response = await adminFetch('/api/admin/role-templates');
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch role templates');
+  }
+
+  return response.json();
+}
+
+export async function getRoleTemplate(id: string): Promise<RoleTemplate> {
+  const response = await adminFetch(`/api/admin/role-templates/${id}`);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch role template');
+  }
+
+  return response.json();
+}
+
+export async function createRoleTemplate(data: {
+  name: string;
+  player_count: number;
+  description: string;
+  roles: Array<{ role_id: string; count: number }>;
+}): Promise<RoleTemplate> {
+  const response = await adminFetch('/api/admin/role-templates', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create role template');
+  }
+
+  return response.json();
+}
+
+export async function updateRoleTemplate(
+  id: string,
+  data: {
+    name?: string;
+    player_count?: number;
+    description?: string;
+    roles?: Array<{ role_id: string; count: number }>;
+  }
+): Promise<RoleTemplate> {
+  const response = await adminFetch(`/api/admin/role-templates/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update role template');
+  }
+
+  return response.json();
+}
+
+export async function deleteRoleTemplate(id: string): Promise<void> {
+  const response = await adminFetch(`/api/admin/role-templates/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete role template');
+  }
+}

@@ -158,20 +158,6 @@ test.describe('Game Flow - Create and Join Game', () => {
     await expect(joinUrl).toBeVisible();
   });
 
-  test('should not allow starting game without players', async ({ page }) => {
-    await page.goto('/create-game');
-    await expect(page.locator('h1:has-text("Create Game")')).toBeVisible();
-
-    await page.click('button:has-text("Create Game")');
-
-    // Wait for game to be created
-    await page.locator('.font-mono').first().waitFor({ state: 'visible', timeout: 10000 });
-
-    // Start button should be disabled
-    const startButton = page.locator('button:has-text("Select Roles")');
-    await expect(startButton).toBeDisabled();
-  });
-
   test('should distribute roles and players should see their assigned roles', async ({ browser }) => {
     // Create game
     const game = await createGameSession(browser);

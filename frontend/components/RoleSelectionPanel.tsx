@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { fetchRoles, Role } from '@/lib/api';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { fetchRoles, Role, fetchRoleTemplates, RoleTemplate } from '@/lib/api';
 import { Button } from './Button';
 
 interface RoleSelectionPanelProps {
@@ -10,32 +10,71 @@ interface RoleSelectionPanelProps {
   onCancel: () => void;
 }
 
+const STORAGE_KEY = 'mafia-night-selected-roles';
+
+function loadFromStorage(): Map<string, number> {
+  if (typeof window === 'undefined') return new Map();
+  
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return new Map(Object.entries(parsed).map(([k, v]) => [k, v as number]));
+    }
+  } catch (err) {
+    console.error('Failed to load roles from storage:', err);
+  }
+  return new Map();
+}
+
+function saveToStorage(roles: Map<string, number>): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const obj = Object.fromEntries(roles.entries());
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  } catch (err) {
+    console.error('Failed to save roles to storage:', err);
+  }
+}
+
 export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: RoleSelectionPanelProps) {
   const [roles, setRoles] = useState<Role[]>([]);
-  const [selectedRoles, setSelectedRoles] = useState<Map<string, number>>(new Map());
+  const [selectedRoles, setSelectedRoles] = useState<Map<string, number>>(() => loadFromStorage());
   const [loading, setLoading] = useState(true);
+  const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    async function loadRoles() {
+    async function loadData() {
       try {
-        const data = await fetchRoles();
-        setRoles(data);
+        const [rolesData, templates] = await Promise.all([
+          fetchRoles(),
+          fetchRoleTemplates()
+        ]);
+        setRoles(rolesData);
+        setRoleTemplates(templates);
       } catch (err) {
-        setError('Failed to load roles');
+        setError('Failed to load data');
         console.error(err);
       } finally {
         setLoading(false);
       }
     }
-    loadRoles();
+
+    loadData();
   }, []);
 
-  const getTotalSelected = () => {
-    return Array.from(selectedRoles.values()).reduce((sum, count) => sum + count, 0);
-  };
+  useEffect(() => {
+    saveToStorage(selectedRoles);
+  }, [selectedRoles]);
 
-  const getTeamCountMap = () => {
+  const totalSelected = useMemo(() => {
+    return Array.from(selectedRoles.values()).reduce((sum, count) => sum + count, 0);
+  }, [selectedRoles]);
+
+  const teamCountMap = useMemo(() => {
     return Array.from(selectedRoles.entries()).reduce((map: Record<string, number>, [roleId, count]) => {
       const role = roles.find(r => r.id === roleId);
       if (role) {
@@ -46,37 +85,59 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
       }
       return map;
     }, {});
-  };
+  }, [selectedRoles, roles]);
 
-  const handleIncrement = (roleId: string) => {
-    const current = selectedRoles.get(roleId) || 0;
-    const newMap = new Map(selectedRoles);
-    newMap.set(roleId, current + 1);
-    setSelectedRoles(newMap);
-  };
-
-  const handleDecrement = (roleId: string) => {
-    const current = selectedRoles.get(roleId) || 0;
-    if (current > 0) {
-      const newMap = new Map(selectedRoles);
-      if (current === 1) {
-        newMap.delete(roleId);
-      } else {
-        newMap.set(roleId, current - 1);
-      }
-      setSelectedRoles(newMap);
+  const selectTemplate = useCallback((selectedTemplateId: string) => {
+    setSelectedTemplateId(selectedTemplateId);
+    
+    if (!selectedTemplateId) {
+      setSelectedRoles(new Map());
+      return;
     }
-  };
+    
+    const template = roleTemplates.find(t => t.id === selectedTemplateId);
+    if (template) {
+      const newSelectedRoles = new Map<string, number>();
+      template.roles.forEach(role => {
+        newSelectedRoles.set(role.role.id, role.count);
+      });
+      setSelectedRoles(newSelectedRoles);
+    }
+  }, [roleTemplates]);
 
-  const handleConfirm = () => {
+  const handleIncrement = useCallback((roleId: string) => {
+    setSelectedRoles(prev => {
+      const current = prev.get(roleId) || 0;
+      const newMap = new Map(prev);
+      newMap.set(roleId, current + 1);
+      return newMap;
+    });
+  }, []);
+
+  const handleDecrement = useCallback((roleId: string) => {
+    setSelectedRoles(prev => {
+      const current = prev.get(roleId) || 0;
+      if (current > 0) {
+        const newMap = new Map(prev);
+        if (current === 1) {
+          newMap.delete(roleId);
+        } else {
+          newMap.set(roleId, current - 1);
+        }
+        return newMap;
+      }
+      return prev;
+    });
+  }, []);
+
+  const handleConfirm = useCallback(() => {
     const rolesArray = Array.from(selectedRoles.entries()).map(([roleId, count]) => ({
       roleId,
       count,
     }));
     onRolesSelected(rolesArray);
-  };
+  }, [selectedRoles, onRolesSelected]);
 
-  const totalSelected = getTotalSelected();
   const isValid = totalSelected === playerCount;
   const remaining = playerCount - totalSelected;
 
@@ -132,6 +193,29 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
     <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-white mb-2">Select Roles</h2>
+        {/* TODO: Implement dropdown button that shows role templates */}
+
+        <div className="mb-4">
+          <select
+            value={selectedTemplateId}
+            onChange={(e) => selectTemplate(e.target.value)}
+            className="flex-1 bg-black/50 border border-purple-500/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-400 appearance-none cursor-pointer"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a855f7'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 0.75rem center',
+              backgroundSize: '1.5rem',
+              paddingRight: '2.5rem'
+            }}
+          >
+            <option value="" className="bg-black/95 text-gray-400">Select a role...</option>
+            {roleTemplates.map(template => (
+              <option key={template.id} value={template.id} className="bg-black/95 text-white py-2">
+                {template.name}               </option>
+            ))}
+          </select>
+          </div>
+
         <div className="flex items-center justify-between">
           <p className="text-purple-300">
             Players: <span className="font-bold text-white">{playerCount}</span>
@@ -153,7 +237,7 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
               {teamLabels[team as keyof typeof teamLabels]}
 
               <span className={` bg-${teamColors[team as keyof typeof teamColors]}-400 text-white px-3 py-1 rounded-full  font-bold`}>
-                {getTeamCountMap()[team] || 0}
+                {teamCountMap[team] || 0}
               </span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

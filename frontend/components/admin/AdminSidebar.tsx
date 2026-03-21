@@ -16,6 +16,7 @@ export function AdminSidebar({ isOpen, onClose, onLogout }: AdminSidebarProps) {
   const navItems = [
     { name: 'Admin Management', path: '/admin/dashboard' },
     { name: 'Role Management', path: '/admin/roles' },
+    { name: 'Role Templates', path: '/admin/role-templates' },
   ];
 
   return (

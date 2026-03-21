@@ -151,7 +151,7 @@ export default function CreateGamePage() {
   };
 
   const handleStartRoleSelection = () => {
-    if (players.length > 0 && game) {
+    if (game) {
       setGamePhase('selecting-roles');
       saveModeratorGame(game.id, moderatorId, 'selecting-roles');
     }
