@@ -1,17 +1,35 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import { BuyCoffee } from './BuyCoffee'
-import { isAdminAuthenticated } from '@/lib/adminAuth'
+import { isAdminAuthenticated, adminLogout } from '@/lib/adminAuth'
 
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const pathname = usePathname()
 
-  useEffect(() => {
+  const syncAuthState = useCallback(() => {
     setIsAdmin(isAdminAuthenticated())
   }, [])
+
+  // Re-check auth on every route change
+  useEffect(() => {
+    syncAuthState()
+  }, [pathname, syncAuthState])
+
+  // Sync auth state across tabs via localStorage events
+  useEffect(() => {
+    window.addEventListener('storage', syncAuthState)
+    return () => window.removeEventListener('storage', syncAuthState)
+  }, [syncAuthState])
+
+  const handleLogout = () => {
+    setIsMenuOpen(false)
+    adminLogout()
+  }
 
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -22,10 +40,10 @@ export default function Navigation() {
 
   if (isAdmin) {
     navLinks.push({ href: '/admin/dashboard', label: 'Dashboard' })
-    navLinks.push({ href: '/admin/logout', label: 'Logout' })
-  } else {
-    navLinks.push({ href: 'admin/login', label: 'Login' })
   }
+
+  const linkClassName = "text-white/80 hover:text-white hover:text-purple-400 transition-colors font-medium"
+  const mobileLinkClassName = "block px-4 py-3 rounded-lg text-white/90 hover:text-white hover:bg-purple-600/30 transition-all font-medium text-lg"
 
   return (
     <>
@@ -40,11 +58,19 @@ export default function Navigation() {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               {navLinks.map((link) => (
-                <Link key={link.href} href={link.href}
-                  className="text-white/80 hover:text-white hover:text-purple-400 transition-colors font-medium">
+                <Link key={link.href} href={link.href} className={linkClassName}>
                   {link.label}
                 </Link>
               ))}
+              {isAdmin ? (
+                <button onClick={handleLogout} className={linkClassName}>
+                  Logout
+                </button>
+              ) : (
+                <Link href="/admin/login" className={linkClassName}>
+                  Login
+                </Link>
+              )}
               <BuyCoffee />
             </div>
 
@@ -57,10 +83,8 @@ export default function Navigation() {
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {isMenuOpen ? (
-                  // X icon
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 ) : (
-                  // Hamburger icon
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 )}
               </svg>
@@ -83,12 +107,20 @@ export default function Navigation() {
           <div className="px-4 pt-4 pb-6 space-y-2 max-w-7xl mx-auto">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href} onClick={() => setIsMenuOpen(false)}
-                className="block px-4 py-3 rounded-lg text-white/90 hover:text-white hover:bg-purple-600/30 transition-all
-          font-medium text-lg"
+                className={mobileLinkClassName}
               >
                 {link.label}
               </Link>
             ))}
+            {isAdmin ? (
+              <button onClick={handleLogout} className={`w-full text-left ${mobileLinkClassName}`}>
+                Logout
+              </button>
+            ) : (
+              <Link href="/admin/login" onClick={() => setIsMenuOpen(false)} className={mobileLinkClassName}>
+                Login
+              </Link>
+            )}
             <div className="pt-4">
               <BuyCoffee />
             </div>
