@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/Button';
 import { getAdminUser } from '@/lib/adminAuth';
@@ -9,74 +10,87 @@ import type { AdminUser } from '@/lib/types';
 import { AdminCreateForm } from '@/components/admin/AdminCreateForm';
 import { AdminList } from '@/components/admin/AdminList';
 
+function apiErr(err: unknown, fallback: string): string {
+  return (err as { error?: string })?.error ?? fallback;
+}
+
 export default function AdminDashboardPage() {
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
-  const [admins, setAdmins] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const currentUser = getAdminUser();
 
-  useEffect(() => {
-    const user = getAdminUser();
-    setCurrentUser(user);
-    loadAdmins();
-  }, []);
+  const { data: admins = [], isLoading, error: loadError } = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: async () => {
+      const { data, error } = await adminApiClient.GET('/admin/users', {});
+      if (error) throw new Error(apiErr(error, 'Failed to load admins'));
+      return (data as AdminUser[]) ?? [];
+    },
+  });
 
-  const loadAdmins = async () => {
-    setLoading(true);
-    setError('');
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
 
-    try {
-      const { data, error } = await adminApiClient.GET("/admin/users");
-      if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to load admins');
-      setAdmins((data as AdminUser[]) ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load admins');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const createMutation = useMutation({
+    mutationFn: async ({
+      username,
+      email,
+      password,
+    }: {
+      username: string;
+      email: string;
+      password: string;
+    }) => {
+      const { error } = await adminApiClient.POST('/admin/users', {
+        body: { username, email, password },
+      });
+      if (error) throw new Error(apiErr(error, 'Failed to create admin'));
+    },
+    onSuccess: () => { setShowCreateForm(false); invalidate(); },
+  });
 
-  const handleCreateAdmin = async (username: string, email: string, password: string) => {
-    const { error } = await adminApiClient.POST("/admin/users", {
-      body: { username, email, password },
-    });
-    if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to create admin');
-    setShowCreateForm(false);
-    await loadAdmins();
-  };
-
-  const handleDeleteAdmin = async (id: string, username: string) => {
-    if (!confirm(`Are you sure you want to delete admin "${username}"?`)) {
-      return;
-    }
-
-    try {
-      const { error } = await adminApiClient.DELETE("/admin/users/{id}", {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await adminApiClient.DELETE('/admin/users/{id}', {
         params: { path: { id } },
       });
-      if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to delete admin');
-      await loadAdmins();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete admin');
-    }
-  };
+      if (error) throw new Error(apiErr(error, 'Failed to delete admin'));
+    },
+    onSuccess: invalidate,
+  });
 
-  const handleToggleActive = async (admin: AdminUser) => {
-    try {
-      const { error } = await adminApiClient.PATCH("/admin/users/{id}", {
+  const toggleActiveMutation = useMutation({
+    mutationFn: async (admin: AdminUser) => {
+      const { error } = await adminApiClient.PATCH('/admin/users/{id}', {
         params: { path: { id: admin.id } },
         body: { is_active: !admin.is_active } as never,
       });
-      if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to update admin');
-      await loadAdmins();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update admin');
-    }
+      if (error) throw new Error(apiErr(error, 'Failed to update admin'));
+    },
+    onSuccess: invalidate,
+  });
+
+  // Throws so AdminCreateForm can display the error inline
+  const handleCreateAdmin = async (username: string, email: string, password: string) => {
+    await createMutation.mutateAsync({ username, email, password });
   };
 
+  const handleDeleteAdmin = async (id: string, username: string) => {
+    if (!confirm(`Are you sure you want to delete admin "${username}"?`)) return;
+    await deleteMutation.mutateAsync(id);
+  };
+
+  const handleToggleActive = async (admin: AdminUser) => {
+    await toggleActiveMutation.mutateAsync(admin);
+  };
+
+  const mutationError =
+    (deleteMutation.error ?? toggleActiveMutation.error) instanceof Error
+      ? (deleteMutation.error ?? toggleActiveMutation.error)!.message
+      : null;
+
   return (
-    <AdminLayout 
+    <AdminLayout
       title="Admin Management"
       actions={
         !showCreateForm && (
@@ -91,29 +105,27 @@ export default function AdminDashboardPage() {
         )
       }
     >
-      {/* Error Display */}
-      {error && (
+      {(loadError || mutationError) && (
         <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm md:text-base">
-          {error}
+          {loadError instanceof Error ? loadError.message : mutationError}
         </div>
       )}
 
-      {/* Create Admin Form */}
       {showCreateForm && (
-        <AdminCreateForm 
-          onCreate={handleCreateAdmin} 
-          onCancel={() => setShowCreateForm(false)} 
+        <AdminCreateForm
+          onCreate={handleCreateAdmin}
+          onCancel={() => setShowCreateForm(false)}
         />
       )}
 
-      {/* Admins List */}
-      <AdminList 
+      <AdminList
         admins={admins}
         currentUser={currentUser}
-        loading={loading}
+        loading={isLoading}
         onToggleActive={handleToggleActive}
         onDelete={handleDeleteAdmin}
       />
     </AdminLayout>
   );
 }
+
