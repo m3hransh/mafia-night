@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { fetchRoles, Role, fetchRoleTemplates, RoleTemplate } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import type { Role, RoleTemplate } from '@/lib/types';
 import { Button } from './Button';
 
 interface RoleSelectionPanelProps {
@@ -39,32 +41,28 @@ function saveToStorage(roles: Map<string, number>): void {
 }
 
 export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: RoleSelectionPanelProps) {
-  const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<Map<string, number>>(() => loadFromStorage());
-  const [loading, setLoading] = useState(true);
-  const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-  const [error, setError] = useState('');
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [rolesData, templates] = await Promise.all([
-          fetchRoles(),
-          fetchRoleTemplates()
-        ]);
-        setRoles(rolesData);
-        setRoleTemplates(templates);
-      } catch (err) {
-        setError('Failed to load data');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
+  const { data: roles = [], isLoading: rolesLoading } = useQuery({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET('/roles', {});
+      if (error) throw new Error('Failed to load roles');
+      return (data as Role[]) ?? [];
+    },
+  });
 
-    loadData();
-  }, []);
+  const { data: roleTemplates = [], isLoading: templatesLoading } = useQuery({
+    queryKey: ['role-templates'],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET('/role-templates', {});
+      if (error) throw new Error('Failed to load templates');
+      return (data as RoleTemplate[]) ?? [];
+    },
+  });
+
+  const loading = rolesLoading || templatesLoading;
 
   useEffect(() => {
     saveToStorage(selectedRoles);
@@ -167,23 +165,6 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
       <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
         <div className="text-center text-purple-300">
           <p>Loading roles...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
-        <div className="text-center text-red-400">
-          <p>{error}</p>
-          <Button
-            onClick={onCancel}
-            size="md"
-            className="mt-4"
-          >
-            Go Back
-          </Button>
         </div>
       </div>
     );
@@ -298,4 +279,4 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
       </div>
     </div>
   );
-        }
+}
