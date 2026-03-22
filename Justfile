@@ -308,3 +308,32 @@ db-seed-prod:
 db-seed-admin-prod:
   @set -a && . {{justfile_directory()}}/.env.production && set +a && \
   ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_PATH} && docker compose -f docker-compose.prod.yml exec -T backend ./seed-admin"
+
+# OpenAPI commands
+# ===============
+
+# Generate Swagger 2.0 spec from Go annotations (requires swag in PATH)
+swagger-gen:
+  cd backend && swag init -g cmd/api/main.go -o ./docs
+
+# Convert Swagger 2.0 spec to OpenAPI 3.0
+swagger-convert:
+  cd frontend && npx swagger2openapi ../backend/docs/swagger.json -o ../backend/docs/openapi3.json
+
+# Generate TypeScript types from the local OpenAPI 3.0 spec
+generate-api-types:
+  cd frontend && npm run generate:api
+
+# Full pipeline: regenerate spec → convert → generate TS types
+api-sync: swagger-gen swagger-convert generate-api-types
+  @echo "✅ OpenAPI spec and TypeScript types are up to date"
+
+# Generate TypeScript types from the live running backend (requires backend on :8080)
+generate-api-types-live:
+  #!/usr/bin/env bash
+  cd frontend
+  tmpfile=$(mktemp /tmp/openapi3-XXXXX.json)
+  npx swagger2openapi http://localhost:8080/swagger/doc.json -o "$tmpfile"
+  npx openapi-typescript "$tmpfile" -o ./types/api.d.ts
+  rm "$tmpfile"
+  echo "✅ Types generated from live backend"

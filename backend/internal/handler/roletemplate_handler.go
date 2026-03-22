@@ -22,7 +22,7 @@ func NewRoleTemplateHandler(roleTemplateService *service.RoleTemplateService) *R
 	return &RoleTemplateHandler{roleTemplateService: roleTemplateService}
 }
 
-// GetRoleTemplates handles GET /api/role-templates
+// GetRoleTemplates handles GET /api/role-templates and GET /api/admin/role-templates
 // @Summary      List role templates
 // @Description  Retrieves all role templates. Optionally filter by player_count.
 // @Tags         role-templates
@@ -32,6 +32,7 @@ func NewRoleTemplateHandler(roleTemplateService *service.RoleTemplateService) *R
 // @Failure      400           {object}  ErrorResponseBody
 // @Failure      500           {object}  ErrorResponseBody
 // @Router       /role-templates [get]
+// @Router       /admin/role-templates [get]
 func (h *RoleTemplateHandler) GetRoleTemplates(w http.ResponseWriter, r *http.Request) {
 	// Optional player count filter
 	var playerCount *int
@@ -58,7 +59,7 @@ func (h *RoleTemplateHandler) GetRoleTemplates(w http.ResponseWriter, r *http.Re
 	JSONResponse(w, http.StatusOK, templatesJSON)
 }
 
-// GetRoleTemplateByID handles GET /api/role-templates/{id}
+// GetRoleTemplateByID handles GET /api/role-templates/{id} and GET /api/admin/role-templates/{id}
 // @Summary      Get a role template by ID
 // @Description  Retrieves a single role template with its role assignments.
 // @Tags         role-templates
@@ -69,6 +70,7 @@ func (h *RoleTemplateHandler) GetRoleTemplates(w http.ResponseWriter, r *http.Re
 // @Failure      404  {object}  ErrorResponseBody
 // @Failure      500  {object}  ErrorResponseBody
 // @Router       /role-templates/{id} [get]
+// @Router       /admin/role-templates/{id} [get]
 func (h *RoleTemplateHandler) GetRoleTemplateByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)

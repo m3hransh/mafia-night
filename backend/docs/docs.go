@@ -83,6 +83,47 @@ const docTemplate = `{
             }
         },
         "/admin/role-templates": {
+            "get": {
+                "description": "Retrieves all role templates. Optionally filter by player_count.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "role-templates"
+                ],
+                "summary": "List role templates",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter by player count",
+                        "name": "player_count",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.RoleTemplateResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponseBody"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -157,6 +198,51 @@ const docTemplate = `{
             }
         },
         "/admin/role-templates/{id}": {
+            "get": {
+                "description": "Retrieves a single role template with its role assignments.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "role-templates"
+                ],
+                "summary": "Get a role template by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.RoleTemplateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponseBody"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -287,6 +373,33 @@ const docTemplate = `{
             }
         },
         "/admin/roles": {
+            "get": {
+                "description": "Retrieves all available roles in the game.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "List all roles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.RoleResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponseBody"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {

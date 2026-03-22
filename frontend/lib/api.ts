@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { apiClient } from "./api-client";
 
 export interface Role {
   id: string;
@@ -6,7 +6,7 @@ export interface Role {
   slug: string;
   video: string;
   description: string;
-  team: 'mafia' | 'village' | 'independent';
+  team: "mafia" | "village" | "independent";
   abilities?: string[];
 }
 
@@ -22,72 +22,25 @@ export interface RoleTemplate {
 
 interface SelectedRole {
   count: number;
-  role: Role
+  role: Role;
 }
 
 export class APIError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string
+  ) {
     super(message);
-    this.name = 'APIError';
+    this.name = "APIError";
   }
 }
 
-/**
- * Fetches all roles from the backend API
- */
-export async function fetchRoles(): Promise<Role[]> {
-  const response = await fetch(`${API_BASE_URL}/api/roles`);
-
-  if (!response.ok) {
-    throw new APIError(response.status, 'Failed to fetch roles');
-  }
-
-  return response.json();
-}
-
-/**
- * Fetches all role templates from the backend API
- */
-export async function fetchRoleTemplates(): Promise<RoleTemplate[]> {
-  const response = await fetch(`${API_BASE_URL}/api/role-templates`);
-
-  if (!response.ok) {
-    throw new APIError(response.status, 'Failed to fetch role templates');
-  }
-
-  return response.json();
-}
-
-/**
- * Fetches a single role by its slug from the backend API
- */
-export async function fetchRoleBySlug(slug: string): Promise<Role> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/roles/${slug}`);
-
-    if (!response.ok) {
-      throw new APIError(response.status, `Failed to fetch role: ${slug}`);
-    }
-
-    const data = await response.json();
-    return data as Role; // or add runtime validation here
-  } catch (error) {
-    // Handle network errors or JSON parsing errors
-    if (error instanceof APIError) {
-      throw error; // Re-throw our custom API errors
-    }
-    
-    // Handle fetch network errors or JSON parsing errors
-    throw new APIError(0, `Network error while fetching role: ${slug}`);
-  }
-}
-
-// Game-related types and functions
+// Game-related types
 
 export interface Game {
   id: string;
   moderator_id: string;
-  status: 'pending' | 'active' | 'completed';
+  status: "pending" | "active" | "completed";
   created_at: string;
 }
 
@@ -98,15 +51,68 @@ export interface Player {
   created_at: string;
 }
 
+export interface PlayerRoleAssignment {
+  player_id: string;
+  player_name: string;
+  role_id: string;
+  role_name: string;
+  role_slug: string;
+  video: string;
+  team: "mafia" | "village" | "independent";
+  assigned_at: string;
+}
+
+/**
+ * Fetches all roles from the backend API
+ */
+export async function fetchRoles(): Promise<Role[]> {
+  const { data, error } = await apiClient.GET("/roles");
+
+  if (error) {
+    throw new APIError(500, "Failed to fetch roles");
+  }
+
+  return (data as Role[]) ?? [];
+}
+
+/**
+ * Fetches all role templates from the backend API
+ */
+export async function fetchRoleTemplates(): Promise<RoleTemplate[]> {
+  const { data, error } = await apiClient.GET("/role-templates");
+
+  if (error) {
+    throw new APIError(500, "Failed to fetch role templates");
+  }
+
+  return (data as RoleTemplate[]) ?? [];
+}
+
+/**
+ * Fetches a single role by its slug from the backend API
+ */
+export async function fetchRoleBySlug(slug: string): Promise<Role> {
+  const { data, error, response } = await apiClient.GET("/roles/{slug}", {
+    params: { path: { slug } },
+  });
+
+  if (error) {
+    throw new APIError(response.status, `Failed to fetch role: ${slug}`);
+  }
+
+  return data as Role;
+}
+
 /**
  * Validates if a game exists on the backend
  */
 export async function validateGameExists(gameId: string): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/games/${gameId}`);
+    const { response } = await apiClient.GET("/games/{id}", {
+      params: { path: { id: gameId } },
+    });
     return response.ok;
-  } catch (error) {
-    console.error('Failed to validate game:', error);
+  } catch {
     return false;
   }
 }
@@ -114,12 +120,14 @@ export async function validateGameExists(gameId: string): Promise<boolean> {
 /**
  * Validates if a player is still part of a game
  */
-export async function validatePlayerInGame(gameId: string, playerId: string): Promise<boolean> {
+export async function validatePlayerInGame(
+  gameId: string,
+  playerId: string
+): Promise<boolean> {
   try {
     const players = await fetchPlayers(gameId);
-    return players.some(player => player.id === playerId);
-  } catch (error) {
-    console.error('Failed to validate player in game:', error);
+    return players.some((player) => player.id === playerId);
+  } catch {
     return false;
   }
 }
@@ -128,43 +136,52 @@ export async function validatePlayerInGame(gameId: string, playerId: string): Pr
  * Fetches all players in a game
  */
 export async function fetchPlayers(gameId: string): Promise<Player[]> {
-  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/players`);
+  const { data, error } = await apiClient.GET("/games/{id}/players", {
+    params: { path: { id: gameId } },
+  });
 
-  if (!response.ok) {
-    throw new APIError(response.status, 'Failed to fetch players');
+  if (error) {
+    throw new APIError(500, "Failed to fetch players");
   }
 
-  return response.json();
+  return (data as Player[]) ?? [];
 }
 
 /**
  * Deletes a game (moderator only)
  */
-export async function deleteGame(gameId: string, moderatorId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}`, {
-    method: 'DELETE',
-    headers: {
-      'X-Moderator-ID': moderatorId,
+export async function deleteGame(
+  gameId: string,
+  moderatorId: string
+): Promise<void> {
+  const { error, response } = await apiClient.DELETE("/games/{id}", {
+    params: {
+      path: { id: gameId },
+      header: { "X-Moderator-ID": moderatorId },
     },
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new APIError(response.status, error || 'Failed to delete game');
+  if (error) {
+    throw new APIError(response.status, "Failed to delete game");
   }
 }
 
 /**
  * Removes a player from a game
  */
-export async function removePlayer(gameId: string, playerId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/players/${playerId}`, {
-    method: 'DELETE',
-  });
+export async function removePlayer(
+  gameId: string,
+  playerId: string
+): Promise<void> {
+  const { error, response } = await apiClient.DELETE(
+    "/games/{id}/players/{player_id}",
+    {
+      params: { path: { id: gameId, player_id: playerId } },
+    }
+  );
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new APIError(response.status, error || 'Failed to remove player');
+  if (error) {
+    throw new APIError(response.status, "Failed to remove player");
   }
 }
 
@@ -176,80 +193,82 @@ export async function distributeRoles(
   moderatorId: string,
   roles: { role_id: string; count: number }[]
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/distribute-roles`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Moderator-ID': moderatorId,
-    },
-    body: JSON.stringify({ roles }),
-  });
+  const { error, response } = await apiClient.POST(
+    "/games/{id}/distribute-roles",
+    {
+      params: {
+        path: { id: gameId },
+        header: { "X-Moderator-ID": moderatorId },
+      },
+      body: { roles } as never,
+    }
+  );
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new APIError(response.status, error || 'Failed to distribute roles');
+  if (error) {
+    throw new APIError(response.status, "Failed to distribute roles");
   }
-}
-
-export interface PlayerRoleAssignment {
-  player_id: string;
-  player_name: string;
-  role_id: string;
-  role_name: string;
-  role_slug: string;
-  video: string;
-  team: 'mafia' | 'village' | 'independent';
-  assigned_at: string;
 }
 
 /**
  * Gets all role assignments for a game (moderator only)
  */
-export async function getGameRoles(gameId: string, moderatorId: string): Promise<PlayerRoleAssignment[]> {
-  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/roles`, {
-    headers: {
-      'X-Moderator-ID': moderatorId,
+export async function getGameRoles(
+  gameId: string,
+  moderatorId: string
+): Promise<PlayerRoleAssignment[]> {
+  const { data, error } = await apiClient.GET("/games/{id}/roles", {
+    params: {
+      path: { id: gameId },
+      header: { "X-Moderator-ID": moderatorId },
     },
   });
 
-  if (!response.ok) {
-    throw new APIError(response.status, 'Failed to fetch game roles');
+  if (error) {
+    throw new APIError(500, "Failed to fetch game roles");
   }
 
-  return response.json();
+  return (data as PlayerRoleAssignment[]) ?? [];
 }
 
 /**
  * Gets the assigned role for a specific player
  */
-export async function getPlayerRole(gameId: string, playerId: string): Promise<Role | null> {
-  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/players/${playerId}/role`);
+export async function getPlayerRole(
+  gameId: string,
+  playerId: string
+): Promise<Role | null> {
+  const { data, response } = await apiClient.GET(
+    "/games/{id}/players/{player_id}/role",
+    {
+      params: { path: { id: gameId, player_id: playerId } },
+    }
+  );
 
   if (!response.ok) {
     return null;
   }
 
-  return response.json();
+  return (data as Role) ?? null;
 }
 
-export async function joinGame(gameCode: string, playerName: string): Promise<Player> {
-      const response = await fetch(`${API_BASE_URL}/api/games/${gameCode}/join`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: playerName }),
-      });
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new APIError(response.status, 'Game not found');
-        }
-       if (response.status == 409){
-         throw new APIError(response.status, 'Player already exists');  
-        }
-        throw new APIError(response.status, 'Failed to join game'); 
-      }
+export async function joinGame(
+  gameCode: string,
+  playerName: string
+): Promise<Player> {
+  const { data, error, response } = await apiClient.POST("/games/{id}/join", {
+    params: { path: { id: gameCode } },
+    body: { name: playerName },
+  });
 
-      const player = await response.json();
-      return player;
+  if (error) {
+    if (response.status === 404) {
+      throw new APIError(response.status, "Game not found");
+    }
+    if (response.status === 409) {
+      throw new APIError(response.status, "Player already exists");
+    }
+    throw new APIError(response.status, "Failed to join game");
+  }
+
+  return data as Player;
 }

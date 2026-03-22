@@ -22,7 +22,7 @@ func NewRoleHandler(roleService *service.RoleService) *RoleHandler {
 	return &RoleHandler{roleService: roleService}
 }
 
-// GetRoles handles GET /api/roles
+// GetRoles handles GET /api/roles and GET /api/admin/roles
 // @Summary      List all roles
 // @Description  Retrieves all available roles in the game.
 // @Tags         roles
@@ -30,6 +30,7 @@ func NewRoleHandler(roleService *service.RoleService) *RoleHandler {
 // @Success      200  {array}   RoleResponse
 // @Failure      500  {object}  ErrorResponseBody
 // @Router       /roles [get]
+// @Router       /admin/roles [get]
 func (h *RoleHandler) GetRoles(w http.ResponseWriter, r *http.Request) {
 	roles, err := h.roleService.GetAllRoles(r.Context())
 	if err != nil {

@@ -287,6 +287,33 @@ paths:
       tags:
       - admin-auth
   /admin/role-templates:
+    get:
+      description: Retrieves all role templates. Optionally filter by player_count.
+      parameters:
+      - description: Filter by player count
+        in: query
+        name: player_count
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.RoleTemplateResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: List role templates
+      tags:
+      - role-templates
     post:
       consumes:
       - application/json
@@ -362,6 +389,36 @@ paths:
       summary: Delete a role template
       tags:
       - admin-role-templates
+    get:
+      description: Retrieves a single role template with its role assignments.
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.RoleTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Get a role template by ID
+      tags:
+      - role-templates
     patch:
       consumes:
       - application/json
@@ -417,6 +474,24 @@ paths:
       tags:
       - admin-role-templates
   /admin/roles:
+    get:
+      description: Retrieves all available roles in the game.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.RoleResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: List all roles
+      tags:
+      - roles
     post:
       consumes:
       - application/json

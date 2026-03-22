@@ -1,0 +1,2395 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "description": "REST API for the Mafia Night game platform.",
+        "title": "Mafia Night API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "Mafia Night Support",
+            "url": "https://github.com/mafia-night"
+        },
+        "license": {
+            "name": "MIT"
+        },
+        "version": "1.0"
+    },
+    "paths": {
+        "/admin/login": {
+            "post": {
+                "description": "Authenticates an admin user and returns a JWT token.",
+                "tags": [
+                    "admin-auth"
+                ],
+                "summary": "Admin login",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "username": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "Credentials",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.LoginResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/role-templates": {
+            "get": {
+                "description": "Retrieves all role templates. Optionally filter by player_count.",
+                "tags": [
+                    "role-templates"
+                ],
+                "summary": "List role templates",
+                "parameters": [
+                    {
+                        "description": "Filter by player count",
+                        "name": "player_count",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/handler.RoleTemplateResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new role template. Requires admin authentication.",
+                "tags": [
+                    "admin-role-templates"
+                ],
+                "summary": "Create a role template",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "player_count": {
+                                        "type": "integer"
+                                    },
+                                    "roles": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "Template data",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.RoleTemplateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/role-templates/{id}": {
+            "get": {
+                "description": "Retrieves a single role template with its role assignments.",
+                "tags": [
+                    "role-templates"
+                ],
+                "summary": "Get a role template by ID",
+                "parameters": [
+                    {
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.RoleTemplateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a role template. Requires admin authentication.",
+                "tags": [
+                    "admin-role-templates"
+                ],
+                "summary": "Delete a role template",
+                "parameters": [
+                    {
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates an existing role template. Requires admin authentication.",
+                "tags": [
+                    "admin-role-templates"
+                ],
+                "summary": "Update a role template",
+                "parameters": [
+                    {
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "player_count": {
+                                        "type": "integer"
+                                    },
+                                    "roles": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "Partial template data"
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.RoleTemplateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/roles": {
+            "get": {
+                "description": "Retrieves all available roles in the game.",
+                "tags": [
+                    "roles"
+                ],
+                "summary": "List all roles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/handler.RoleResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new game role. Requires admin authentication.",
+                "tags": [
+                    "admin-roles"
+                ],
+                "summary": "Create a role",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "abilities": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "slug": {
+                                        "type": "string"
+                                    },
+                                    "team": {
+                                        "type": "string"
+                                    },
+                                    "video": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "Role data",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.RoleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/roles/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a role. Requires admin authentication.",
+                "tags": [
+                    "admin-roles"
+                ],
+                "summary": "Delete a role",
+                "parameters": [
+                    {
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates an existing role. Requires admin authentication.",
+                "tags": [
+                    "admin-roles"
+                ],
+                "summary": "Update a role",
+                "parameters": [
+                    {
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "abilities": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "slug": {
+                                        "type": "string"
+                                    },
+                                    "team": {
+                                        "type": "string"
+                                    },
+                                    "video": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "Partial role data"
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.RoleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all admin users. Requires admin authentication.",
+                "tags": [
+                    "admin-users"
+                ],
+                "summary": "List admin users",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/handler.AdminResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new admin user. Requires admin authentication.",
+                "tags": [
+                    "admin-users"
+                ],
+                "summary": "Create an admin user",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "username": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "Admin data",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.AdminResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves an admin user by ID. Requires admin authentication.",
+                "tags": [
+                    "admin-users"
+                ],
+                "summary": "Get an admin user",
+                "parameters": [
+                    {
+                        "description": "Admin ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.AdminResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes an admin user. Requires admin authentication.",
+                "tags": [
+                    "admin-users"
+                ],
+                "summary": "Delete an admin user",
+                "parameters": [
+                    {
+                        "description": "Admin ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates an admin user. Requires admin authentication.",
+                "tags": [
+                    "admin-users"
+                ],
+                "summary": "Update an admin user",
+                "parameters": [
+                    {
+                        "description": "Admin ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    },
+                                    "username": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "Partial admin data"
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.AdminResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/{id}/change-password": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Changes the password for an admin user. Requires admin authentication.",
+                "tags": [
+                    "admin-users"
+                ],
+                "summary": "Change admin password",
+                "parameters": [
+                    {
+                        "description": "Admin ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "new_password": {
+                                        "type": "string"
+                                    },
+                                    "old_password": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "Password change data",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ChangePasswordSuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/games": {
+            "post": {
+                "description": "Creates a new Mafia game session. The caller becomes the moderator.",
+                "tags": [
+                    "games"
+                ],
+                "summary": "Create a new game",
+                "parameters": [
+                    {
+                        "description": "Moderator identifier",
+                        "name": "X-Moderator-ID",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.GameResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/games/{id}": {
+            "get": {
+                "description": "Retrieves a game by its ID.",
+                "tags": [
+                    "games"
+                ],
+                "summary": "Get a game by ID",
+                "parameters": [
+                    {
+                        "description": "Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.GameResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a game. Only the moderator can delete.",
+                "tags": [
+                    "games"
+                ],
+                "summary": "Delete a game",
+                "parameters": [
+                    {
+                        "description": "Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Moderator identifier",
+                        "name": "X-Moderator-ID",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates the status of a game. Only the moderator can update.",
+                "tags": [
+                    "games"
+                ],
+                "summary": "Update game status",
+                "parameters": [
+                    {
+                        "description": "Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Moderator identifier",
+                        "name": "X-Moderator-ID",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "status": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "New status",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.GameResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/games/{id}/distribute-roles": {
+            "post": {
+                "description": "Randomly assigns roles to all players. Only the moderator can trigger this.",
+                "tags": [
+                    "games"
+                ],
+                "summary": "Distribute roles to players",
+                "parameters": [
+                    {
+                        "description": "Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Moderator identifier",
+                        "name": "X-Moderator-ID",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "roles": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/service.RoleSelection"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "Role selections",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.DistributeRolesSuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/games/{id}/join": {
+            "post": {
+                "description": "Allows a player to join a game by name.",
+                "tags": [
+                    "games"
+                ],
+                "summary": "Join a game",
+                "parameters": [
+                    {
+                        "description": "Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "Player name",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.PlayerResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/games/{id}/players": {
+            "get": {
+                "description": "Retrieves all players in a game.",
+                "tags": [
+                    "games"
+                ],
+                "summary": "Get players in a game",
+                "parameters": [
+                    {
+                        "description": "Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/handler.PlayerResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/games/{id}/players/{player_id}": {
+            "delete": {
+                "description": "Removes a player from the game.",
+                "tags": [
+                    "games"
+                ],
+                "summary": "Remove a player from a game",
+                "parameters": [
+                    {
+                        "description": "Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Player ID",
+                        "name": "player_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/games/{id}/players/{player_id}/role": {
+            "get": {
+                "description": "Retrieves the role assigned to a specific player.",
+                "tags": [
+                    "games"
+                ],
+                "summary": "Get a player's role",
+                "parameters": [
+                    {
+                        "description": "Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Player ID",
+                        "name": "player_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.PlayerRoleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/games/{id}/roles": {
+            "get": {
+                "description": "Returns all player-role assignments for a game. Only the moderator can view this.",
+                "tags": [
+                    "games"
+                ],
+                "summary": "Get all role assignments in a game",
+                "parameters": [
+                    {
+                        "description": "Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Moderator identifier",
+                        "name": "X-Moderator-ID",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/handler.GameRoleResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/role-templates": {
+            "get": {
+                "description": "Retrieves all role templates. Optionally filter by player_count.",
+                "tags": [
+                    "role-templates"
+                ],
+                "summary": "List role templates",
+                "parameters": [
+                    {
+                        "description": "Filter by player count",
+                        "name": "player_count",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/handler.RoleTemplateResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/role-templates/{id}": {
+            "get": {
+                "description": "Retrieves a single role template with its role assignments.",
+                "tags": [
+                    "role-templates"
+                ],
+                "summary": "Get a role template by ID",
+                "parameters": [
+                    {
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.RoleTemplateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/roles": {
+            "get": {
+                "description": "Retrieves all available roles in the game.",
+                "tags": [
+                    "roles"
+                ],
+                "summary": "List all roles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/handler.RoleResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/{slug}": {
+            "get": {
+                "description": "Retrieves a single role by its slug identifier.",
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Get a role by slug",
+                "parameters": [
+                    {
+                        "description": "Role slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.RoleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponseBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "//localhost:8080/api"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "description": "Type \"Bearer\" followed by a space and the JWT token.",
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header"
+            }
+        },
+        "schemas": {
+            "handler.AdminResponse": {
+                "description": "Admin user data",
+                "type": "object",
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "example": "2024-01-01T00:00:00Z"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "admin@example.com"
+                    },
+                    "id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "last_login": {
+                        "type": "string",
+                        "example": "2024-01-01T00:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "example": "2024-01-01T00:00:00Z"
+                    },
+                    "username": {
+                        "type": "string",
+                        "example": "admin"
+                    }
+                }
+            },
+            "handler.ChangePasswordSuccessResponse": {
+                "description": "Password change success response",
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "password changed successfully"
+                    }
+                }
+            },
+            "handler.DistributeRolesSuccessResponse": {
+                "description": "Role distribution success response",
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "roles distributed successfully"
+                    }
+                }
+            },
+            "handler.ErrorResponseBody": {
+                "description": "Error response body",
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "example": "something went wrong"
+                    }
+                }
+            },
+            "handler.GameResponse": {
+                "description": "Game data",
+                "type": "object",
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "example": "2024-01-01T00:00:00Z"
+                    },
+                    "id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    },
+                    "moderator_id": {
+                        "type": "string",
+                        "example": "mod-123"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "waiting",
+                            "active",
+                            "finished"
+                        ],
+                        "example": "waiting"
+                    }
+                }
+            },
+            "handler.GameRoleResponse": {
+                "description": "Moderator view of a player-role assignment",
+                "type": "object",
+                "properties": {
+                    "assigned_at": {
+                        "type": "string",
+                        "example": "2024-01-01T00:00:00Z"
+                    },
+                    "player_id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    },
+                    "player_name": {
+                        "type": "string",
+                        "example": "Alice"
+                    },
+                    "role_id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440001"
+                    },
+                    "role_name": {
+                        "type": "string",
+                        "example": "Mafia"
+                    },
+                    "role_slug": {
+                        "type": "string",
+                        "example": "mafia"
+                    },
+                    "team": {
+                        "type": "string",
+                        "enum": [
+                            "mafia",
+                            "village",
+                            "independent"
+                        ],
+                        "example": "mafia"
+                    },
+                    "video": {
+                        "type": "string",
+                        "example": "https://example.com/video.mp4"
+                    }
+                }
+            },
+            "handler.LoginResponse": {
+                "description": "Login response with token and admin info",
+                "type": "object",
+                "properties": {
+                    "admin": {
+                        "$ref": "#/components/schemas/handler.AdminResponse"
+                    },
+                    "token": {
+                        "type": "string",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                }
+            },
+            "handler.PlayerResponse": {
+                "description": "Player data",
+                "type": "object",
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "example": "2024-01-01T00:00:00Z"
+                    },
+                    "game_id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440001"
+                    },
+                    "id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Alice"
+                    }
+                }
+            },
+            "handler.PlayerRoleResponse": {
+                "description": "Player role assignment data",
+                "type": "object",
+                "properties": {
+                    "abilities": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "eliminate"
+                        ]
+                    },
+                    "assigned_at": {
+                        "type": "string",
+                        "example": "2024-01-01T00:00:00Z"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "The mafia member eliminates villagers at night."
+                    },
+                    "id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Mafia"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "mafia"
+                    },
+                    "team": {
+                        "type": "string",
+                        "enum": [
+                            "mafia",
+                            "village",
+                            "independent"
+                        ],
+                        "example": "mafia"
+                    },
+                    "video": {
+                        "type": "string",
+                        "example": "https://example.com/video.mp4"
+                    }
+                }
+            },
+            "handler.RoleResponse": {
+                "description": "Role data",
+                "type": "object",
+                "properties": {
+                    "abilities": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "eliminate"
+                        ]
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "The mafia member eliminates villagers at night."
+                    },
+                    "id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Mafia"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "mafia"
+                    },
+                    "team": {
+                        "type": "string",
+                        "enum": [
+                            "mafia",
+                            "village",
+                            "independent"
+                        ],
+                        "example": "mafia"
+                    },
+                    "video": {
+                        "type": "string",
+                        "example": "https://example.com/video.mp4"
+                    }
+                }
+            },
+            "handler.RoleTemplateResponse": {
+                "description": "Role template data",
+                "type": "object",
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "example": "2024-01-01T00:00:00Z"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Standard 8-player game setup"
+                    },
+                    "id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "8-player standard"
+                    },
+                    "player_count": {
+                        "type": "integer",
+                        "example": 8
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/handler.TemplateRoleEntryResponse"
+                        }
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "example": "2024-01-01T00:00:00Z"
+                    }
+                }
+            },
+            "handler.TemplateRoleEntryResponse": {
+                "description": "Role entry in a template",
+                "type": "object",
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "role": {
+                        "$ref": "#/components/schemas/handler.RoleResponse"
+                    },
+                    "role_id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                }
+            },
+            "service.RoleSelection": {
+                "type": "object",
+                "properties": {
+                    "count": {
+                        "type": "integer"
+                    },
+                    "role_id": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

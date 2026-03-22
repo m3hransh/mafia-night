@@ -1,198 +1,186 @@
 // Admin API client functions
 
-import { getAdminToken, saveAdminToken, saveAdminUser, removeAdminToken, AdminUser, LoginResponse } from './adminAuth';
-import { Role } from './api';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-// Helper function to make authenticated requests
-async function adminFetch(endpoint: string, options: RequestInit = {}) {
-  const token = getAdminToken();
-
-  const headers = new Headers(options.headers);
-  
-  if (!headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  // If unauthorized, clear token and redirect to login
-  if (response.status === 401) {
-    removeAdminToken();
-    if (typeof window !== 'undefined') {
-      window.location.href = '/admin/login';
-    }
-    throw new Error('Unauthorized');
-  }
-
-  return response;
-}
+import { adminApiClient } from "./api-client";
+import { saveAdminToken, saveAdminUser, AdminUser, LoginResponse } from "./adminAuth";
+import { Role } from "./api";
 
 // Auth API
-export async function adminLogin(username: string, password: string): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ username, password }),
+export async function adminLogin(
+  username: string,
+  password: string
+): Promise<LoginResponse> {
+  const { data, error } = await adminApiClient.POST("/admin/login", {
+    body: { username, password },
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Login failed');
+  if (error || !data) {
+    throw new Error((error as { error?: string })?.error ?? "Login failed");
   }
 
-  const data: LoginResponse = await response.json();
+  const result = data as LoginResponse;
+  saveAdminToken(result.token);
+  saveAdminUser(result.admin as AdminUser);
 
-  // Save token and user info
-  saveAdminToken(data.token);
-  saveAdminUser(data.admin);
-
-  return data;
+  return result;
 }
 
 // Admin Users CRUD
 export async function listAdmins(): Promise<AdminUser[]> {
-  const response = await adminFetch('/api/admin/users');
+  const { data, error } = await adminApiClient.GET("/admin/users");
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to fetch admins');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to fetch admins"
+    );
   }
 
-  return response.json();
+  return (data as AdminUser[]) ?? [];
 }
 
 export async function getAdmin(id: string): Promise<AdminUser> {
-  const response = await adminFetch(`/api/admin/users/${id}`);
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to fetch admin');
-  }
-
-  return response.json();
-}
-
-export async function createAdmin(username: string, email: string, password: string): Promise<AdminUser> {
-  const response = await adminFetch('/api/admin/users', {
-    method: 'POST',
-    body: JSON.stringify({ username, email, password }),
+  const { data, error } = await adminApiClient.GET("/admin/users/{id}", {
+    params: { path: { id } },
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create admin');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to fetch admin"
+    );
   }
 
-  return response.json();
+  return data as AdminUser;
+}
+
+export async function createAdmin(
+  username: string,
+  email: string,
+  password: string
+): Promise<AdminUser> {
+  const { data, error } = await adminApiClient.POST("/admin/users", {
+    body: { username, email, password },
+  });
+
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to create admin"
+    );
+  }
+
+  return data as AdminUser;
 }
 
 export async function updateAdmin(
   id: string,
-  data: {
+  updates: {
     username?: string;
     email?: string;
     is_active?: boolean;
   }
 ): Promise<AdminUser> {
-  const response = await adminFetch(`/api/admin/users/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
+  const { data, error } = await adminApiClient.PATCH("/admin/users/{id}", {
+    params: { path: { id } },
+    body: updates as never,
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to update admin');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to update admin"
+    );
   }
 
-  return response.json();
+  return data as AdminUser;
 }
 
 export async function deleteAdmin(id: string): Promise<void> {
-  const response = await adminFetch(`/api/admin/users/${id}`, {
-    method: 'DELETE',
+  const { error } = await adminApiClient.DELETE("/admin/users/{id}", {
+    params: { path: { id } },
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to delete admin');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to delete admin"
+    );
   }
 }
 
-export async function changePassword(id: string, oldPassword: string, newPassword: string): Promise<void> {
-  const response = await adminFetch(`/api/admin/users/${id}/change-password`, {
-    method: 'POST',
-    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
-  });
+export async function changePassword(
+  id: string,
+  oldPassword: string,
+  newPassword: string
+): Promise<void> {
+  const { error } = await adminApiClient.POST(
+    "/admin/users/{id}/change-password",
+    {
+      params: { path: { id } },
+      body: { old_password: oldPassword, new_password: newPassword } as never,
+    }
+  );
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to change password');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to change password"
+    );
   }
 }
 
 // Role Management
 export async function listRoles(): Promise<Role[]> {
-  const response = await adminFetch('/api/admin/roles');
+  const { data, error } = await adminApiClient.GET("/admin/roles", {});
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to fetch roles');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to fetch roles"
+    );
   }
 
-  return response.json();
+  return (data as Role[]) ?? [];
 }
 
-export async function createRole(role: Omit<Role, 'id'>): Promise<Role> {
-  const response = await adminFetch('/api/admin/roles', {
-    method: 'POST',
-    body: JSON.stringify(role),
+export async function createRole(role: Omit<Role, "id">): Promise<Role> {
+  const { data, error } = await adminApiClient.POST("/admin/roles", {
+    body: role as never,
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create role');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to create role"
+    );
   }
 
-  return response.json();
+  return data as Role;
 }
 
-export async function updateRole(id: string, role: Partial<Role>): Promise<Role> {
-  const response = await adminFetch(`/api/admin/roles/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(role),
+export async function updateRole(
+  id: string,
+  role: Partial<Role>
+): Promise<Role> {
+  const { data, error } = await adminApiClient.PATCH("/admin/roles/{id}", {
+    params: { path: { id } },
+    body: role as never,
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to update role');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to update role"
+    );
   }
 
-  return response.json();
+  return data as Role;
 }
 
 export async function deleteRole(id: string): Promise<void> {
-  const response = await adminFetch(`/api/admin/roles/${id}`, {
-    method: 'DELETE',
+  const { error } = await adminApiClient.DELETE("/admin/roles/{id}", {
+    params: { path: { id } },
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to delete role');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to delete role"
+    );
   }
 }
 
-// Role Template Management
+// Role Template Management — reads use GET endpoints (same handler as public routes)
 export interface RoleTemplate {
   id: string;
   name: string;
@@ -208,75 +196,84 @@ export interface RoleTemplate {
 }
 
 export async function listRoleTemplates(): Promise<RoleTemplate[]> {
-  const response = await adminFetch('/api/admin/role-templates');
+  const { data, error } = await adminApiClient.GET("/admin/role-templates", {});
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to fetch role templates');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to fetch role templates"
+    );
   }
 
-  return response.json();
+  return (data as RoleTemplate[]) ?? [];
 }
 
 export async function getRoleTemplate(id: string): Promise<RoleTemplate> {
-  const response = await adminFetch(`/api/admin/role-templates/${id}`);
+  const { data, error } = await adminApiClient.GET("/admin/role-templates/{id}", {
+    params: { path: { id } },
+  });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to fetch role template');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to fetch role template"
+    );
   }
 
-  return response.json();
+  return data as RoleTemplate;
 }
 
-export async function createRoleTemplate(data: {
+export async function createRoleTemplate(templateData: {
   name: string;
   player_count: number;
   description: string;
   roles: Array<{ role_id: string; count: number }>;
 }): Promise<RoleTemplate> {
-  const response = await adminFetch('/api/admin/role-templates', {
-    method: 'POST',
-    body: JSON.stringify(data),
+  const { data, error } = await adminApiClient.POST("/admin/role-templates", {
+    body: templateData as never,
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create role template');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to create role template"
+    );
   }
 
-  return response.json();
+  return data as RoleTemplate;
 }
 
 export async function updateRoleTemplate(
   id: string,
-  data: {
+  updates: {
     name?: string;
     player_count?: number;
     description?: string;
     roles?: Array<{ role_id: string; count: number }>;
   }
 ): Promise<RoleTemplate> {
-  const response = await adminFetch(`/api/admin/role-templates/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
+  const { data, error } = await adminApiClient.PATCH(
+    "/admin/role-templates/{id}",
+    {
+      params: { path: { id } },
+      body: updates as never,
+    }
+  );
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to update role template');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to update role template"
+    );
   }
 
-  return response.json();
+  return data as RoleTemplate;
 }
 
 export async function deleteRoleTemplate(id: string): Promise<void> {
-  const response = await adminFetch(`/api/admin/role-templates/${id}`, {
-    method: 'DELETE',
+  const { error } = await adminApiClient.DELETE("/admin/role-templates/{id}", {
+    params: { path: { id } },
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to delete role template');
+  if (error) {
+    throw new Error(
+      (error as { error?: string })?.error ?? "Failed to delete role template"
+    );
   }
 }
