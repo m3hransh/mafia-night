@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/Button';
 import { Role } from '@/lib/api';
 
@@ -8,66 +9,76 @@ interface RoleFormProps {
   onCancel: () => void;
 }
 
+type FormValues = {
+  name: string;
+  slug: string;
+  description: string;
+  team: 'mafia' | 'village' | 'independent';
+  video: string;
+  abilities: { value: string }[];
+};
+
 export function RoleForm({ initialData, onSubmit, onCancel }: RoleFormProps) {
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [description, setDescription] = useState('');
-  const [team, setTeam] = useState<'mafia' | 'village' | 'independent'>('village');
-  const [video, setVideo] = useState('https://res.cloudinary.com/m3hransh/video/upload/mafia-roles/Constantine.webm');
-  const [abilities, setAbilities] = useState<string[]>([]);
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
+    defaultValues: initialData
+      ? {
+          name: initialData.name,
+          slug: initialData.slug,
+          description: initialData.description,
+          team: initialData.team,
+          video: initialData.video,
+          abilities: initialData.abilities?.map(a => ({ value: a })) ?? [],
+        }
+      : {
+          name: '',
+          slug: '',
+          description: '',
+          team: 'village',
+          video: 'https://res.cloudinary.com/m3hransh/video/upload/mafia-roles/Constantine.webm',
+          abilities: [],
+        },
+  });
+
+  const { fields, append, remove } = useFieldArray({ control, name: 'abilities' });
   const [newAbility, setNewAbility] = useState('');
-  
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
+  // Auto-generate slug from name when creating a new role
+  const nameValue = watch('name');
   useEffect(() => {
-    if (initialData) {
-      setName(initialData.name);
-      setSlug(initialData.slug);
-      setDescription(initialData.description);
-      setTeam(initialData.team);
-      setVideo(initialData.video);
-      setAbilities(initialData.abilities || []);
+    if (!initialData && nameValue) {
+      setValue('slug', nameValue.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
     }
-  }, [initialData]);
+  }, [nameValue, initialData, setValue]);
 
-  // Auto-generate slug from name if creating new role
-  useEffect(() => {
-    if (!initialData && name) {
-      setSlug(name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
-    }
-  }, [name, initialData]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError('');
-
+  const onFormSubmit = handleSubmit(async (values) => {
+    setSubmitError('');
     try {
       await onSubmit({
-        name,
-        slug,
-        description,
-        team,
-        video,
-        abilities
+        name: values.name,
+        slug: values.slug,
+        description: values.description,
+        team: values.team,
+        video: values.video,
+        abilities: values.abilities.map(a => a.value),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save role');
-    } finally {
-      setSubmitting(false);
+      setSubmitError(err instanceof Error ? err.message : 'Failed to save role');
     }
-  };
+  });
 
   const addAbility = () => {
     if (newAbility.trim()) {
-      setAbilities([...abilities, newAbility.trim()]);
+      append({ value: newAbility.trim() });
       setNewAbility('');
     }
-  };
-
-  const removeAbility = (index: number) => {
-    setAbilities(abilities.filter((_, i) => i !== index));
   };
 
   return (
@@ -76,35 +87,26 @@ export function RoleForm({ initialData, onSubmit, onCancel }: RoleFormProps) {
         <h2 className="text-xl md:text-2xl font-bold text-white">
           {initialData ? 'Edit Role' : 'Create New Role'}
         </h2>
-        <button 
-          onClick={onCancel}
-          className="text-purple-400 hover:text-white transition-colors"
-        >
-          ✕
-        </button>
+        <button onClick={onCancel} className="text-purple-400 hover:text-white transition-colors">✕</button>
       </div>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
+
+      <form onSubmit={onFormSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-white font-semibold mb-2">Name</label>
             <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              {...register('name', { required: 'Name is required' })}
               className="w-full bg-black/50 border border-purple-500/50 rounded-lg px-4 py-3 text-white placeholder-purple-400/50 focus:outline-none focus:border-purple-400"
-              required
             />
+            {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>}
           </div>
           <div>
             <label className="block text-white font-semibold mb-2">Slug</label>
             <input
-              type="text"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
+              {...register('slug', { required: 'Slug is required' })}
               className="w-full bg-black/50 border border-purple-500/50 rounded-lg px-4 py-3 text-white placeholder-purple-400/50 focus:outline-none focus:border-purple-400"
-              required
             />
+            {errors.slug && <p className="text-red-400 text-sm mt-1">{errors.slug.message}</p>}
           </div>
         </div>
 
@@ -112,8 +114,7 @@ export function RoleForm({ initialData, onSubmit, onCancel }: RoleFormProps) {
           <div>
             <label className="block text-white font-semibold mb-2">Team</label>
             <select
-              value={team}
-              onChange={(e) => setTeam(e.target.value as any)}
+              {...register('team')}
               className="w-full bg-black/50 border border-purple-500/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-400"
             >
               <option value="village">Village</option>
@@ -124,9 +125,7 @@ export function RoleForm({ initialData, onSubmit, onCancel }: RoleFormProps) {
           <div>
             <label className="block text-white font-semibold mb-2">Video URL (Optional)</label>
             <input
-              type="text"
-              value={video}
-              onChange={(e) => setVideo(e.target.value)}
+              {...register('video')}
               className="w-full bg-black/50 border border-purple-500/50 rounded-lg px-4 py-3 text-white placeholder-purple-400/50 focus:outline-none focus:border-purple-400"
             />
           </div>
@@ -135,11 +134,10 @@ export function RoleForm({ initialData, onSubmit, onCancel }: RoleFormProps) {
         <div>
           <label className="block text-white font-semibold mb-2">Description</label>
           <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            {...register('description', { required: 'Description is required' })}
             className="w-full bg-black/50 border border-purple-500/50 rounded-lg px-4 py-3 text-white placeholder-purple-400/50 focus:outline-none focus:border-purple-400 min-h-[100px]"
-            required
           />
+          {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description.message}</p>}
         </div>
 
         <div>
@@ -155,34 +153,25 @@ export function RoleForm({ initialData, onSubmit, onCancel }: RoleFormProps) {
             />
             <Button type="button" onClick={addAbility} variant="secondary" size="sm">Add</Button>
           </div>
-          
-          {abilities.length > 0 && (
+          {fields.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
-              {abilities.map((ability, index) => (
-                <div key={index} className="bg-purple-900/40 border border-purple-500/30 rounded-full px-3 py-1 flex items-center gap-2">
-                  <span className="text-sm text-purple-200">{ability}</span>
-                  <button 
-                    type="button" 
-                    onClick={() => removeAbility(index)}
-                    className="text-purple-400 hover:text-white"
-                  >
-                    ✕
-                  </button>
+              {fields.map((field, index) => (
+                <div key={field.id} className="bg-purple-900/40 border border-purple-500/30 rounded-full px-3 py-1 flex items-center gap-2">
+                  <span className="text-sm text-purple-200">{field.value}</span>
+                  <button type="button" onClick={() => remove(index)} className="text-purple-400 hover:text-white">✕</button>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {error && (
-          <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
-            {error}
-          </div>
+        {submitError && (
+          <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">{submitError}</div>
         )}
 
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
-          <Button type="submit" disabled={submitting} variant="success" size="lg" className="w-full sm:w-auto">
-            {submitting ? 'Saving...' : (initialData ? 'Update Role' : 'Create Role')}
+          <Button type="submit" disabled={isSubmitting} variant="success" size="lg" className="w-full sm:w-auto">
+            {isSubmitting ? 'Saving...' : (initialData ? 'Update Role' : 'Create Role')}
           </Button>
           <Button type="button" onClick={onCancel} variant="secondary" size="lg" className="w-full sm:w-auto">
             Cancel
