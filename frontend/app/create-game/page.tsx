@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useEffect } from 'react';
+import { useReducer, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { RoleSelectionPanel } from '@/components/RoleSelectionPanel';
@@ -9,6 +9,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { saveModeratorGame, clearModeratorGame, validateModeratorGameState } from '@/lib/gameStorage';
 import { deleteGame, removePlayer, distributeRoles, getGameRoles, PlayerRoleAssignment } from '@/lib/api';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import type { Role } from '@/lib/types';
 
 interface Player {
   id: string;
@@ -25,6 +28,26 @@ interface Game {
 
 type GamePhase = 'not-created' | 'waiting-for-players' | 'selecting-roles' | 'game-started';
 
+const SELECTED_ROLES_KEY = 'mafia-night-selected-roles';
+
+function loadSelectedRolesFromStorage(): Map<string, number> {
+  if (typeof window === 'undefined') return new Map();
+  try {
+    const stored = localStorage.getItem(SELECTED_ROLES_KEY);
+    if (stored) {
+      return new Map(Object.entries(JSON.parse(stored)).map(([k, v]) => [k, v as number]));
+    }
+  } catch {}
+  return new Map();
+}
+
+function saveSelectedRolesToStorage(roles: Map<string, number>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(SELECTED_ROLES_KEY, JSON.stringify(Object.fromEntries(roles)));
+  } catch {}
+}
+
 // ── State ────────────────────────────────────────────────────────────────────
 
 type State = {
@@ -33,6 +56,7 @@ type State = {
   moderatorId: string;
   phase: GamePhase;
   roleAssignments: PlayerRoleAssignment[];
+  selectedRoles: Map<string, number>;
   error: string;
   loading: boolean;
   closing: boolean;
@@ -47,6 +71,7 @@ const initialState: State = {
   moderatorId: '',
   phase: 'not-created',
   roleAssignments: [],
+  selectedRoles: loadSelectedRolesFromStorage(),
   error: '',
   loading: false,
   closing: false,
@@ -76,7 +101,8 @@ type Action =
   | { type: 'REMOVE_PLAYER_FAILED'; error: string }
   | { type: 'CLOSING' }
   | { type: 'SET_COPY_SUCCESS'; value: boolean }
-  | { type: 'SET_ERROR'; error: string };
+  | { type: 'SET_ERROR'; error: string }
+  | { type: 'ROLES_CHANGED'; roles: Map<string, number> };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -148,20 +174,88 @@ function reducer(state: State, action: Action): State {
     case 'SET_ERROR':
       return { ...state, error: action.error };
 
+    case 'ROLES_CHANGED':
+      return { ...state, selectedRoles: action.roles };
+
     default:
       return state;
   }
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Selected Roles Summary ────────────────────────────────────────────────────
+
+const teamColors = { mafia: 'red', village: 'green', independent: 'yellow' } as const;
+
+function SelectedRolesSummary({
+  selectedRoles,
+  allRoles,
+  playerCount,
+}: {
+  selectedRoles: Map<string, number>;
+  allRoles: Role[];
+  playerCount: number;
+}) {
+  const total = useMemo(
+    () => Array.from(selectedRoles.values()).reduce((s, c) => s + c, 0),
+    [selectedRoles]
+  );
+
+  const entries = useMemo(() =>
+    Array.from(selectedRoles.entries())
+      .map(([roleId, count]) => ({ role: allRoles.find(r => r.id === roleId), count }))
+      .filter((e): e is { role: Role; count: number } => !!e.role),
+    [selectedRoles, allRoles]
+  );
+
+  const isComplete = total === playerCount;
+
+  return (
+    <div className="mt-6 bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-purple-500/30">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl font-bold text-white">Pre-selected Roles</h3>
+        <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
+          isComplete ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+        }`}>
+          {total} / {playerCount} {isComplete ? '✓ Ready' : 'slots'}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {entries.map(({ role, count }) => (
+          <div key={role.id}
+            className={`flex items-center gap-2 bg-black/30 border border-${teamColors[role.team as keyof typeof teamColors]}-500/30 rounded-lg px-3 py-2`}>
+            <span className={`w-2 h-2 rounded-full bg-${teamColors[role.team as keyof typeof teamColors]}-500`} />
+            <span className="text-white text-sm font-medium">{role.name}</span>
+            <span className={`text-${teamColors[role.team as keyof typeof teamColors]}-400 text-sm font-bold`}>×{count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 export default function CreateGamePage() {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { game, players, moderatorId, phase, roleAssignments, error, loading, closing,
+  const { game, players, moderatorId, phase, roleAssignments, selectedRoles, error, loading, closing,
     removingPlayerId, distributingRoles, copySuccess } = state;
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
   const router = useRouter();
+
+  // Fetch roles for the summary card (served from cache — no extra fetch if /roles visited)
+  const { data: allRoles = [] } = useQuery({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET('/roles', {});
+      if (error) throw new Error('Failed to load roles');
+      return (data as Role[]) ?? [];
+    },
+  });
+
+  // Persist selected roles to localStorage whenever they change
+  useEffect(() => {
+    saveSelectedRolesToStorage(selectedRoles);
+  }, [selectedRoles]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -346,6 +440,8 @@ export default function CreateGamePage() {
           ) : (
             <RoleSelectionPanel
               playerCount={players.length}
+              selectedRoles={selectedRoles}
+              onRolesChanged={(roles) => dispatch({ type: 'ROLES_CHANGED', roles })}
               onRolesSelected={handleRolesSelected}
               onCancel={handleCancelRoleSelection}
             />
@@ -353,18 +449,23 @@ export default function CreateGamePage() {
         ) : phase === 'game-started' ? (
           <GameStarted roleAssignments={roleAssignments} error={error} closing={closing} onCloseGame={closeGame} />
         ) : (
-          <WaitingForPlayers
-            gameId={game.id}
-            players={players}
-            removingPlayerId={removingPlayerId}
-            copySuccess={copySuccess}
-            closing={closing}
-            onCopyGameCode={copyGameCode}
-            onShareGame={shareGame}
-            onRemovePlayer={handleRemovePlayer}
-            onStartRoleSelection={handleStartRoleSelection}
-            onCloseGame={closeGame}
-          />
+          <>
+            <WaitingForPlayers
+              gameId={game.id}
+              players={players}
+              removingPlayerId={removingPlayerId}
+              copySuccess={copySuccess}
+              closing={closing}
+              onCopyGameCode={copyGameCode}
+              onShareGame={shareGame}
+              onRemovePlayer={handleRemovePlayer}
+              onStartRoleSelection={handleStartRoleSelection}
+              onCloseGame={closeGame}
+            />
+            {selectedRoles.size > 0 && (
+              <SelectedRolesSummary selectedRoles={selectedRoles} allRoles={allRoles} playerCount={players.length} />
+            )}
+          </>
         )}
       </div>
     </main>

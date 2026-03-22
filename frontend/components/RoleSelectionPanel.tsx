@@ -8,40 +8,13 @@ import { Button } from './Button';
 
 interface RoleSelectionPanelProps {
   playerCount: number;
+  selectedRoles: Map<string, number>;
+  onRolesChanged: (roles: Map<string, number>) => void;
   onRolesSelected: (selectedRoles: { roleId: string; count: number }[]) => void;
   onCancel: () => void;
 }
 
-const STORAGE_KEY = 'mafia-night-selected-roles';
-
-function loadFromStorage(): Map<string, number> {
-  if (typeof window === 'undefined') return new Map();
-  
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return new Map(Object.entries(parsed).map(([k, v]) => [k, v as number]));
-    }
-  } catch (err) {
-    console.error('Failed to load roles from storage:', err);
-  }
-  return new Map();
-}
-
-function saveToStorage(roles: Map<string, number>): void {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    const obj = Object.fromEntries(roles.entries());
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-  } catch (err) {
-    console.error('Failed to save roles to storage:', err);
-  }
-}
-
-export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: RoleSelectionPanelProps) {
-  const [selectedRoles, setSelectedRoles] = useState<Map<string, number>>(() => loadFromStorage());
+export function RoleSelectionPanel({ playerCount, selectedRoles, onRolesChanged, onRolesSelected, onCancel }: RoleSelectionPanelProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
@@ -64,10 +37,6 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
 
   const loading = rolesLoading || templatesLoading;
 
-  useEffect(() => {
-    saveToStorage(selectedRoles);
-  }, [selectedRoles]);
-
   const totalSelected = useMemo(() => {
     return Array.from(selectedRoles.values()).reduce((sum, count) => sum + count, 0);
   }, [selectedRoles]);
@@ -76,89 +45,58 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
     return Array.from(selectedRoles.entries()).reduce((map: Record<string, number>, [roleId, count]) => {
       const role = roles.find(r => r.id === roleId);
       if (role) {
-        if (!map[role.team]) {
-          map[role.team] = 0;
-        }
-        map[role.team] += count;
+        map[role.team] = (map[role.team] ?? 0) + count;
       }
       return map;
     }, {});
   }, [selectedRoles, roles]);
 
-  const selectTemplate = useCallback((selectedTemplateId: string) => {
-    setSelectedTemplateId(selectedTemplateId);
-    
-    if (!selectedTemplateId) {
-      setSelectedRoles(new Map());
+  const selectTemplate = useCallback((templateId: string) => {
+    setSelectedTemplateId(templateId);
+    if (!templateId) {
+      onRolesChanged(new Map());
       return;
     }
-    
-    const template = roleTemplates.find(t => t.id === selectedTemplateId);
+    const template = roleTemplates.find(t => t.id === templateId);
     if (template) {
-      const newSelectedRoles = new Map<string, number>();
-      template.roles.forEach(role => {
-        newSelectedRoles.set(role.role!.id, role.count);
-      });
-      setSelectedRoles(newSelectedRoles);
+      const newMap = new Map<string, number>();
+      template.roles.forEach(r => newMap.set(r.role!.id, r.count));
+      onRolesChanged(newMap);
     }
-  }, [roleTemplates]);
+  }, [roleTemplates, onRolesChanged]);
 
   const handleIncrement = useCallback((roleId: string) => {
-    setSelectedRoles(prev => {
-      const current = prev.get(roleId) || 0;
-      const newMap = new Map(prev);
-      newMap.set(roleId, current + 1);
-      return newMap;
-    });
-  }, []);
+    const newMap = new Map(selectedRoles);
+    newMap.set(roleId, (selectedRoles.get(roleId) ?? 0) + 1);
+    onRolesChanged(newMap);
+  }, [selectedRoles, onRolesChanged]);
 
   const handleDecrement = useCallback((roleId: string) => {
-    setSelectedRoles(prev => {
-      const current = prev.get(roleId) || 0;
-      if (current > 0) {
-        const newMap = new Map(prev);
-        if (current === 1) {
-          newMap.delete(roleId);
-        } else {
-          newMap.set(roleId, current - 1);
-        }
-        return newMap;
-      }
-      return prev;
-    });
-  }, []);
+    const current = selectedRoles.get(roleId) ?? 0;
+    if (current === 0) return;
+    const newMap = new Map(selectedRoles);
+    if (current === 1) newMap.delete(roleId);
+    else newMap.set(roleId, current - 1);
+    onRolesChanged(newMap);
+  }, [selectedRoles, onRolesChanged]);
 
   const handleConfirm = useCallback(() => {
-    const rolesArray = Array.from(selectedRoles.entries()).map(([roleId, count]) => ({
-      roleId,
-      count,
-    }));
-    onRolesSelected(rolesArray);
+    onRolesSelected(
+      Array.from(selectedRoles.entries()).map(([roleId, count]) => ({ roleId, count }))
+    );
   }, [selectedRoles, onRolesSelected]);
 
   const isValid = totalSelected === playerCount;
   const remaining = playerCount - totalSelected;
 
-  // Group roles by team
   const rolesByTeam = roles.reduce((acc, role) => {
-    if (!acc[role.team]) {
-      acc[role.team] = [];
-    }
+    if (!acc[role.team]) acc[role.team] = [];
     acc[role.team].push(role);
     return acc;
   }, {} as Record<string, Role[]>);
 
-  const teamColors = {
-    mafia: 'red',
-    village: 'green',
-    independent: 'yellow',
-  };
-
-  const teamLabels = {
-    mafia: 'Mafia Team',
-    village: 'Village Team',
-    independent: 'Independent',
-  };
+  const teamColors = { mafia: 'red', village: 'green', independent: 'yellow' };
+  const teamLabels = { mafia: 'Mafia Team', village: 'Village Team', independent: 'Independent' };
 
   if (loading) {
     return (
@@ -174,7 +112,6 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
     <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-white mb-2">Select Roles</h2>
-        {/* TODO: Implement dropdown button that shows role templates */}
 
         <div className="mb-4">
           <select
@@ -186,25 +123,24 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'right 0.75rem center',
               backgroundSize: '1.5rem',
-              paddingRight: '2.5rem'
+              paddingRight: '2.5rem',
             }}
           >
-            <option value="" className="bg-black/95 text-gray-400">Select a role...</option>
+            <option value="" className="bg-black/95 text-gray-400">Select a template...</option>
             {roleTemplates.map(template => (
               <option key={template.id} value={template.id} className="bg-black/95 text-white py-2">
-                {template.name}               </option>
+                {template.name}
+              </option>
             ))}
           </select>
-          </div>
+        </div>
 
         <div className="flex items-center justify-between">
           <p className="text-purple-300">
             Players: <span className="font-bold text-white">{playerCount}</span>
           </p>
-          <div className={`text-xl font-bold ${isValid ? 'text-green-400' : remaining < 0 ? 'text-red-400'
-            : 'text-yellow-400'}`}>
-            {isValid ? '✓ Complete' : remaining > 0 ? `${remaining} more needed` : `${Math.abs(remaining)} too
-                many`}
+          <div className={`text-xl font-bold ${isValid ? 'text-green-400' : remaining < 0 ? 'text-red-400' : 'text-yellow-400'}`}>
+            {isValid ? '✓ Complete' : remaining > 0 ? `${remaining} more needed` : `${Math.abs(remaining)} too many`}
           </div>
         </div>
       </div>
@@ -212,12 +148,10 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
       <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
         {Object.entries(rolesByTeam).map(([team, teamRoles]) => (
           <div key={team} className="space-y-3">
-            <h3 className={`text-xl font-semibold text-${teamColors[team as keyof typeof teamColors]}-400 flex
-                items-center gap-2`}>
-              <span className={`w-3 h-3 rounded-full bg-${teamColors[team as keyof typeof teamColors]}-500`}></span>
+            <h3 className={`text-xl font-semibold text-${teamColors[team as keyof typeof teamColors]}-400 flex items-center gap-2`}>
+              <span className={`w-3 h-3 rounded-full bg-${teamColors[team as keyof typeof teamColors]}-500`} />
               {teamLabels[team as keyof typeof teamLabels]}
-
-              <span className={` bg-${teamColors[team as keyof typeof teamColors]}-400 text-white px-3 py-1 rounded-full  font-bold`}>
+              <span className={`bg-${teamColors[team as keyof typeof teamColors]}-400 text-white px-3 py-1 rounded-full font-bold`}>
                 {teamCountMap[team] || 0}
               </span>
             </h3>
@@ -230,26 +164,17 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-semibold">{role.name}</span>
                       {count > 0 && (
-                        <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                          {count}
-                        </span>
+                        <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">{count}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => handleDecrement(role.id)}
-                        disabled={count === 0}
-                        className="bg-red-600/50 hover:bg-red-600 disabled:bg-gray-700 disabled:cursor-not-allowed
-                      text-white w-10 h-10 rounded-lg transition-all font-bold text-xl"
-                      >
+                      <button onClick={() => handleDecrement(role.id)} disabled={count === 0}
+                        className="bg-red-600/50 hover:bg-red-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white w-10 h-10 rounded-lg transition-all font-bold text-xl">
                         −
                       </button>
-                      <div className="flex-1 text-center text-2xl font-bold text-purple-300">
-                        {count}
-                      </div>
+                      <div className="flex-1 text-center text-2xl font-bold text-purple-300">{count}</div>
                       <button onClick={() => handleIncrement(role.id)}
-                        className="bg-green-600/50 hover:bg-green-600 text-white w-10 h-10 rounded-lg transition-all
-                      font-bold text-xl"
-                      >
+                        className="bg-green-600/50 hover:bg-green-600 text-white w-10 h-10 rounded-lg transition-all font-bold text-xl">
                         +
                       </button>
                     </div>
@@ -262,18 +187,8 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
       </div>
 
       <div className="mt-8 flex gap-4 justify-center">
-        <Button
-          onClick={onCancel}
-          variant="secondary"
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleConfirm}
-          disabled={!isValid}
-          variant="primary"
-          scaleOnHover
-        >
+        <Button onClick={onCancel} variant="secondary">Cancel</Button>
+        <Button onClick={handleConfirm} disabled={!isValid} variant="primary" scaleOnHover>
           Confirm Selection
         </Button>
       </div>
