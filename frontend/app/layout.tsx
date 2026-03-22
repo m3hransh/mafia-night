@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Navigation } from '@/components'
 import { GradientBackground } from '@/components/GradientBackground'
+import { QueryProvider } from '@/components/QueryProvider'
 
 export const metadata: Metadata = {
   title: {
@@ -64,9 +65,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="relative w-full min-h-screen flex flex-col overflow-x-hidden">
-        <Navigation />
-        <GradientBackground />
-        {children}
+        <QueryProvider>
+          <Navigation />
+          <GradientBackground />
+          {children}
+        </QueryProvider>
       </body>
     </html>
   )

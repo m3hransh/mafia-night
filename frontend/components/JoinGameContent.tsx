@@ -7,13 +7,15 @@ import { JoinLobby } from '@/components/JoinLobby';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 import { AssignedRole } from '@/components/AssignedRole';
 import { JoinGameForm } from '@/components/JoinGameForm';
+import { useQuery } from '@tanstack/react-query';
 
 export function JoinGameContent() {
   const searchParams = useSearchParams();
   const router = useRouter(); const [gameCode, setGameCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [playerId, setPlayerId] = useState('');
-  const [joined, setJoined] = useState(false); const [players, setPlayers] = useState<Player[]>([]);
+  const [joined, setJoined] = useState(false);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [leaving, setLeaving] = useState(false);
   const [assignedRole, setAssignedRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
