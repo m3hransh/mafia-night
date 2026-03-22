@@ -242,9 +242,12 @@ export async function selectRoles(page: Page, roleCount: number) {
  * Confirm role distribution and wait for completion
  */
 export async function confirmRoleDistribution(page: Page) {
-  const confirmButton = page.getByRole("button", {name: "Confirm Selection"});
-  await confirmButton.waitFor({ state: 'visible', timeout: 10000 });
-  await confirmButton.click();
+  const back = page.getByRole("button", {name: "Back"});
+  await back.waitFor({ state: 'visible', timeout: 10000 });
+  await back.click();
+  const startButton = page.getByRole("button", {name: "Start Game"});
+  await startButton.waitFor({ state: 'visible', timeout: 10000 });
+  await startButton.click();
 
   // Wait for success message
   await expect(page.getByText('Roles Distributed!')).toBeVisible({ timeout: 10000 });

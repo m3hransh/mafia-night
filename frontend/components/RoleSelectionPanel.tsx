@@ -8,13 +8,12 @@ import { Button } from './Button';
 import { useCreateGameContext } from '@/app/create-game/context';
 
 export function RoleSelectionPanel() {
-  const { state, handleRolesSelected, handleCancelRoleSelection, handleRolesChanged } = useCreateGameContext();
+  const { state , handleCancelRoleSelection, handleRolesChanged } = useCreateGameContext();
   const { selectedRoles, players } = state;
   const playerCount = players.length;
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
-  const { data: roles = [], isLoading: rolesLoading } = useQuery({
-    queryKey: ['roles'],
+  const { data: roles = [], isLoading: rolesLoading } = useQuery({ queryKey: ['roles'],
     queryFn: async () => {
       const { data, error } = await apiClient.GET('/roles', {});
       if (error) throw new Error('Failed to load roles');
@@ -75,12 +74,6 @@ export function RoleSelectionPanel() {
     else newMap.set(roleId, current - 1);
     handleRolesChanged(newMap);
   }, [selectedRoles, handleRolesChanged]);
-
-  const handleConfirm = useCallback(() => {
-    handleRolesSelected(
-      Array.from(selectedRoles.entries()).map(([roleId, count]) => ({ roleId, count }))
-    );
-  }, [selectedRoles, handleRolesSelected]);
 
   const isValid = totalSelected === playerCount;
   const remaining = playerCount - totalSelected;
@@ -183,10 +176,7 @@ export function RoleSelectionPanel() {
       </div>
 
       <div className="mt-8 flex gap-4 justify-center">
-        <Button onClick={handleCancelRoleSelection} variant="secondary">Cancel</Button>
-        <Button onClick={handleConfirm} disabled={!isValid} variant="primary" scaleOnHover>
-          Confirm Selection
-        </Button>
+        <Button onClick={handleCancelRoleSelection} variant="secondary">Back</Button>
       </div>
     </div>
   );

@@ -40,11 +40,13 @@ export interface RoleTemplate {
   description: string;
   created_at: string;
   updated_at: string;
-  roles: Array<{
-    role_id?: string;
-    count: number;
-    role?: Role;
-  }>;
+  roles: Array<SelectedRole>;
+}
+
+export interface SelectedRole {
+  role_id?: string;
+  count: number;
+  role?: Role;
 }
 
 export interface AdminUser {

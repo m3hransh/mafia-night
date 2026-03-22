@@ -165,7 +165,7 @@ type CreateGameContextValue = {
   closeGame: () => Promise<void>;
   handleRemovePlayer: (playerId: string, playerName: string) => Promise<void>;
   handleStartRoleSelection: () => void;
-  handleRolesSelected: (selectedRoles: { roleId: string; count: number }[]) => Promise<void>;
+  handleRolesDistribute: (selectedRoles: { roleId: string; count: number }[]) => Promise<void>;
   handleCancelRoleSelection: () => void;
   handleRolesChanged: (roles: Map<string, number>) => void;
 };
@@ -337,7 +337,7 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const handleRolesSelected = async (selectedRoles: { roleId: string; count: number }[]) => {
+  const handleRolesDistribute = async (selectedRoles: { roleId: string; count: number }[]) => {
     if (!game) return;
     dispatch({ type: 'DISTRIBUTING' });
     try {
@@ -367,7 +367,7 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     closeGame,
     handleRemovePlayer,
     handleStartRoleSelection,
-    handleRolesSelected,
+    handleRolesDistribute,
     handleCancelRoleSelection,
     handleRolesChanged,
   // eslint-disable-next-line react-hooks/exhaustive-deps
