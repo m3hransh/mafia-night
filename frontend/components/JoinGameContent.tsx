@@ -7,7 +7,6 @@ import { JoinLobby } from '@/components/JoinLobby';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 import { AssignedRole } from '@/components/AssignedRole';
 import { JoinGameForm } from '@/components/JoinGameForm';
-import { useQuery } from '@tanstack/react-query';
 
 export function JoinGameContent() {
   const searchParams = useSearchParams();
