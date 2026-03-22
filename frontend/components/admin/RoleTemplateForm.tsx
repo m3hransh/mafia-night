@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/Button';
-import { RoleTemplate } from '@/lib/adminApi';
-import { Role } from '@/lib/api';
+import { RoleTemplate } from '@/lib/types';
+import { Role } from '@/lib/types';
 
 interface RoleTemplateFormProps {
   initialData?: RoleTemplate;

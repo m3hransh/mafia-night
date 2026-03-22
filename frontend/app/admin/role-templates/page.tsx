@@ -5,15 +5,8 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/Button';
 import { RoleTemplateList } from '@/components/admin/RoleTemplateList';
 import { RoleTemplateForm } from '@/components/admin/RoleTemplateForm';
-import {
-  listRoleTemplates,
-  createRoleTemplate,
-  updateRoleTemplate,
-  deleteRoleTemplate,
-  listRoles,
-  RoleTemplate,
-} from '@/lib/adminApi';
-import { Role } from '@/lib/api';
+import { adminApiClient } from '@/lib/api-client';
+import type { Role, RoleTemplate } from '@/lib/types';
 
 export default function RoleTemplatesPage() {
   const [templates, setTemplates] = useState<RoleTemplate[]>([]);
@@ -31,12 +24,14 @@ export default function RoleTemplatesPage() {
     setLoading(true);
     setError('');
     try {
-      const [templatesData, rolesData] = await Promise.all([
-        listRoleTemplates(),
-        listRoles(),
+      const [{ data: templatesData, error: tErr }, { data: rolesData, error: rErr }] = await Promise.all([
+        adminApiClient.GET("/admin/role-templates", {}),
+        adminApiClient.GET("/admin/roles", {}),
       ]);
-      setTemplates(templatesData);
-      setRoles(rolesData);
+      if (tErr) throw new Error((tErr as { error?: string })?.error ?? 'Failed to load templates');
+      if (rErr) throw new Error((rErr as { error?: string })?.error ?? 'Failed to load roles');
+      setTemplates((templatesData as RoleTemplate[]) ?? []);
+      setRoles((rolesData as Role[]) ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
@@ -62,9 +57,16 @@ export default function RoleTemplatesPage() {
   }) => {
     try {
       if (editingTemplate) {
-        await updateRoleTemplate(editingTemplate.id, templateData);
+        const { error } = await adminApiClient.PATCH("/admin/role-templates/{id}", {
+          params: { path: { id: editingTemplate.id } },
+          body: templateData as never,
+        });
+        if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to update template');
       } else {
-        await createRoleTemplate(templateData);
+        const { error } = await adminApiClient.POST("/admin/role-templates", {
+          body: templateData as never,
+        });
+        if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to create template');
       }
       setShowForm(false);
       loadData();
@@ -79,7 +81,10 @@ export default function RoleTemplatesPage() {
     }
 
     try {
-      await deleteRoleTemplate(id);
+      const { error } = await adminApiClient.DELETE("/admin/role-templates/{id}", {
+        params: { path: { id } },
+      });
+      if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to delete template');
       loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete template');

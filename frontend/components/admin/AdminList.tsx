@@ -1,5 +1,5 @@
 import { Button } from '@/components/Button';
-import { AdminUser } from '@/lib/adminAuth';
+import { AdminUser } from '@/lib/types';
 
 interface AdminListProps {
   admins: AdminUser[];

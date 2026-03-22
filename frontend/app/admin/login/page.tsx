@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { adminLogin } from '@/lib/adminApi';
-import { isAdminAuthenticated } from '@/lib/adminAuth';
+import { adminApiClient } from '@/lib/api-client';
+import { isAdminAuthenticated, saveAdminToken, saveAdminUser } from '@/lib/adminAuth';
+import type { LoginResponse } from '@/lib/types';
 import { Button } from '@/components/Button';
 
 export default function AdminLoginPage() {
@@ -26,7 +27,13 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      await adminLogin(username, password);
+      const { data, error } = await adminApiClient.POST("/admin/login", {
+        body: { username, password },
+      });
+      if (error || !data) throw new Error((error as { error?: string })?.error ?? "Login failed");
+      const result = data as LoginResponse;
+      saveAdminToken(result.token);
+      saveAdminUser(result.admin);
       router.push('/admin/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

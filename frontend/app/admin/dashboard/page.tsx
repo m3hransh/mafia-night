@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/Button';
-import { getAdminUser, AdminUser } from '@/lib/adminAuth';
-import { listAdmins, createAdmin, deleteAdmin, updateAdmin } from '@/lib/adminApi';
+import { getAdminUser } from '@/lib/adminAuth';
+import { adminApiClient } from '@/lib/api-client';
+import type { AdminUser } from '@/lib/types';
 import { AdminCreateForm } from '@/components/admin/AdminCreateForm';
 import { AdminList } from '@/components/admin/AdminList';
 
@@ -26,8 +27,9 @@ export default function AdminDashboardPage() {
     setError('');
 
     try {
-      const data = await listAdmins();
-      setAdmins(data);
+      const { data, error } = await adminApiClient.GET("/admin/users");
+      if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to load admins');
+      setAdmins((data as AdminUser[]) ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load admins');
     } finally {
@@ -36,7 +38,10 @@ export default function AdminDashboardPage() {
   };
 
   const handleCreateAdmin = async (username: string, email: string, password: string) => {
-    await createAdmin(username, email, password);
+    const { error } = await adminApiClient.POST("/admin/users", {
+      body: { username, email, password },
+    });
+    if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to create admin');
     setShowCreateForm(false);
     await loadAdmins();
   };
@@ -47,7 +52,10 @@ export default function AdminDashboardPage() {
     }
 
     try {
-      await deleteAdmin(id);
+      const { error } = await adminApiClient.DELETE("/admin/users/{id}", {
+        params: { path: { id } },
+      });
+      if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to delete admin');
       await loadAdmins();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete admin');
@@ -56,7 +64,11 @@ export default function AdminDashboardPage() {
 
   const handleToggleActive = async (admin: AdminUser) => {
     try {
-      await updateAdmin(admin.id, { is_active: !admin.is_active });
+      const { error } = await adminApiClient.PATCH("/admin/users/{id}", {
+        params: { path: { id: admin.id } },
+        body: { is_active: !admin.is_active } as never,
+      });
+      if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to update admin');
       await loadAdmins();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update admin');

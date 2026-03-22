@@ -99,7 +99,7 @@ export function RoleSelectionPanel({ playerCount, onRolesSelected, onCancel }: R
     if (template) {
       const newSelectedRoles = new Map<string, number>();
       template.roles.forEach(role => {
-        newSelectedRoles.set(role.role.id, role.count);
+        newSelectedRoles.set(role.role!.id, role.count);
       });
       setSelectedRoles(newSelectedRoles);
     }

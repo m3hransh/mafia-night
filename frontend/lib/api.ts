@@ -1,66 +1,8 @@
 import { apiClient } from "./api-client";
-
-export interface Role {
-  id: string;
-  name: string;
-  slug: string;
-  video: string;
-  description: string;
-  team: "mafia" | "village" | "independent";
-  abilities?: string[];
-}
-
-export interface RoleTemplate {
-  id: string;
-  name: string;
-  player_count: number;
-  description: string;
-  created_at: string;
-  updated_at: string;
-  roles: SelectedRole[];
-}
-
-interface SelectedRole {
-  count: number;
-  role: Role;
-}
-
-export class APIError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
-    super(message);
-    this.name = "APIError";
-  }
-}
-
-// Game-related types
-
-export interface Game {
-  id: string;
-  moderator_id: string;
-  status: "pending" | "active" | "completed";
-  created_at: string;
-}
-
-export interface Player {
-  id: string;
-  name: string;
-  game_id: string;
-  created_at: string;
-}
-
-export interface PlayerRoleAssignment {
-  player_id: string;
-  player_name: string;
-  role_id: string;
-  role_name: string;
-  role_slug: string;
-  video: string;
-  team: "mafia" | "village" | "independent";
-  assigned_at: string;
-}
+export type { Role, Game, Player, PlayerRoleAssignment, RoleTemplate, AdminUser, LoginResponse } from "./types";
+export { APIError } from "./types";
+import type { Role, Player, PlayerRoleAssignment, RoleTemplate } from "./types";
+import { APIError } from "./types";
 
 /**
  * Fetches all roles from the backend API

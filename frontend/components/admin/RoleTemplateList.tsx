@@ -1,5 +1,5 @@
 import { Button } from '@/components/Button';
-import { RoleTemplate } from '@/lib/adminApi';
+import { RoleTemplate } from '@/lib/types';
 
 interface RoleTemplateListProps {
   templates: RoleTemplate[];

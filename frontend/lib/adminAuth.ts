@@ -1,22 +1,10 @@
 // Admin authentication utilities
 
+import type { AdminUser } from "./types";
+export type { AdminUser, LoginResponse } from "./types";
+
 const ADMIN_TOKEN_KEY = 'mafia_admin_token';
 const ADMIN_USER_KEY = 'mafia_admin_user';
-
-export interface AdminUser {
-  id: string;
-  username: string;
-  email: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  last_login: string | null;
-}
-
-export interface LoginResponse {
-  token: string;
-  admin: AdminUser;
-}
 
 // Token management
 export const saveAdminToken = (token: string) => {

@@ -5,8 +5,8 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/Button';
 import { RoleList } from '@/components/admin/RoleList';
 import { RoleForm } from '@/components/admin/RoleForm';
-import { listRoles, createRole, updateRole, deleteRole } from '@/lib/adminApi';
-import { Role } from '@/lib/api';
+import { adminApiClient } from '@/lib/api-client';
+import type { Role } from '@/lib/types';
 
 export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -23,8 +23,9 @@ export default function RolesPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await listRoles();
-      setRoles(data);
+      const { data, error } = await adminApiClient.GET("/admin/roles", {});
+      if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to load roles');
+      setRoles((data as Role[]) ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load roles');
     } finally {
@@ -45,9 +46,16 @@ export default function RolesPage() {
   const handleSubmit = async (roleData: Omit<Role, 'id'>) => {
     try {
       if (editingRole) {
-        await updateRole(editingRole.id, roleData);
+        const { error } = await adminApiClient.PATCH("/admin/roles/{id}", {
+          params: { path: { id: editingRole.id } },
+          body: roleData as never,
+        });
+        if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to update role');
       } else {
-        await createRole(roleData);
+        const { error } = await adminApiClient.POST("/admin/roles", {
+          body: roleData as never,
+        });
+        if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to create role');
       }
       setShowForm(false);
       loadRoles();
@@ -62,7 +70,10 @@ export default function RolesPage() {
     }
 
     try {
-      await deleteRole(id);
+      const { error } = await adminApiClient.DELETE("/admin/roles/{id}", {
+        params: { path: { id } },
+      });
+      if (error) throw new Error((error as { error?: string })?.error ?? 'Failed to delete role');
       loadRoles();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete role');
