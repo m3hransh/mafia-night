@@ -1,20 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import type { Role, RoleTemplate } from '@/lib/types';
 import { Button } from './Button';
+import { useCreateGameContext } from '@/app/create-game/context';
 
-interface RoleSelectionPanelProps {
-  playerCount: number;
-  selectedRoles: Map<string, number>;
-  onRolesChanged: (roles: Map<string, number>) => void;
-  onRolesSelected: (selectedRoles: { roleId: string; count: number }[]) => void;
-  onCancel: () => void;
-}
-
-export function RoleSelectionPanel({ playerCount, selectedRoles, onRolesChanged, onRolesSelected, onCancel }: RoleSelectionPanelProps) {
+export function RoleSelectionPanel() {
+  const { state, handleRolesSelected, handleCancelRoleSelection, handleRolesChanged } = useCreateGameContext();
+  const { selectedRoles, players } = state;
+  const playerCount = players.length;
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
@@ -54,22 +50,22 @@ export function RoleSelectionPanel({ playerCount, selectedRoles, onRolesChanged,
   const selectTemplate = useCallback((templateId: string) => {
     setSelectedTemplateId(templateId);
     if (!templateId) {
-      onRolesChanged(new Map());
+      handleRolesChanged(new Map());
       return;
     }
     const template = roleTemplates.find(t => t.id === templateId);
     if (template) {
       const newMap = new Map<string, number>();
       template.roles.forEach(r => newMap.set(r.role!.id, r.count));
-      onRolesChanged(newMap);
+      handleRolesChanged(newMap);
     }
-  }, [roleTemplates, onRolesChanged]);
+  }, [roleTemplates, handleRolesChanged]);
 
   const handleIncrement = useCallback((roleId: string) => {
     const newMap = new Map(selectedRoles);
     newMap.set(roleId, (selectedRoles.get(roleId) ?? 0) + 1);
-    onRolesChanged(newMap);
-  }, [selectedRoles, onRolesChanged]);
+    handleRolesChanged(newMap);
+  }, [selectedRoles, handleRolesChanged]);
 
   const handleDecrement = useCallback((roleId: string) => {
     const current = selectedRoles.get(roleId) ?? 0;
@@ -77,14 +73,14 @@ export function RoleSelectionPanel({ playerCount, selectedRoles, onRolesChanged,
     const newMap = new Map(selectedRoles);
     if (current === 1) newMap.delete(roleId);
     else newMap.set(roleId, current - 1);
-    onRolesChanged(newMap);
-  }, [selectedRoles, onRolesChanged]);
+    handleRolesChanged(newMap);
+  }, [selectedRoles, handleRolesChanged]);
 
   const handleConfirm = useCallback(() => {
-    onRolesSelected(
+    handleRolesSelected(
       Array.from(selectedRoles.entries()).map(([roleId, count]) => ({ roleId, count }))
     );
-  }, [selectedRoles, onRolesSelected]);
+  }, [selectedRoles, handleRolesSelected]);
 
   const isValid = totalSelected === playerCount;
   const remaining = playerCount - totalSelected;
@@ -187,7 +183,7 @@ export function RoleSelectionPanel({ playerCount, selectedRoles, onRolesChanged,
       </div>
 
       <div className="mt-8 flex gap-4 justify-center">
-        <Button onClick={onCancel} variant="secondary">Cancel</Button>
+        <Button onClick={handleCancelRoleSelection} variant="secondary">Cancel</Button>
         <Button onClick={handleConfirm} disabled={!isValid} variant="primary" scaleOnHover>
           Confirm Selection
         </Button>

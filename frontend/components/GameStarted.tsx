@@ -1,21 +1,10 @@
 import { Button } from './Button';
+import { useCreateGameContext } from '@/app/create-game/context';
 
-interface PlayerRoleAssignment {
-  player_id: string;
-  player_name: string;
-  role_id: string;
-  role_name: string;
-  team: string;
-}
+export function GameStarted() {
+  const { state, closeGame } = useCreateGameContext();
+  const { roleAssignments, error, closing } = state;
 
-interface GameStartedProps {
-  roleAssignments: PlayerRoleAssignment[];
-  error: string;
-  closing: boolean;
-  onCloseGame: () => void;
-}
-
-export function GameStarted({ roleAssignments, error, closing, onCloseGame }: GameStartedProps) {
   return (
     <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
       <h2 className="text-3xl font-bold text-white mb-4 text-center">Roles Distributed!</h2>
@@ -62,12 +51,7 @@ export function GameStarted({ roleAssignments, error, closing, onCloseGame }: Ga
       </div>
 
       <div className="flex gap-4 justify-center">
-        <Button
-          onClick={onCloseGame}
-          disabled={closing}
-          variant="danger"
-          size="lg"
-        >
+        <Button onClick={closeGame} disabled={closing} variant="danger" size="lg">
           {closing ? 'Closing...' : 'End Game'}
         </Button>
       </div>

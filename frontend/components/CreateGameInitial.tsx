@@ -1,12 +1,10 @@
 import { Button } from './Button';
+import { useCreateGameContext } from '@/app/create-game/context';
 
-interface CreateGameInitialProps {
-  loading: boolean;
-  error: string;
-  onCreateGame: () => void;
-}
+export function CreateGameInitial() {
+  const { state, createGame } = useCreateGameContext();
+  const { loading, error } = state;
 
-export function CreateGameInitial({ loading, error, onCreateGame }: CreateGameInitialProps) {
   return (
     <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
       <div className="text-center">
@@ -21,7 +19,7 @@ export function CreateGameInitial({ loading, error, onCreateGame }: CreateGameIn
         )}
 
         <Button
-          onClick={onCreateGame}
+          onClick={createGame}
           disabled={loading}
           size="xl"
           scaleOnHover
