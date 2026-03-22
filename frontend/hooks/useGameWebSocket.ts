@@ -101,13 +101,12 @@ export function useGameWebSocket({
 
       ws.onclose = () => {
         setIsConnected(false);
+        setError(null);
         wsRef.current = null;
 
-        // Attempt reconnect after 3 seconds
+        // Attempt reconnect after 3 seconds if still enabled
         if (enabled) {
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
-          }, 3000);
+          reconnectTimeoutRef.current = setTimeout(connect, 3000);
         }
       };
 

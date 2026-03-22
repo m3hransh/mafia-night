@@ -21,11 +21,12 @@ export function JoinGameContent() {
 
   // Check for existing player session on mount with backend validation
   useEffect(() => {
+    const controller = new AbortController();
+
     const checkSavedPlayer = async () => {
       try {
         const validatedState = await validatePlayerGameState();
-        if (validatedState) {
-          // Restore player state
+        if (!controller.signal.aborted && validatedState) {
           setGameCode(validatedState.gameId);
           setPlayerName(validatedState.playerName);
           setPlayerId(validatedState.playerId);
@@ -33,21 +34,22 @@ export function JoinGameContent() {
 
           try {
             const role = await getPlayerRole(validatedState.gameId, validatedState.playerId);
-            if (role) {
+            if (!controller.signal.aborted && role) {
               setAssignedRole(role);
             }
           } catch (error) {
-            console.error('Error fetching role:', error);
+            if (!controller.signal.aborted) console.error('Error fetching role:', error);
           }
         }
       } catch (error) {
-        console.error('Error validating player state:', error);
+        if (!controller.signal.aborted) console.error('Error validating player state:', error);
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) setIsLoading(false);
       }
     };
 
     checkSavedPlayer();
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {

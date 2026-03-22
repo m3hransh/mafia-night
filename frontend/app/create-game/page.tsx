@@ -164,26 +164,35 @@ export default function CreateGamePage() {
   const router = useRouter();
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const checkSavedGame = async () => {
       const validatedState = await validateModeratorGameState();
+      if (controller.signal.aborted) return;
+
       if (validatedState) {
         try {
-          const res = await fetch(`${API_BASE_URL}/api/games/${validatedState.gameId}`);
+          const res = await fetch(`${API_BASE_URL}/api/games/${validatedState.gameId}`, {
+            signal: controller.signal,
+          });
           if (res.ok) {
             const gameData = await res.json();
             const roles = await getGameRoles(validatedState.gameId, validatedState.moderatorId);
-            dispatch({
-              type: 'RESTORE',
-              game: gameData,
-              moderatorId: validatedState.moderatorId,
-              phase: roles?.length > 0 ? 'game-started' : validatedState.phase,
-              roleAssignments: roles ?? [],
-            });
+            if (!controller.signal.aborted) {
+              dispatch({
+                type: 'RESTORE',
+                game: gameData,
+                moderatorId: validatedState.moderatorId,
+                phase: roles?.length > 0 ? 'game-started' : validatedState.phase,
+                roleAssignments: roles ?? [],
+              });
+            }
           } else {
             clearModeratorGame();
-            dispatch({ type: 'INIT', moderatorId: uuidv4() });
+            if (!controller.signal.aborted) dispatch({ type: 'INIT', moderatorId: uuidv4() });
           }
-        } catch {
+        } catch (err) {
+          if ((err as Error)?.name === 'AbortError') return;
           clearModeratorGame();
           dispatch({ type: 'INIT', moderatorId: uuidv4() });
         }
@@ -193,6 +202,7 @@ export default function CreateGamePage() {
     };
 
     checkSavedGame();
+    return () => controller.abort();
   }, [API_BASE_URL]);
 
   useGameWebSocket({

@@ -136,7 +136,7 @@ test.describe('Roles Gallery Page', () => {
     const errorTitle = page.locator('h1:has-text("Error")');
     await expect(errorTitle).toBeVisible();
 
-    const errorMessage = page.locator('text=Failed to fetch roles');
+    const errorMessage = page.locator('text=Failed to load roles');
     await expect(errorMessage).toBeVisible();
 
     // Check for retry button
