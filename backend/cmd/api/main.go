@@ -1,3 +1,21 @@
+// @title           Mafia Night API
+// @version         1.0
+// @description     REST API for the Mafia Night game platform.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   Mafia Night Support
+// @contact.url    https://github.com/mafia-night
+
+// @license.name  MIT
+
+// @host      localhost:8080
+// @BasePath  /api
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and the JWT token.
+
 package main
 
 import (
@@ -12,7 +30,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	_ "github.com/lib/pq"
+	httpSwagger "github.com/swaggo/http-swagger"
 
+	_ "github.com/mafia-night/backend/docs"
 	"github.com/mafia-night/backend/ent"
 	"github.com/mafia-night/backend/internal/auth"
 	"github.com/mafia-night/backend/internal/handler"
@@ -80,6 +100,11 @@ func main() {
 	}))
 
 	fmt.Printf("CORS enabled for origins: %v\n", allowedOrigins)
+
+	// Swagger UI
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	// Health check
 	r.Get("/health", healthHandler)
@@ -157,6 +182,7 @@ func main() {
 	fmt.Printf("Starting Mafia Night API server on port %s\n", port)
 	fmt.Printf("Health check: http://localhost:%s/health\n", port)
 	fmt.Printf("API endpoint: http://localhost:%s/api/games\n", port)
+	fmt.Printf("Swagger UI:   http://localhost:%s/swagger/\n", port)
 	
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatal(err)

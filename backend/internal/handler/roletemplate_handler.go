@@ -23,6 +23,15 @@ func NewRoleTemplateHandler(roleTemplateService *service.RoleTemplateService) *R
 }
 
 // GetRoleTemplates handles GET /api/role-templates
+// @Summary      List role templates
+// @Description  Retrieves all role templates. Optionally filter by player_count.
+// @Tags         role-templates
+// @Produce      json
+// @Param        player_count  query     int  false  "Filter by player count"
+// @Success      200           {array}   RoleTemplateResponse
+// @Failure      400           {object}  ErrorResponseBody
+// @Failure      500           {object}  ErrorResponseBody
+// @Router       /role-templates [get]
 func (h *RoleTemplateHandler) GetRoleTemplates(w http.ResponseWriter, r *http.Request) {
 	// Optional player count filter
 	var playerCount *int
@@ -50,6 +59,16 @@ func (h *RoleTemplateHandler) GetRoleTemplates(w http.ResponseWriter, r *http.Re
 }
 
 // GetRoleTemplateByID handles GET /api/role-templates/{id}
+// @Summary      Get a role template by ID
+// @Description  Retrieves a single role template with its role assignments.
+// @Tags         role-templates
+// @Produce      json
+// @Param        id   path      string  true  "Template ID"
+// @Success      200  {object}  RoleTemplateResponse
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Failure      500  {object}  ErrorResponseBody
+// @Router       /role-templates/{id} [get]
 func (h *RoleTemplateHandler) GetRoleTemplateByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -72,6 +91,18 @@ func (h *RoleTemplateHandler) GetRoleTemplateByID(w http.ResponseWriter, r *http
 }
 
 // CreateRoleTemplate handles POST /api/admin/role-templates
+// @Summary      Create a role template
+// @Description  Creates a new role template. Requires admin authentication.
+// @Tags         admin-role-templates
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      object{name=string,player_count=int,description=string,roles=[]object}  true  "Template data"
+// @Success      201   {object}  RoleTemplateResponse
+// @Failure      400   {object}  ErrorResponseBody
+// @Failure      409   {object}  ErrorResponseBody
+// @Failure      500   {object}  ErrorResponseBody
+// @Router       /admin/role-templates [post]
 func (h *RoleTemplateHandler) CreateRoleTemplate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name        string `json:"name"`
@@ -131,6 +162,20 @@ func (h *RoleTemplateHandler) CreateRoleTemplate(w http.ResponseWriter, r *http.
 }
 
 // UpdateRoleTemplate handles PATCH /api/admin/role-templates/{id}
+// @Summary      Update a role template
+// @Description  Updates an existing role template. Requires admin authentication.
+// @Tags         admin-role-templates
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path      string  true   "Template ID"
+// @Param        body  body      object{name=string,player_count=int,description=string,roles=[]object}  false  "Partial template data"
+// @Success      200   {object}  RoleTemplateResponse
+// @Failure      400   {object}  ErrorResponseBody
+// @Failure      404   {object}  ErrorResponseBody
+// @Failure      409   {object}  ErrorResponseBody
+// @Failure      500   {object}  ErrorResponseBody
+// @Router       /admin/role-templates/{id} [patch]
 func (h *RoleTemplateHandler) UpdateRoleTemplate(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -205,6 +250,16 @@ func (h *RoleTemplateHandler) UpdateRoleTemplate(w http.ResponseWriter, r *http.
 }
 
 // DeleteRoleTemplate handles DELETE /api/admin/role-templates/{id}
+// @Summary      Delete a role template
+// @Description  Deletes a role template. Requires admin authentication.
+// @Tags         admin-role-templates
+// @Security     BearerAuth
+// @Param        id   path    string  true  "Template ID"
+// @Success      204
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Failure      500  {object}  ErrorResponseBody
+// @Router       /admin/role-templates/{id} [delete]
 func (h *RoleTemplateHandler) DeleteRoleTemplate(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)

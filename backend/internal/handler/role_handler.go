@@ -23,6 +23,13 @@ func NewRoleHandler(roleService *service.RoleService) *RoleHandler {
 }
 
 // GetRoles handles GET /api/roles
+// @Summary      List all roles
+// @Description  Retrieves all available roles in the game.
+// @Tags         roles
+// @Produce      json
+// @Success      200  {array}   RoleResponse
+// @Failure      500  {object}  ErrorResponseBody
+// @Router       /roles [get]
 func (h *RoleHandler) GetRoles(w http.ResponseWriter, r *http.Request) {
 	roles, err := h.roleService.GetAllRoles(r.Context())
 	if err != nil {
@@ -39,6 +46,15 @@ func (h *RoleHandler) GetRoles(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetRoleBySlug handles GET /api/roles/{slug}
+// @Summary      Get a role by slug
+// @Description  Retrieves a single role by its slug identifier.
+// @Tags         roles
+// @Produce      json
+// @Param        slug  path      string  true  "Role slug"
+// @Success      200   {object}  RoleResponse
+// @Failure      400   {object}  ErrorResponseBody
+// @Failure      404   {object}  ErrorResponseBody
+// @Router       /roles/{slug} [get]
 func (h *RoleHandler) GetRoleBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 
@@ -56,6 +72,18 @@ func (h *RoleHandler) GetRoleBySlug(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateRole handles POST /api/admin/roles
+// @Summary      Create a role
+// @Description  Creates a new game role. Requires admin authentication.
+// @Tags         admin-roles
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      object{name=string,slug=string,video=string,description=string,team=string,abilities=[]string}  true  "Role data"
+// @Success      201   {object}  RoleResponse
+// @Failure      400   {object}  ErrorResponseBody
+// @Failure      409   {object}  ErrorResponseBody
+// @Failure      500   {object}  ErrorResponseBody
+// @Router       /admin/roles [post]
 func (h *RoleHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name        string   `json:"name"`
@@ -112,6 +140,20 @@ func (h *RoleHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateRole handles PATCH /api/admin/roles/{id}
+// @Summary      Update a role
+// @Description  Updates an existing role. Requires admin authentication.
+// @Tags         admin-roles
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path      string  true  "Role ID"
+// @Param        body  body      object{name=string,slug=string,video=string,description=string,team=string,abilities=[]string}  false  "Partial role data"
+// @Success      200   {object}  RoleResponse
+// @Failure      400   {object}  ErrorResponseBody
+// @Failure      404   {object}  ErrorResponseBody
+// @Failure      409   {object}  ErrorResponseBody
+// @Failure      500   {object}  ErrorResponseBody
+// @Router       /admin/roles/{id} [patch]
 func (h *RoleHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -179,6 +221,16 @@ func (h *RoleHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteRole handles DELETE /api/admin/roles/{id}
+// @Summary      Delete a role
+// @Description  Deletes a role. Requires admin authentication.
+// @Tags         admin-roles
+// @Security     BearerAuth
+// @Param        id   path    string  true  "Role ID"
+// @Success      204
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Failure      500  {object}  ErrorResponseBody
+// @Router       /admin/roles/{id} [delete]
 func (h *RoleHandler) DeleteRole(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)

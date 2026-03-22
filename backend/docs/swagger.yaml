@@ -1,0 +1,1253 @@
+basePath: /api
+definitions:
+  handler.AdminResponse:
+    description: Admin user data
+    properties:
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      email:
+        example: admin@example.com
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      last_login:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      updated_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      username:
+        example: admin
+        type: string
+    type: object
+  handler.ChangePasswordSuccessResponse:
+    description: Password change success response
+    properties:
+      message:
+        example: password changed successfully
+        type: string
+    type: object
+  handler.DistributeRolesSuccessResponse:
+    description: Role distribution success response
+    properties:
+      message:
+        example: roles distributed successfully
+        type: string
+    type: object
+  handler.ErrorResponseBody:
+    description: Error response body
+    properties:
+      error:
+        example: something went wrong
+        type: string
+    type: object
+  handler.GameResponse:
+    description: Game data
+    properties:
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      moderator_id:
+        example: mod-123
+        type: string
+      status:
+        enum:
+        - waiting
+        - active
+        - finished
+        example: waiting
+        type: string
+    type: object
+  handler.GameRoleResponse:
+    description: Moderator view of a player-role assignment
+    properties:
+      assigned_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      player_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      player_name:
+        example: Alice
+        type: string
+      role_id:
+        example: 550e8400-e29b-41d4-a716-446655440001
+        type: string
+      role_name:
+        example: Mafia
+        type: string
+      role_slug:
+        example: mafia
+        type: string
+      team:
+        enum:
+        - mafia
+        - village
+        - independent
+        example: mafia
+        type: string
+      video:
+        example: https://example.com/video.mp4
+        type: string
+    type: object
+  handler.LoginResponse:
+    description: Login response with token and admin info
+    properties:
+      admin:
+        $ref: '#/definitions/handler.AdminResponse'
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  handler.PlayerResponse:
+    description: Player data
+    properties:
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      game_id:
+        example: 550e8400-e29b-41d4-a716-446655440001
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      name:
+        example: Alice
+        type: string
+    type: object
+  handler.PlayerRoleResponse:
+    description: Player role assignment data
+    properties:
+      abilities:
+        example:
+        - eliminate
+        items:
+          type: string
+        type: array
+      assigned_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      description:
+        example: The mafia member eliminates villagers at night.
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      name:
+        example: Mafia
+        type: string
+      slug:
+        example: mafia
+        type: string
+      team:
+        enum:
+        - mafia
+        - village
+        - independent
+        example: mafia
+        type: string
+      video:
+        example: https://example.com/video.mp4
+        type: string
+    type: object
+  handler.RoleResponse:
+    description: Role data
+    properties:
+      abilities:
+        example:
+        - eliminate
+        items:
+          type: string
+        type: array
+      description:
+        example: The mafia member eliminates villagers at night.
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      name:
+        example: Mafia
+        type: string
+      slug:
+        example: mafia
+        type: string
+      team:
+        enum:
+        - mafia
+        - village
+        - independent
+        example: mafia
+        type: string
+      video:
+        example: https://example.com/video.mp4
+        type: string
+    type: object
+  handler.RoleTemplateResponse:
+    description: Role template data
+    properties:
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      description:
+        example: Standard 8-player game setup
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      name:
+        example: 8-player standard
+        type: string
+      player_count:
+        example: 8
+        type: integer
+      roles:
+        items:
+          $ref: '#/definitions/handler.TemplateRoleEntryResponse'
+        type: array
+      updated_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+    type: object
+  handler.TemplateRoleEntryResponse:
+    description: Role entry in a template
+    properties:
+      count:
+        example: 2
+        type: integer
+      role:
+        $ref: '#/definitions/handler.RoleResponse'
+      role_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  service.RoleSelection:
+    properties:
+      count:
+        type: integer
+      role_id:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: Mafia Night Support
+    url: https://github.com/mafia-night
+  description: REST API for the Mafia Night game platform.
+  license:
+    name: MIT
+  termsOfService: http://swagger.io/terms/
+  title: Mafia Night API
+  version: "1.0"
+paths:
+  /admin/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates an admin user and returns a JWT token.
+      parameters:
+      - description: Credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            password:
+              type: string
+            username:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Admin login
+      tags:
+      - admin-auth
+  /admin/role-templates:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new role template. Requires admin authentication.
+      parameters:
+      - description: Template data
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            description:
+              type: string
+            name:
+              type: string
+            player_count:
+              type: integer
+            roles:
+              items:
+                type: object
+              type: array
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.RoleTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Create a role template
+      tags:
+      - admin-role-templates
+  /admin/role-templates/{id}:
+    delete:
+      description: Deletes a role template. Requires admin authentication.
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Delete a role template
+      tags:
+      - admin-role-templates
+    patch:
+      consumes:
+      - application/json
+      description: Updates an existing role template. Requires admin authentication.
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Partial template data
+        in: body
+        name: body
+        schema:
+          properties:
+            description:
+              type: string
+            name:
+              type: string
+            player_count:
+              type: integer
+            roles:
+              items:
+                type: object
+              type: array
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.RoleTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Update a role template
+      tags:
+      - admin-role-templates
+  /admin/roles:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new game role. Requires admin authentication.
+      parameters:
+      - description: Role data
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            abilities:
+              items:
+                type: string
+              type: array
+            description:
+              type: string
+            name:
+              type: string
+            slug:
+              type: string
+            team:
+              type: string
+            video:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.RoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Create a role
+      tags:
+      - admin-roles
+  /admin/roles/{id}:
+    delete:
+      description: Deletes a role. Requires admin authentication.
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Delete a role
+      tags:
+      - admin-roles
+    patch:
+      consumes:
+      - application/json
+      description: Updates an existing role. Requires admin authentication.
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Partial role data
+        in: body
+        name: body
+        schema:
+          properties:
+            abilities:
+              items:
+                type: string
+              type: array
+            description:
+              type: string
+            name:
+              type: string
+            slug:
+              type: string
+            team:
+              type: string
+            video:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.RoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Update a role
+      tags:
+      - admin-roles
+  /admin/users:
+    get:
+      description: Retrieves all admin users. Requires admin authentication.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.AdminResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: List admin users
+      tags:
+      - admin-users
+    post:
+      consumes:
+      - application/json
+      description: Creates a new admin user. Requires admin authentication.
+      parameters:
+      - description: Admin data
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+            password:
+              type: string
+            username:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.AdminResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Create an admin user
+      tags:
+      - admin-users
+  /admin/users/{id}:
+    delete:
+      description: Deletes an admin user. Requires admin authentication.
+      parameters:
+      - description: Admin ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Delete an admin user
+      tags:
+      - admin-users
+    get:
+      description: Retrieves an admin user by ID. Requires admin authentication.
+      parameters:
+      - description: Admin ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.AdminResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Get an admin user
+      tags:
+      - admin-users
+    patch:
+      consumes:
+      - application/json
+      description: Updates an admin user. Requires admin authentication.
+      parameters:
+      - description: Admin ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Partial admin data
+        in: body
+        name: body
+        schema:
+          properties:
+            email:
+              type: string
+            is_active:
+              type: boolean
+            username:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.AdminResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Update an admin user
+      tags:
+      - admin-users
+  /admin/users/{id}/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Changes the password for an admin user. Requires admin authentication.
+      parameters:
+      - description: Admin ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Password change data
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            new_password:
+              type: string
+            old_password:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ChangePasswordSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Change admin password
+      tags:
+      - admin-users
+  /games:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new Mafia game session. The caller becomes the moderator.
+      parameters:
+      - description: Moderator identifier
+        in: header
+        name: X-Moderator-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.GameResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Create a new game
+      tags:
+      - games
+  /games/{id}:
+    delete:
+      description: Deletes a game. Only the moderator can delete.
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Moderator identifier
+        in: header
+        name: X-Moderator-ID
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Delete a game
+      tags:
+      - games
+    get:
+      description: Retrieves a game by its ID.
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.GameResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Get a game by ID
+      tags:
+      - games
+    patch:
+      consumes:
+      - application/json
+      description: Updates the status of a game. Only the moderator can update.
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Moderator identifier
+        in: header
+        name: X-Moderator-ID
+        required: true
+        type: string
+      - description: New status
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            status:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.GameResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Update game status
+      tags:
+      - games
+  /games/{id}/distribute-roles:
+    post:
+      consumes:
+      - application/json
+      description: Randomly assigns roles to all players. Only the moderator can trigger
+        this.
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Moderator identifier
+        in: header
+        name: X-Moderator-ID
+        required: true
+        type: string
+      - description: Role selections
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            roles:
+              items:
+                $ref: '#/definitions/service.RoleSelection'
+              type: array
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.DistributeRolesSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Distribute roles to players
+      tags:
+      - games
+  /games/{id}/join:
+    post:
+      consumes:
+      - application/json
+      description: Allows a player to join a game by name.
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Player name
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.PlayerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Join a game
+      tags:
+      - games
+  /games/{id}/players:
+    get:
+      description: Retrieves all players in a game.
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.PlayerResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Get players in a game
+      tags:
+      - games
+  /games/{id}/players/{player_id}:
+    delete:
+      description: Removes a player from the game.
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Player ID
+        in: path
+        name: player_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Remove a player from a game
+      tags:
+      - games
+  /games/{id}/players/{player_id}/role:
+    get:
+      description: Retrieves the role assigned to a specific player.
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Player ID
+        in: path
+        name: player_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.PlayerRoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Get a player's role
+      tags:
+      - games
+  /games/{id}/roles:
+    get:
+      description: Returns all player-role assignments for a game. Only the moderator
+        can view this.
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Moderator identifier
+        in: header
+        name: X-Moderator-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.GameRoleResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Get all role assignments in a game
+      tags:
+      - games
+  /role-templates:
+    get:
+      description: Retrieves all role templates. Optionally filter by player_count.
+      parameters:
+      - description: Filter by player count
+        in: query
+        name: player_count
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.RoleTemplateResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: List role templates
+      tags:
+      - role-templates
+  /role-templates/{id}:
+    get:
+      description: Retrieves a single role template with its role assignments.
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.RoleTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Get a role template by ID
+      tags:
+      - role-templates
+  /roles:
+    get:
+      description: Retrieves all available roles in the game.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.RoleResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: List all roles
+      tags:
+      - roles
+  /roles/{slug}:
+    get:
+      description: Retrieves a single role by its slug identifier.
+      parameters:
+      - description: Role slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.RoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponseBody'
+      summary: Get a role by slug
+      tags:
+      - roles
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and the JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

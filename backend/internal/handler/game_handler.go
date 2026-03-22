@@ -22,6 +22,16 @@ func NewGameHandler(gameService *service.GameService) *GameHandler {
 }
 
 // CreateGame handles POST /api/games
+// @Summary      Create a new game
+// @Description  Creates a new Mafia game session. The caller becomes the moderator.
+// @Tags         games
+// @Accept       json
+// @Produce      json
+// @Param        X-Moderator-ID  header    string           true  "Moderator identifier"
+// @Success      201             {object}  GameResponse
+// @Failure      400             {object}  ErrorResponseBody
+// @Failure      500             {object}  ErrorResponseBody
+// @Router       /games [post]
 func (h *GameHandler) CreateGame(w http.ResponseWriter, r *http.Request) {
 	moderatorID := r.Header.Get("X-Moderator-ID")
 	if moderatorID == "" {
@@ -39,6 +49,15 @@ func (h *GameHandler) CreateGame(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetGame handles GET /api/games/{id}
+// @Summary      Get a game by ID
+// @Description  Retrieves a game by its ID.
+// @Tags         games
+// @Produce      json
+// @Param        id   path      string  true  "Game ID"
+// @Success      200  {object}  GameResponse
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Router       /games/{id} [get]
 func (h *GameHandler) GetGame(w http.ResponseWriter, r *http.Request) {
 	gameID := chi.URLParam(r, "id")
 
@@ -56,6 +75,19 @@ func (h *GameHandler) GetGame(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateGameStatus handles PATCH /api/games/{id}
+// @Summary      Update game status
+// @Description  Updates the status of a game. Only the moderator can update.
+// @Tags         games
+// @Accept       json
+// @Produce      json
+// @Param        id              path      string                  true  "Game ID"
+// @Param        X-Moderator-ID  header    string                  true  "Moderator identifier"
+// @Param        body            body      object{status=string}   true  "New status"
+// @Success      200             {object}  GameResponse
+// @Failure      400             {object}  ErrorResponseBody
+// @Failure      403             {object}  ErrorResponseBody
+// @Failure      404             {object}  ErrorResponseBody
+// @Router       /games/{id} [patch]
 func (h *GameHandler) UpdateGameStatus(w http.ResponseWriter, r *http.Request) {
 	gameID := chi.URLParam(r, "id")
 	moderatorID := r.Header.Get("X-Moderator-ID")
@@ -92,6 +124,16 @@ func (h *GameHandler) UpdateGameStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteGame handles DELETE /api/games/{id}
+// @Summary      Delete a game
+// @Description  Deletes a game. Only the moderator can delete.
+// @Tags         games
+// @Param        id              path    string  true  "Game ID"
+// @Param        X-Moderator-ID  header  string  true  "Moderator identifier"
+// @Success      204
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      403  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Router       /games/{id} [delete]
 func (h *GameHandler) DeleteGame(w http.ResponseWriter, r *http.Request) {
 	gameID := chi.URLParam(r, "id")
 	moderatorID := r.Header.Get("X-Moderator-ID")
@@ -118,6 +160,19 @@ func (h *GameHandler) DeleteGame(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// JoinGame handles POST /api/games/{id}/join
+// @Summary      Join a game
+// @Description  Allows a player to join a game by name.
+// @Tags         games
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string              true  "Game ID"
+// @Param        body  body      object{name=string} true  "Player name"
+// @Success      200   {object}  PlayerResponse
+// @Failure      400   {object}  ErrorResponseBody
+// @Failure      404   {object}  ErrorResponseBody
+// @Failure      409   {object}  ErrorResponseBody
+// @Router       /games/{id}/join [post]
 func (h *GameHandler) JoinGame(w http.ResponseWriter, r *http.Request) {
 	gameID := chi.URLParam(r, "id")
 	var req struct {
@@ -155,6 +210,15 @@ func (h *GameHandler) JoinGame(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPlayers handles GET /api/games/{id}/players
+// @Summary      Get players in a game
+// @Description  Retrieves all players in a game.
+// @Tags         games
+// @Produce      json
+// @Param        id   path      string  true  "Game ID"
+// @Success      200  {array}   PlayerResponse
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Router       /games/{id}/players [get]
 func (h *GameHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
 	gameID := chi.URLParam(r, "id")
 
@@ -177,6 +241,15 @@ func (h *GameHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
 }
 
 // RemovePlayer handles DELETE /api/games/{id}/players/{player_id}
+// @Summary      Remove a player from a game
+// @Description  Removes a player from the game.
+// @Tags         games
+// @Param        id         path    string  true  "Game ID"
+// @Param        player_id  path    string  true  "Player ID"
+// @Success      204
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Router       /games/{id}/players/{player_id} [delete]
 func (h *GameHandler) RemovePlayer(w http.ResponseWriter, r *http.Request) {
 	gameID := chi.URLParam(r, "id")
 	playerID := chi.URLParam(r, "player_id")
@@ -214,6 +287,20 @@ func playerToJSON(p *ent.Player) map[string]any {
 }
 
 // DistributeRoles handles POST /api/games/{id}/distribute-roles
+// @Summary      Distribute roles to players
+// @Description  Randomly assigns roles to all players. Only the moderator can trigger this.
+// @Tags         games
+// @Accept       json
+// @Produce      json
+// @Param        id              path      string                                         true  "Game ID"
+// @Param        X-Moderator-ID  header    string                                         true  "Moderator identifier"
+// @Param        body            body      object{roles=[]service.RoleSelection}          true  "Role selections"
+// @Success      200             {object}  DistributeRolesSuccessResponse
+// @Failure      400             {object}  ErrorResponseBody
+// @Failure      403             {object}  ErrorResponseBody
+// @Failure      409             {object}  ErrorResponseBody
+// @Failure      500             {object}  ErrorResponseBody
+// @Router       /games/{id}/distribute-roles [post]
 func (h *GameHandler) DistributeRoles(w http.ResponseWriter, r *http.Request) {
 	gameID := chi.URLParam(r, "id")
 	moderatorID := r.Header.Get("X-Moderator-ID")
@@ -260,6 +347,17 @@ func (h *GameHandler) DistributeRoles(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPlayerRole handles GET /api/games/{id}/players/{player_id}/role
+// @Summary      Get a player's role
+// @Description  Retrieves the role assigned to a specific player.
+// @Tags         games
+// @Produce      json
+// @Param        id         path      string  true  "Game ID"
+// @Param        player_id  path      string  true  "Player ID"
+// @Success      200        {object}  PlayerRoleResponse
+// @Failure      400        {object}  ErrorResponseBody
+// @Failure      404        {object}  ErrorResponseBody
+// @Failure      500        {object}  ErrorResponseBody
+// @Router       /games/{id}/players/{player_id}/role [get]
 func (h *GameHandler) GetPlayerRole(w http.ResponseWriter, r *http.Request) {
 	gameID := chi.URLParam(r, "id")
 	playerID := chi.URLParam(r, "player_id")
@@ -294,6 +392,17 @@ func (h *GameHandler) GetPlayerRole(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetGameRoles handles GET /api/games/{id}/roles (moderator view)
+// @Summary      Get all role assignments in a game
+// @Description  Returns all player-role assignments for a game. Only the moderator can view this.
+// @Tags         games
+// @Produce      json
+// @Param        id              path      string  true  "Game ID"
+// @Param        X-Moderator-ID  header    string  true  "Moderator identifier"
+// @Success      200             {array}   GameRoleResponse
+// @Failure      400             {object}  ErrorResponseBody
+// @Failure      403             {object}  ErrorResponseBody
+// @Failure      404             {object}  ErrorResponseBody
+// @Router       /games/{id}/roles [get]
 func (h *GameHandler) GetGameRoles(w http.ResponseWriter, r *http.Request) {
 	gameID := chi.URLParam(r, "id")
 	moderatorID := r.Header.Get("X-Moderator-ID")

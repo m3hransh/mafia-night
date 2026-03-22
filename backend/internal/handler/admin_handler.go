@@ -27,6 +27,17 @@ func NewAdminHandler(adminService *service.AdminService, jwtService *auth.JWTSer
 }
 
 // Login handles POST /api/admin/login
+// @Summary      Admin login
+// @Description  Authenticates an admin user and returns a JWT token.
+// @Tags         admin-auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      object{username=string,password=string}  true  "Credentials"
+// @Success      200   {object}  LoginResponse
+// @Failure      400   {object}  ErrorResponseBody
+// @Failure      401   {object}  ErrorResponseBody
+// @Failure      500   {object}  ErrorResponseBody
+// @Router       /admin/login [post]
 func (h *AdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
@@ -62,6 +73,18 @@ func (h *AdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateAdmin handles POST /api/admin/users
+// @Summary      Create an admin user
+// @Description  Creates a new admin user. Requires admin authentication.
+// @Tags         admin-users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      object{username=string,email=string,password=string}  true  "Admin data"
+// @Success      201   {object}  AdminResponse
+// @Failure      400   {object}  ErrorResponseBody
+// @Failure      409   {object}  ErrorResponseBody
+// @Failure      500   {object}  ErrorResponseBody
+// @Router       /admin/users [post]
 func (h *AdminHandler) CreateAdmin(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
@@ -92,6 +115,14 @@ func (h *AdminHandler) CreateAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListAdmins handles GET /api/admin/users
+// @Summary      List admin users
+// @Description  Retrieves all admin users. Requires admin authentication.
+// @Tags         admin-users
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   AdminResponse
+// @Failure      500  {object}  ErrorResponseBody
+// @Router       /admin/users [get]
 func (h *AdminHandler) ListAdmins(w http.ResponseWriter, r *http.Request) {
 	admins, err := h.adminService.ListAdmins(r.Context())
 	if err != nil {
@@ -108,6 +139,17 @@ func (h *AdminHandler) ListAdmins(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAdmin handles GET /api/admin/users/{id}
+// @Summary      Get an admin user
+// @Description  Retrieves an admin user by ID. Requires admin authentication.
+// @Tags         admin-users
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      string  true  "Admin ID"
+// @Success      200  {object}  AdminResponse
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Failure      500  {object}  ErrorResponseBody
+// @Router       /admin/users/{id} [get]
 func (h *AdminHandler) GetAdmin(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -130,6 +172,20 @@ func (h *AdminHandler) GetAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateAdmin handles PATCH /api/admin/users/{id}
+// @Summary      Update an admin user
+// @Description  Updates an admin user. Requires admin authentication.
+// @Tags         admin-users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path      string  true   "Admin ID"
+// @Param        body  body      object{username=string,email=string,is_active=bool}  false  "Partial admin data"
+// @Success      200   {object}  AdminResponse
+// @Failure      400   {object}  ErrorResponseBody
+// @Failure      404   {object}  ErrorResponseBody
+// @Failure      409   {object}  ErrorResponseBody
+// @Failure      500   {object}  ErrorResponseBody
+// @Router       /admin/users/{id} [patch]
 func (h *AdminHandler) UpdateAdmin(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -167,6 +223,20 @@ func (h *AdminHandler) UpdateAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 // ChangePassword handles POST /api/admin/users/{id}/change-password
+// @Summary      Change admin password
+// @Description  Changes the password for an admin user. Requires admin authentication.
+// @Tags         admin-users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path      string  true  "Admin ID"
+// @Param        body  body      object{old_password=string,new_password=string}  true  "Password change data"
+// @Success      200   {object}  ChangePasswordSuccessResponse
+// @Failure      400   {object}  ErrorResponseBody
+// @Failure      401   {object}  ErrorResponseBody
+// @Failure      404   {object}  ErrorResponseBody
+// @Failure      500   {object}  ErrorResponseBody
+// @Router       /admin/users/{id}/change-password [post]
 func (h *AdminHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -205,6 +275,16 @@ func (h *AdminHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteAdmin handles DELETE /api/admin/users/{id}
+// @Summary      Delete an admin user
+// @Description  Deletes an admin user. Requires admin authentication.
+// @Tags         admin-users
+// @Security     BearerAuth
+// @Param        id   path    string  true  "Admin ID"
+// @Success      204
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Failure      500  {object}  ErrorResponseBody
+// @Router       /admin/users/{id} [delete]
 func (h *AdminHandler) DeleteAdmin(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
