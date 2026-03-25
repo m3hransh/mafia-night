@@ -4,7 +4,7 @@ import { useReducer, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { savePlayerGame, clearPlayerGame, validatePlayerGameState } from '@/lib/gameStorage';
-import { getPlayerRole, Role, Player } from '@/lib/api';
+import { getPlayerRole, getSelectedRoles, Role, Player, SelectedRoleEntry } from '@/lib/api';
 import { JoinLobby } from '@/components/JoinLobby';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 import { AssignedRole } from '@/components/AssignedRole';
@@ -21,6 +21,7 @@ type State = {
   playerId: string;
   players: Player[];
   assignedRole: Role | null;
+  selectedRoles: SelectedRoleEntry[];
   leaving: boolean;
 };
 
@@ -31,6 +32,7 @@ const initialState: State = {
   playerId: '',
   players: [],
   assignedRole: null,
+  selectedRoles: [],
   leaving: false,
 };
 
@@ -45,6 +47,7 @@ type Action =
   | { type: 'PLAYER_LEFT'; playerId: string }
   | { type: 'PLAYERS_LOADED'; players: Player[] }
   | { type: 'ROLE_ASSIGNED'; role: Role }
+  | { type: 'SELECTED_ROLES_LOADED'; roles: SelectedRoleEntry[] }
   | { type: 'LEAVING' };
 
 function reducer(state: State, action: Action): State {
@@ -87,6 +90,9 @@ function reducer(state: State, action: Action): State {
     case 'ROLE_ASSIGNED':
       return { ...state, phase: 'role-assigned', assignedRole: action.role };
 
+    case 'SELECTED_ROLES_LOADED':
+      return { ...state, selectedRoles: action.roles };
+
     case 'LEAVING':
       return { ...state, leaving: true };
 
@@ -99,7 +105,7 @@ function reducer(state: State, action: Action): State {
 
 function JoinGameContent() {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { phase, gameCode, playerName, playerId, players, assignedRole, leaving } = state;
+  const { phase, gameCode, playerName, playerId, players, assignedRole, selectedRoles, leaving } = state;
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -151,11 +157,30 @@ function JoinGameContent() {
     }
   }, [searchParams, phase]);
 
+  // Fetch selected roles whenever we're in the waiting phase
+  useEffect(() => {
+    if (phase !== 'waiting' || !gameCode) return;
+    getSelectedRoles(gameCode).then(roles => {
+      if (roles.length > 0) dispatch({ type: 'SELECTED_ROLES_LOADED', roles });
+    }).catch(() => {});
+  }, [phase, gameCode]);
+
+  const refreshSelectedRoles = async () => {
+    if (!gameCode) return;
+    try {
+      const roles = await getSelectedRoles(gameCode);
+      dispatch({ type: 'SELECTED_ROLES_LOADED', roles });
+    } catch {
+      // ignore
+    }
+  };
+
   useGameWebSocket({
     gameId: gameCode,
     enabled: phase === 'waiting',
     onPlayerJoined: (player) => dispatch({ type: 'PLAYER_JOINED', player }),
     onPlayerLeft: (pid) => dispatch({ type: 'PLAYER_LEFT', playerId: pid }),
+    onRolesSelected: refreshSelectedRoles,
     onRolesDistributed: async () => {
       if (gameCode && playerId) {
         try {
@@ -171,8 +196,13 @@ function JoinGameContent() {
       router.push('/');
     },
     onUpdate: (update) => {
-      if (update.type === 'initial_state' && update.payload?.players) {
-        dispatch({ type: 'PLAYERS_LOADED', players: update.payload.players });
+      if (update.type === 'initial_state') {
+        if (update.payload?.players) {
+          dispatch({ type: 'PLAYERS_LOADED', players: update.payload.players });
+        }
+        if (update.payload?.selected_roles?.length > 0) {
+          dispatch({ type: 'SELECTED_ROLES_LOADED', roles: update.payload.selected_roles });
+        }
       }
     },
   });
@@ -218,7 +248,13 @@ function JoinGameContent() {
           {phase === 'not-joined' ? (
             <JoinGameForm gameId={gameCode} onJoinGame={joinGameHandler} />
           ) : (
-            <JoinLobby players={players} playerName={playerName} leaving={leaving} onLeaveGame={leaveGameHandler} />
+            <JoinLobby
+              players={players}
+              playerName={playerName}
+              leaving={leaving}
+              onLeaveGame={leaveGameHandler}
+              selectedRoles={selectedRoles}
+            />
           )}
         </div>
       )}

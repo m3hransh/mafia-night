@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import { Button } from './Button';
 import { useCreateGameContext } from '@/app/create-game/context';
+import { SelectedRolesDisplay } from './SelectedRolesDisplay';
+import type { SelectedRoleEntry } from '@/lib/api';
 import type { Role } from '@/lib/types';
-
-const teamColors = { mafia: 'red', village: 'green', independent: 'yellow' } as const;
 
 function SelectedRolesSummary() {
   const { state, allRoles } = useCreateGameContext();
@@ -16,37 +16,34 @@ function SelectedRolesSummary() {
     [selectedRoles]
   );
 
-  const entries = useMemo(() =>
+  const entries = useMemo((): SelectedRoleEntry[] =>
     Array.from(selectedRoles.entries())
-      .map(([roleId, count]) => ({ role: allRoles.find(r => r.id === roleId), count }))
-      .filter((e): e is { role: Role; count: number } => !!e.role),
+      .map(([roleId, count]) => {
+        const role = allRoles.find(r => r.id === roleId);
+        if (!role) return null;
+        return { role_id: role.id, name: role.name, slug: role.slug, team: role.team, video: role.video, count } satisfies SelectedRoleEntry;
+      })
+      .filter((e): e is SelectedRoleEntry => e !== null),
     [selectedRoles, allRoles]
   );
 
-  if (selectedRoles.size === 0) return null;
-
   const isComplete = total === playerCount;
 
+  const badge = (
+    <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
+      isComplete ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+    }`}>
+      {total} / {playerCount} {isComplete ? '✓ Ready' : 'slots'}
+    </span>
+  );
+
   return (
-    <div className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-purple-500/30">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-white">Pre-selected Roles</h3>
-        <span className={`text-sm font-semibold px-3 py-1 rounded-full ${isComplete ? 'bg-green-500/20 text-green-400'
-          : 'bg-yellow-500/20 text-yellow-400'}`}>
-          {total} / {playerCount} {isComplete ? '✓ Ready' : 'slots'}
-        </span>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {entries.map(({ role, count }) => (
-          <div key={role.id} className={`flex items-center gap-2 bg-black/30 border border-${teamColors[role.team as keyof
-            typeof teamColors]}-500/30 rounded-lg px-3 py-2`}>
-            <span className={`w-2 h-2 rounded-full bg-${teamColors[role.team as keyof typeof teamColors]}-500`} />
-            <span className="text-white text-sm font-medium">{role.name}</span>
-            <span className={`text-${teamColors[role.team as keyof typeof teamColors]}-400 text-sm font-bold`}>×{count}</span>
-          </div>
-        ))}
-      </div>
-    </div>
+    <SelectedRolesDisplay
+      roles={entries}
+      title="Pre-selected Roles"
+      badge={badge}
+      footer={null}
+    />
   );
 }
 
@@ -66,9 +63,7 @@ export function WaitingForPlayers() {
 
   const getJoinUrl = () => `${window.location.origin}/join-game?code=${game.id}`;
   const handleStartGame = () => {
-    handleRolesDistribute(
-      Array.from(selectedRoles.entries()).map(([roleId, count]) => ({ roleId, count }))
-    );
+    handleRolesDistribute();
   };
 
   return (

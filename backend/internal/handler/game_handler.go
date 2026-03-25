@@ -475,36 +475,52 @@ func (h *GameHandler) GetGameRoles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Transform to JSON response grouped by team
+	// Return only fully-assigned roles (player+role pairs)
 	response := make([]map[string]any, 0, len(gameRoles))
 	for _, gameRole := range gameRoles {
 		player := gameRole.Edges.Player
 		role := gameRole.Edges.Role
-
-		if player != nil && role != nil {
-			response = append(response, map[string]any{
-				"player_id":   player.ID,
-				"player_name": player.Name,
-				"role_id":     role.ID,
-				"role_name":   role.Name,
-				"role_slug":   role.Slug,
-				"video":       role.Video,
-				"team":        role.Team,
-				"assigned_at": gameRole.AssignedAt,
-			})
+		if player == nil || role == nil {
+			continue
 		}
-		if role != nil {
-			response = append(response, map[string]any{
-				"role_id":     role.ID,
-				"role_name":   role.Name,
-				"role_slug":   role.Slug,
-				"video":       role.Video,
-				"team":        role.Team,
-				"assigned_at": gameRole.AssignedAt,
-			})
-		}
+		response = append(response, map[string]any{
+			"player_id":   player.ID,
+			"player_name": player.Name,
+			"role_id":     role.ID,
+			"role_name":   role.Name,
+			"role_slug":   role.Slug,
+			"video":       role.Video,
+			"team":        role.Team,
+			"assigned_at": gameRole.AssignedAt,
+		})
 	}
 
 	JSONResponse(w, http.StatusOK, response)
+}
+
+// GetSelectedRoles handles GET /api/games/{id}/selected-roles
+// @Summary      Get selected (unassigned) roles for a game
+// @Description  Returns the roles the moderator has selected but not yet distributed to players. Public endpoint.
+// @Tags         games
+// @Produce      json
+// @Param        id   path      string  true  "Game ID"
+// @Success      200  {array}   service.SelectedRoleEntry
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Router       /games/{id}/selected-roles [get]
+func (h *GameHandler) GetSelectedRoles(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+
+	entries, err := h.gameService.GetSelectedRoles(r.Context(), gameID)
+	if err != nil {
+		if errors.Is(err, service.ErrEmptyGameID) {
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		ErrorResponse(w, http.StatusNotFound, "game not found")
+		return
+	}
+
+	JSONResponse(w, http.StatusOK, entries)
 }
 

@@ -124,6 +124,7 @@ func main() {
 			r.Delete("/{id}/players/{player_id}", handler.NotifyPlayerUpdate(gameHandler.RemovePlayer, wsHandler, handler.PlayerLeft))
 			r.Post("/{id}/select-roles", handler.NotifyPlayerUpdate(gameHandler.SelectRoles, wsHandler, handler.RolesSelected))
 			r.Post("/{id}/distribute-roles", handler.NotifyPlayerUpdate(gameHandler.DistributeRoles, wsHandler, handler.RolesDistributed))
+			r.Get("/{id}/selected-roles", gameHandler.GetSelectedRoles)
 			r.Get("/{id}/roles", gameHandler.GetGameRoles)
 			r.Get("/{id}/players/{player_id}/role", gameHandler.GetPlayerRole)
 			r.Get("/{id}/ws", wsHandler.HandleGameWebSocket)

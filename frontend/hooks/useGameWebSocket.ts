@@ -4,6 +4,7 @@ export type GameUpdateType =
   | 'initial_state'
   | 'player_joined' 
   | 'player_left' 
+  | 'roles_selected'
   | 'roles_distributed'
   | 'game_deleted';
 
@@ -18,6 +19,7 @@ interface UseGameWebSocketOptions {
   onUpdate?: (update: GameUpdate) => void;
   onPlayerJoined?: (player: any) => void;
   onPlayerLeft?: (playerId: string) => void;
+  onRolesSelected?: () => void;
   onRolesDistributed?: () => void;
   onGameDeleted?: () => void;
   enabled?: boolean;
@@ -28,6 +30,7 @@ export function useGameWebSocket({
   onUpdate,
   onPlayerJoined,
   onPlayerLeft,
+  onRolesSelected,
   onRolesDistributed,
   onGameDeleted,
   enabled = true,
@@ -41,6 +44,7 @@ export function useGameWebSocket({
   const onUpdateRef = useRef(onUpdate);
   const onPlayerJoinedRef = useRef(onPlayerJoined);
   const onPlayerLeftRef = useRef(onPlayerLeft);
+  const onRolesSelectedRef = useRef(onRolesSelected);
   const onRolesDistributedRef = useRef(onRolesDistributed);
   const onGameDeletedRef = useRef(onGameDeleted);
 
@@ -48,9 +52,10 @@ export function useGameWebSocket({
     onUpdateRef.current = onUpdate;
     onPlayerJoinedRef.current = onPlayerJoined;
     onPlayerLeftRef.current = onPlayerLeft;
+    onRolesSelectedRef.current = onRolesSelected;
     onRolesDistributedRef.current = onRolesDistributed;
     onGameDeletedRef.current = onGameDeleted;
-  }, [onUpdate, onPlayerJoined, onPlayerLeft, onRolesDistributed, onGameDeleted]);
+  }, [onUpdate, onPlayerJoined, onPlayerLeft, onRolesSelected, onRolesDistributed, onGameDeleted]);
 
   const connect = useCallback(() => {
     if (!enabled || !gameId) return;
@@ -82,6 +87,9 @@ export function useGameWebSocket({
               break;
             case 'player_left':
               onPlayerLeftRef.current?.(update.payload?.player_id);
+              break;
+            case 'roles_selected':
+              onRolesSelectedRef.current?.();
               break;
             case 'roles_distributed':
               onRolesDistributedRef.current?.();

@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { apiClient } from '@/lib/api-client';
 import type { Role } from '@/lib/types';
 import { saveModeratorGame, clearModeratorGame, validateModeratorGameState } from '@/lib/gameStorage';
-import { deleteGame, removePlayer, distributeRoles, getGameRoles, PlayerRoleAssignment } from '@/lib/api';
+import { deleteGame, removePlayer, distributeRoles, selectRoles, getSelectedRoles, getGameRoles, PlayerRoleAssignment } from '@/lib/api';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ export type State = {
 
 type Action =
   | { type: 'INIT'; moderatorId: string }
-  | { type: 'RESTORE'; game: Game; moderatorId: string; phase: GamePhase; roleAssignments: PlayerRoleAssignment[] }
+  | { type: 'RESTORE'; game: Game; moderatorId: string; phase: GamePhase; roleAssignments: PlayerRoleAssignment[]; selectedRoles: Map<string, number> }
   | { type: 'CREATING' }
   | { type: 'CREATED'; game: Game }
   | { type: 'CREATE_FAILED'; error: string }
@@ -111,7 +111,7 @@ function reducer(state: State, action: Action): State {
     case 'INIT':
       return { ...state, moderatorId: action.moderatorId };
     case 'RESTORE':
-      return { ...state, game: action.game, moderatorId: action.moderatorId, phase: action.phase, roleAssignments: action.roleAssignments };
+      return { ...state, game: action.game, moderatorId: action.moderatorId, phase: action.phase, roleAssignments: action.roleAssignments, selectedRoles: action.selectedRoles };
     case 'CREATING':
       return { ...state, loading: true, error: '' };
     case 'CREATED':
@@ -165,7 +165,7 @@ type CreateGameContextValue = {
   closeGame: () => Promise<void>;
   handleRemovePlayer: (playerId: string, playerName: string) => Promise<void>;
   handleStartRoleSelection: () => void;
-  handleRolesDistribute: (selectedRoles: { roleId: string; count: number }[]) => Promise<void>;
+  handleRolesDistribute: () => Promise<void>;
   handleCancelRoleSelection: () => void;
   handleRolesChanged: (roles: Map<string, number>) => void;
 };
@@ -193,7 +193,16 @@ async function restoreModeratorSession(
       const res = await fetch(`${apiBaseUrl}/api/games/${validatedState.gameId}`, { signal });
       if (res.ok) {
         const gameData = await res.json();
-        const roles = await getGameRoles(validatedState.gameId, validatedState.moderatorId);
+        const [roles, selectedEntries] = await Promise.all([
+          getGameRoles(validatedState.gameId, validatedState.moderatorId),
+          getSelectedRoles(validatedState.gameId),
+        ]);
+
+        // Convert the backend's selected-role entries into the Map<roleId, count> format
+        const selectedRoles = new Map<string, number>(
+          selectedEntries.map(e => [e.role_id, e.count])
+        );
+
         if (!signal.aborted) {
           dispatch({
             type: 'RESTORE',
@@ -201,6 +210,7 @@ async function restoreModeratorSession(
             moderatorId: validatedState.moderatorId,
             phase: roles?.length > 0 ? 'game-started' : validatedState.phase,
             roleAssignments: roles ?? [],
+            selectedRoles,
           });
         }
       } else {
@@ -337,11 +347,11 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const handleRolesDistribute = async (selectedRoles: { roleId: string; count: number }[]) => {
+  const handleRolesDistribute = async () => {
     if (!game) return;
     dispatch({ type: 'DISTRIBUTING' });
     try {
-      await distributeRoles(game.id, moderatorId, selectedRoles.map(r => ({ role_id: r.roleId, count: r.count })));
+      await distributeRoles(game.id, moderatorId);
       const assignments = await getGameRoles(game.id, moderatorId);
       dispatch({ type: 'DISTRIBUTED', roleAssignments: assignments });
       saveModeratorGame(game.id, moderatorId, 'game-started');
@@ -355,8 +365,17 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     if (game) saveModeratorGame(game.id, moderatorId, 'waiting-for-players');
   };
 
-  const handleRolesChanged = (roles: Map<string, number>) =>
+  const handleRolesChanged = (roles: Map<string, number>) => {
     dispatch({ type: 'ROLES_CHANGED', roles });
+    // Persist every change to the backend so players always see the latest selection
+    if (game && roles.size > 0) {
+      selectRoles(
+        game.id,
+        moderatorId,
+        Array.from(roles.entries()).map(([role_id, count]) => ({ role_id, count }))
+      ).catch(() => {});
+    }
+  };
 
   const value = useMemo(() => ({
     state,

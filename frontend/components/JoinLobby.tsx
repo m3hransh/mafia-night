@@ -1,14 +1,17 @@
-import {Player} from "@/lib/api";
+import { Player } from "@/lib/api";
+import type { SelectedRoleEntry } from '@/lib/api';
 import { Button } from './Button';
+import { SelectedRolesDisplay } from './SelectedRolesDisplay';
 
 interface JoinLobbyProps {
     playerName: string;
     players: Player[];
     onLeaveGame: () => void;
     leaving: boolean;
+    selectedRoles?: SelectedRoleEntry[];
 }
 
-export function JoinLobby({ playerName, players, onLeaveGame, leaving }: JoinLobbyProps) {
+export function JoinLobby({ playerName, players, onLeaveGame, leaving, selectedRoles = [] }: JoinLobbyProps) {
   const handleLeaveClick = () => {
     onLeaveGame();
   }
@@ -56,6 +59,11 @@ export function JoinLobby({ playerName, players, onLeaveGame, leaving }: JoinLob
           </div>
         )}
       </div>
+
+      {/* Selected Roles (shown once moderator has selected them) */}
+      {selectedRoles.length > 0 && (
+        <SelectedRolesDisplay roles={selectedRoles} />
+      )}
 
       <div className="text-center">
         <p className="text-purple-300 mb-6">Waiting for the game to start...</p>

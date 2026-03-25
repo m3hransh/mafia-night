@@ -368,13 +368,18 @@ func (h *WebSocketHub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 					"created_at": player.CreatedAt,
 				}
 			}
-			
+
+			selectedRoles, _ := h.gameService.GetSelectedRoles(ctx, gameID)
+
 			update := GameUpdate{
-				Type:    "initial_state",
-				GameID:  gameID,
-				Payload: map[string]any{"players": playersJSON},
+				Type:   "initial_state",
+				GameID: gameID,
+				Payload: map[string]any{
+					"players":        playersJSON,
+					"selected_roles": selectedRoles,
+				},
 			}
-			
+
 			if msg, err := json.Marshal(update); err == nil {
 				select {
 				case client.send <- msg:

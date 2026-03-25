@@ -409,7 +409,64 @@ func (s *GameService) DistributeRoles(ctx context.Context, gameID string, modera
 	return tx.Commit()
 }
 
-// GetPlayerRole retrieves the assigned role for a player
+// SelectedRoleEntry holds a role and how many times it was selected.
+type SelectedRoleEntry struct {
+	RoleID string `json:"role_id"`
+	Name   string `json:"name"`
+	Slug   string `json:"slug"`
+	Team   string `json:"team"`
+	Video  string `json:"video"`
+	Count  int    `json:"count"`
+}
+
+// GetSelectedRoles returns the roles the moderator has selected but not yet distributed.
+func (s *GameService) GetSelectedRoles(ctx context.Context, gameID string) ([]SelectedRoleEntry, error) {
+	if gameID == "" {
+		return nil, ErrEmptyGameID
+	}
+
+	_, err := s.GetGameByID(ctx, gameID)
+	if err != nil {
+		return nil, err
+	}
+
+	gameRoles, err := s.client.GameRole.
+		Query().
+		Where(gamerole.GameID(gameID), gamerole.PlayerIDIsNil()).
+		WithRole().
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Aggregate counts per role
+	order := []string{}
+	counts := map[string]*SelectedRoleEntry{}
+	for _, gr := range gameRoles {
+		r := gr.Edges.Role
+		if r == nil {
+			continue
+		}
+		id := r.ID.String()
+		if _, ok := counts[id]; !ok {
+			order = append(order, id)
+			counts[id] = &SelectedRoleEntry{
+				RoleID: id,
+				Name:   r.Name,
+				Slug:   r.Slug,
+				Team:   string(r.Team),
+				Video:  r.Video,
+			}
+		}
+		counts[id].Count++
+	}
+
+	result := make([]SelectedRoleEntry, 0, len(order))
+	for _, id := range order {
+		result = append(result, *counts[id])
+	}
+	return result, nil
+}
 func (s *GameService) GetPlayerRole(ctx context.Context, gameID string, playerID string) (*ent.GameRole, error) {
 	if gameID == "" {
 		return nil, ErrEmptyGameID

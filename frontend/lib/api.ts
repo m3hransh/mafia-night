@@ -128,12 +128,51 @@ export async function removePlayer(
 }
 
 /**
+ * Selects roles for a game (persists without assigning to players).
+ * Can be called multiple times to update the selection.
+ */
+export async function selectRoles(
+  gameId: string,
+  moderatorId: string,
+  roles: { role_id: string; count: number }[]
+): Promise<void> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/select-roles`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Moderator-ID': moderatorId },
+    body: JSON.stringify({ roles }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new APIError(res.status, err.error || 'Failed to select roles');
+  }
+}
+
+export interface SelectedRoleEntry {
+  role_id: string;
+  name: string;
+  slug: string;
+  team: 'mafia' | 'village' | 'independent';
+  video: string;
+  count: number;
+}
+
+/**
+ * Gets the roles the moderator has selected but not yet distributed (public endpoint).
+ */
+export async function getSelectedRoles(gameId: string): Promise<SelectedRoleEntry[]> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/selected-roles`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+/**
  * Distributes roles to players
  */
 export async function distributeRoles(
   gameId: string,
   moderatorId: string,
-  roles: { role_id: string; count: number }[]
 ): Promise<void> {
   const { error, response } = await apiClient.POST(
     "/games/{id}/distribute-roles",
@@ -142,7 +181,7 @@ export async function distributeRoles(
         path: { id: gameId },
         header: { "X-Moderator-ID": moderatorId },
       },
-      body: { roles } as never,
+      body: {} as never,
     }
   );
 
