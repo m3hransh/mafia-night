@@ -521,7 +521,10 @@ func (_q *GameRoleQuery) loadPlayer(ctx context.Context, query *PlayerQuery, nod
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*GameRole)
 	for i := range nodes {
-		fk := nodes[i].PlayerID
+		if nodes[i].PlayerID == nil {
+			continue
+		}
+		fk := *nodes[i].PlayerID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}

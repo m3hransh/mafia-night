@@ -16,15 +16,17 @@ import (
 )
 
 var (
-	ErrEmptyGameID      = errors.New("game ID cannot be empty")
-	ErrEmptyModeratorID = errors.New("moderator ID cannot be empty")
-	ErrNotAuthorized    = errors.New("not authorized to perform this action")
-	ErrEmptyUserID      = errors.New("user ID cannot be empty")
-	ErrEmptyPlayerID    = errors.New("player ID cannot be empty")
-	ErrPlayerNameExists = errors.New("player name already exists in this game")
-	ErrGameAlreadyStarted = errors.New("game has already started")
-	ErrInvalidRoleCount = errors.New("role count must match player count")
+	ErrEmptyGameID          = errors.New("game ID cannot be empty")
+	ErrEmptyModeratorID     = errors.New("moderator ID cannot be empty")
+	ErrNotAuthorized        = errors.New("not authorized to perform this action")
+	ErrEmptyUserID          = errors.New("user ID cannot be empty")
+	ErrEmptyPlayerID        = errors.New("player ID cannot be empty")
+	ErrPlayerNameExists     = errors.New("player name already exists in this game")
+	ErrGameAlreadyStarted   = errors.New("game has already started")
+	ErrInvalidRoleCount     = errors.New("role count must match player count")
 	ErrRolesAlreadyAssigned = errors.New("roles have already been assigned")
+	ErrRolesAlreadySelected = errors.New("roles have already been selected")
+	ErrRolesNotSelected     = errors.New("roles have not been selected yet")
 )
 
 // GameService handles game-related business logic
@@ -247,8 +249,78 @@ type RoleSelection struct {
 	Count  int    `json:"count"`
 }
 
-// DistributeRoles assigns roles to players randomly
-func (s *GameService) DistributeRoles(ctx context.Context, gameID string, moderatorID string, roleSelections []RoleSelection) error {
+// SelectRoles persists the moderator's role selection without assigning them to players.
+// Can be called multiple times to update the selection; fails only if roles were already distributed.
+func (s *GameService) SelectRoles(ctx context.Context, gameID string, moderatorID string, roleSelections []RoleSelection) error {
+	if gameID == "" {
+		return ErrEmptyGameID
+	}
+	if moderatorID == "" {
+		return ErrEmptyModeratorID
+	}
+
+	existingGame, err := s.GetGameByID(ctx, gameID)
+	if err != nil {
+		return err
+	}
+
+	if existingGame.ModeratorID != moderatorID {
+		return ErrNotAuthorized
+	}
+
+	// Fail if roles have already been distributed (any row has a player assigned)
+	assignedCount, err := s.client.GameRole.
+		Query().
+		Where(gamerole.GameID(gameID), gamerole.PlayerIDNotNil()).
+		Count(ctx)
+	if err != nil {
+		return err
+	}
+	if assignedCount > 0 {
+		return ErrRolesAlreadyAssigned
+	}
+
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Delete any previous unassigned selection before saving the new one
+	_, err = tx.GameRole.
+		Delete().
+		Where(gamerole.GameID(gameID), gamerole.PlayerIDIsNil()).
+		Exec(ctx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Create GameRole records without a player assignment
+	for _, sel := range roleSelections {
+		roleUUID, err := uuid.Parse(sel.RoleID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		for i := 0; i < sel.Count; i++ {
+			_, err := tx.GameRole.
+				Create().
+				SetGameID(gameID).
+				SetRoleID(roleUUID).
+				Save(ctx)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+// DistributeRoles randomly assigns players to the pre-selected roles.
+// SelectRoles must be called first to persist the role selection.
+func (s *GameService) DistributeRoles(ctx context.Context, gameID string, moderatorID string) error {
 	if gameID == "" {
 		return ErrEmptyGameID
 	}
@@ -266,16 +338,28 @@ func (s *GameService) DistributeRoles(ctx context.Context, gameID string, modera
 		return ErrNotAuthorized
 	}
 
-	// Check if roles are already assigned
-	existingRoles, err := s.client.GameRole.
+	// Fail if roles have already been distributed
+	assignedCount, err := s.client.GameRole.
 		Query().
-		Where(gamerole.GameID(gameID)).
+		Where(gamerole.GameID(gameID), gamerole.PlayerIDNotNil()).
 		Count(ctx)
 	if err != nil {
 		return err
 	}
-	if existingRoles > 0 {
+	if assignedCount > 0 {
 		return ErrRolesAlreadyAssigned
+	}
+
+	// Load the pre-selected (unassigned) GameRole records
+	selectedRoles, err := s.client.GameRole.
+		Query().
+		Where(gamerole.GameID(gameID), gamerole.PlayerIDIsNil()).
+		All(ctx)
+	if err != nil {
+		return err
+	}
+	if len(selectedRoles) == 0 {
+		return ErrRolesNotSelected
 	}
 
 	// Get all players in the game
@@ -284,47 +368,27 @@ func (s *GameService) DistributeRoles(ctx context.Context, gameID string, modera
 		return err
 	}
 
-	// Calculate total roles to assign
-	totalRoles := 0
-	for _, selection := range roleSelections {
-		totalRoles += selection.Count
-	}
-
 	// Validate role count matches player count
-	if totalRoles != len(players) {
+	if len(selectedRoles) != len(players) {
 		return ErrInvalidRoleCount
 	}
 
-	// Build a list of role IDs based on counts
-	roleList := make([]uuid.UUID, 0, totalRoles)
-	for _, selection := range roleSelections {
-		roleUUID, err := uuid.Parse(selection.RoleID)
-		if err != nil {
-			return err
-		}
-		for i := 0; i < selection.Count; i++ {
-			roleList = append(roleList, roleUUID)
-		}
-	}
-
-	// Shuffle roles for random distribution
+	// Shuffle players for random assignment
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	rng.Shuffle(len(roleList), func(i, j int) {
-		roleList[i], roleList[j] = roleList[j], roleList[i]
+	rng.Shuffle(len(players), func(i, j int) {
+		players[i], players[j] = players[j], players[i]
 	})
 
-	// Assign roles to players in a transaction
+	// Assign each player to a pre-selected GameRole record in a transaction
 	tx, err := s.client.Tx(ctx)
 	if err != nil {
 		return err
 	}
 
-	for i, player := range players {
+	for i, gr := range selectedRoles {
 		_, err := tx.GameRole.
-			Create().
-			SetGameID(gameID).
-			SetPlayerID(player.ID).
-			SetRoleID(roleList[i]).
+			UpdateOneID(gr.ID).
+			SetPlayerID(players[i].ID).
 			Save(ctx)
 		if err != nil {
 			tx.Rollback()

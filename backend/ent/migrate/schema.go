@@ -67,7 +67,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "assigned_at", Type: field.TypeTime},
 		{Name: "game_id", Type: field.TypeString, Size: 12},
-		{Name: "player_id", Type: field.TypeUUID, Unique: true},
+		{Name: "player_id", Type: field.TypeUUID, Unique: true, Nullable: true},
 		{Name: "role_id", Type: field.TypeUUID},
 	}
 	// GameRolesTable holds the schema information for the "game_roles" table.
@@ -86,7 +86,7 @@ var (
 				Symbol:     "game_roles_players_game_role",
 				Columns:    []*schema.Column{GameRolesColumns[3]},
 				RefColumns: []*schema.Column{PlayersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "game_roles_roles_game_roles",

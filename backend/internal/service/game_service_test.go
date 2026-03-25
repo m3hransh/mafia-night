@@ -2,9 +2,12 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/mafia-night/backend/ent/game"
+	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/role"
 	"github.com/mafia-night/backend/internal/database"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -381,4 +384,191 @@ func TestGameService_RemovePlayer(t *testing.T) {
 		err = service.RemovePlayer(ctx, created.ID, "00000000-0000-0000-0000-000000000000")
 		assert.Error(t, err)
 	})
+}
+
+// createTestRole is a helper that inserts a role directly into the test DB.
+func createTestRole(t *testing.T, svc *GameService, name string) *RoleSelection {
+t.Helper()
+ctx := context.Background()
+r, err := svc.client.Role.Create().
+SetName(name).
+SetSlug(name).
+SetVideo("https://example.com/video").
+SetTeam(role.TeamVillage).
+Save(ctx)
+require.NoError(t, err)
+return &RoleSelection{RoleID: r.ID.String(), Count: 1}
+}
+
+func TestGameService_SelectRoles(t *testing.T) {
+client := database.SetupTestDB(t)
+svc := NewGameService(client)
+ctx := context.Background()
+
+setup := func(t *testing.T, playerCount int) (gameID string, selections []RoleSelection) {
+t.Helper()
+g, err := svc.CreateGame(ctx, "mod-123")
+require.NoError(t, err)
+for i := 0; i < playerCount; i++ {
+_, err = svc.JoinGame(ctx, g.ID, fmt.Sprintf("player%d", i+1))
+require.NoError(t, err)
+}
+for i := 0; i < playerCount; i++ {
+sel := createTestRole(t, svc, fmt.Sprintf("role-%s-%d", g.ID, i))
+selections = append(selections, *sel)
+}
+return g.ID, selections
+}
+
+t.Run("selects roles successfully", func(t *testing.T) {
+gameID, selections := setup(t, 3)
+err := svc.SelectRoles(ctx, gameID, "mod-123", selections)
+require.NoError(t, err)
+
+// Verify GameRole rows were created without player assignments
+gameRoles, err := client.GameRole.Query().Where(gamerole.GameID(gameID)).All(ctx)
+require.NoError(t, err)
+assert.Len(t, gameRoles, 3)
+for _, gr := range gameRoles {
+assert.Nil(t, gr.PlayerID, "player_id should be nil after SelectRoles")
+}
+})
+
+t.Run("can re-select roles before distribution", func(t *testing.T) {
+gameID, selections := setup(t, 2)
+
+err := svc.SelectRoles(ctx, gameID, "mod-123", selections)
+require.NoError(t, err)
+
+// Re-select with the same selections — should replace, not append
+err = svc.SelectRoles(ctx, gameID, "mod-123", selections)
+require.NoError(t, err)
+
+gameRoles, err := client.GameRole.Query().Where(gamerole.GameID(gameID)).All(ctx)
+require.NoError(t, err)
+assert.Len(t, gameRoles, 2, "re-selection should replace, not duplicate")
+})
+
+t.Run("fails if roles already distributed", func(t *testing.T) {
+gameID, selections := setup(t, 2)
+require.NoError(t, svc.SelectRoles(ctx, gameID, "mod-123", selections))
+require.NoError(t, svc.DistributeRoles(ctx, gameID, "mod-123"))
+
+err := svc.SelectRoles(ctx, gameID, "mod-123", selections)
+assert.ErrorIs(t, err, ErrRolesAlreadyAssigned)
+})
+
+t.Run("fails with wrong moderator", func(t *testing.T) {
+gameID, selections := setup(t, 2)
+err := svc.SelectRoles(ctx, gameID, "wrong-mod", selections)
+assert.ErrorIs(t, err, ErrNotAuthorized)
+})
+
+t.Run("fails with empty game ID", func(t *testing.T) {
+err := svc.SelectRoles(ctx, "", "mod-123", nil)
+assert.ErrorIs(t, err, ErrEmptyGameID)
+})
+
+t.Run("fails with empty moderator ID", func(t *testing.T) {
+gameID, selections := setup(t, 1)
+err := svc.SelectRoles(ctx, gameID, "", selections)
+assert.ErrorIs(t, err, ErrEmptyModeratorID)
+})
+}
+
+func TestGameService_DistributeRoles(t *testing.T) {
+client := database.SetupTestDB(t)
+svc := NewGameService(client)
+ctx := context.Background()
+
+setup := func(t *testing.T, playerCount int) (gameID string) {
+t.Helper()
+g, err := svc.CreateGame(ctx, "mod-123")
+require.NoError(t, err)
+var selections []RoleSelection
+for i := 0; i < playerCount; i++ {
+_, err = svc.JoinGame(ctx, g.ID, fmt.Sprintf("player%d", i+1))
+require.NoError(t, err)
+sel := createTestRole(t, svc, fmt.Sprintf("drole-%s-%d", g.ID, i))
+selections = append(selections, *sel)
+}
+require.NoError(t, svc.SelectRoles(ctx, g.ID, "mod-123", selections))
+return g.ID
+}
+
+t.Run("distributes roles to all players", func(t *testing.T) {
+gameID := setup(t, 3)
+
+err := svc.DistributeRoles(ctx, gameID, "mod-123")
+require.NoError(t, err)
+
+// Every GameRole should now have a player
+gameRoles, err := client.GameRole.Query().Where(gamerole.GameID(gameID)).All(ctx)
+require.NoError(t, err)
+assert.Len(t, gameRoles, 3)
+for _, gr := range gameRoles {
+assert.NotNil(t, gr.PlayerID, "every GameRole should have a player after distribution")
+}
+
+// Game should be active
+g, err := svc.GetGameByID(ctx, gameID)
+require.NoError(t, err)
+assert.Equal(t, game.StatusActive, g.Status)
+})
+
+t.Run("fails if roles not selected yet", func(t *testing.T) {
+g, err := svc.CreateGame(ctx, "mod-123")
+require.NoError(t, err)
+_, err = svc.JoinGame(ctx, g.ID, "player1")
+require.NoError(t, err)
+
+err = svc.DistributeRoles(ctx, g.ID, "mod-123")
+assert.ErrorIs(t, err, ErrRolesNotSelected)
+})
+
+t.Run("fails if roles already distributed", func(t *testing.T) {
+gameID := setup(t, 2)
+require.NoError(t, svc.DistributeRoles(ctx, gameID, "mod-123"))
+
+err := svc.DistributeRoles(ctx, gameID, "mod-123")
+assert.ErrorIs(t, err, ErrRolesAlreadyAssigned)
+})
+
+t.Run("fails if selected roles count does not match player count", func(t *testing.T) {
+// Create game with 3 players but select only 2 roles manually
+g, err := svc.CreateGame(ctx, "mod-123")
+require.NoError(t, err)
+for i := 0; i < 3; i++ {
+_, err = svc.JoinGame(ctx, g.ID, fmt.Sprintf("player%d", i+1))
+require.NoError(t, err)
+}
+// Select only 2 roles (bypass SelectRoles validation by inserting directly)
+sel1 := createTestRole(t, svc, fmt.Sprintf("xrole-%s-0", g.ID))
+sel2 := createTestRole(t, svc, fmt.Sprintf("xrole-%s-1", g.ID))
+require.NoError(t, svc.SelectRoles(ctx, g.ID, "mod-123", []RoleSelection{*sel1, *sel2}))
+
+// Add a third player after selection so counts mismatch at distribution time
+_, err = svc.JoinGame(ctx, g.ID, "player4")
+require.NoError(t, err)
+
+err = svc.DistributeRoles(ctx, g.ID, "mod-123")
+assert.ErrorIs(t, err, ErrInvalidRoleCount)
+})
+
+t.Run("fails with wrong moderator", func(t *testing.T) {
+gameID := setup(t, 2)
+err := svc.DistributeRoles(ctx, gameID, "wrong-mod")
+assert.ErrorIs(t, err, ErrNotAuthorized)
+})
+
+t.Run("fails with empty game ID", func(t *testing.T) {
+err := svc.DistributeRoles(ctx, "", "mod-123")
+assert.ErrorIs(t, err, ErrEmptyGameID)
+})
+
+t.Run("fails with empty moderator ID", func(t *testing.T) {
+gameID := setup(t, 2)
+err := svc.DistributeRoles(ctx, gameID, "")
+assert.ErrorIs(t, err, ErrEmptyModeratorID)
+})
 }

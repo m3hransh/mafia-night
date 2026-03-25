@@ -161,6 +161,16 @@ func PlayerIDNotIn(vs ...uuid.UUID) predicate.GameRole {
 	return predicate.GameRole(sql.FieldNotIn(FieldPlayerID, vs...))
 }
 
+// PlayerIDIsNil applies the IsNil predicate on the "player_id" field.
+func PlayerIDIsNil() predicate.GameRole {
+	return predicate.GameRole(sql.FieldIsNull(FieldPlayerID))
+}
+
+// PlayerIDNotNil applies the NotNil predicate on the "player_id" field.
+func PlayerIDNotNil() predicate.GameRole {
+	return predicate.GameRole(sql.FieldNotNull(FieldPlayerID))
+}
+
 // RoleIDEQ applies the EQ predicate on the "role_id" field.
 func RoleIDEQ(v uuid.UUID) predicate.GameRole {
 	return predicate.GameRole(sql.FieldEQ(FieldRoleID, v))

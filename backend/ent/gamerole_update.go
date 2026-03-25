@@ -59,6 +59,12 @@ func (_u *GameRoleUpdate) SetNillablePlayerID(v *uuid.UUID) *GameRoleUpdate {
 	return _u
 }
 
+// ClearPlayerID clears the value of the "player_id" field.
+func (_u *GameRoleUpdate) ClearPlayerID() *GameRoleUpdate {
+	_u.mutation.ClearPlayerID()
+	return _u
+}
+
 // SetRoleID sets the "role_id" field.
 func (_u *GameRoleUpdate) SetRoleID(v uuid.UUID) *GameRoleUpdate {
 	_u.mutation.SetRoleID(v)
@@ -147,9 +153,6 @@ func (_u *GameRoleUpdate) check() error {
 	}
 	if _u.mutation.GameCleared() && len(_u.mutation.GameIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "GameRole.game"`)
-	}
-	if _u.mutation.PlayerCleared() && len(_u.mutation.PlayerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "GameRole.player"`)
 	}
 	if _u.mutation.RoleCleared() && len(_u.mutation.RoleIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "GameRole.role"`)
@@ -304,6 +307,12 @@ func (_u *GameRoleUpdateOne) SetNillablePlayerID(v *uuid.UUID) *GameRoleUpdateOn
 	return _u
 }
 
+// ClearPlayerID clears the value of the "player_id" field.
+func (_u *GameRoleUpdateOne) ClearPlayerID() *GameRoleUpdateOne {
+	_u.mutation.ClearPlayerID()
+	return _u
+}
+
 // SetRoleID sets the "role_id" field.
 func (_u *GameRoleUpdateOne) SetRoleID(v uuid.UUID) *GameRoleUpdateOne {
 	_u.mutation.SetRoleID(v)
@@ -405,9 +414,6 @@ func (_u *GameRoleUpdateOne) check() error {
 	}
 	if _u.mutation.GameCleared() && len(_u.mutation.GameIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "GameRole.game"`)
-	}
-	if _u.mutation.PlayerCleared() && len(_u.mutation.PlayerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "GameRole.player"`)
 	}
 	if _u.mutation.RoleCleared() && len(_u.mutation.RoleIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "GameRole.role"`)

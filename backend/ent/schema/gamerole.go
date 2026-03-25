@@ -21,7 +21,9 @@ func (GameRole) Fields() []ent.Field {
 		field.String("game_id").
 			MaxLen(12).
 			NotEmpty(),
-		field.UUID("player_id", uuid.UUID{}),
+		field.UUID("player_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
 		field.UUID("role_id", uuid.UUID{}),
 		field.Time("assigned_at").
 			Default(time.Now).
@@ -40,7 +42,6 @@ func (GameRole) Edges() []ent.Edge {
 		edge.From("player", Player.Type).
 			Ref("game_role").
 			Field("player_id").
-			Required().
 			Unique(),
 		edge.From("role", Role.Type).
 			Ref("game_roles").

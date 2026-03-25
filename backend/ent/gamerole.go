@@ -24,7 +24,7 @@ type GameRole struct {
 	// GameID holds the value of the "game_id" field.
 	GameID string `json:"game_id,omitempty"`
 	// PlayerID holds the value of the "player_id" field.
-	PlayerID uuid.UUID `json:"player_id,omitempty"`
+	PlayerID *uuid.UUID `json:"player_id,omitempty"`
 	// RoleID holds the value of the "role_id" field.
 	RoleID uuid.UUID `json:"role_id,omitempty"`
 	// AssignedAt holds the value of the "assigned_at" field.
@@ -86,13 +86,15 @@ func (*GameRole) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case gamerole.FieldPlayerID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case gamerole.FieldID:
 			values[i] = new(sql.NullInt64)
 		case gamerole.FieldGameID:
 			values[i] = new(sql.NullString)
 		case gamerole.FieldAssignedAt:
 			values[i] = new(sql.NullTime)
-		case gamerole.FieldPlayerID, gamerole.FieldRoleID:
+		case gamerole.FieldRoleID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -122,10 +124,11 @@ func (_m *GameRole) assignValues(columns []string, values []any) error {
 				_m.GameID = value.String
 			}
 		case gamerole.FieldPlayerID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field player_id", values[i])
-			} else if value != nil {
-				_m.PlayerID = *value
+			} else if value.Valid {
+				_m.PlayerID = new(uuid.UUID)
+				*_m.PlayerID = *value.S.(*uuid.UUID)
 			}
 		case gamerole.FieldRoleID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -193,8 +196,10 @@ func (_m *GameRole) String() string {
 	builder.WriteString("game_id=")
 	builder.WriteString(_m.GameID)
 	builder.WriteString(", ")
-	builder.WriteString("player_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.PlayerID))
+	if v := _m.PlayerID; v != nil {
+		builder.WriteString("player_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("role_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RoleID))

@@ -36,6 +36,14 @@ func (_c *GameRoleCreate) SetPlayerID(v uuid.UUID) *GameRoleCreate {
 	return _c
 }
 
+// SetNillablePlayerID sets the "player_id" field if the given value is not nil.
+func (_c *GameRoleCreate) SetNillablePlayerID(v *uuid.UUID) *GameRoleCreate {
+	if v != nil {
+		_c.SetPlayerID(*v)
+	}
+	return _c
+}
+
 // SetRoleID sets the "role_id" field.
 func (_c *GameRoleCreate) SetRoleID(v uuid.UUID) *GameRoleCreate {
 	_c.mutation.SetRoleID(v)
@@ -122,9 +130,6 @@ func (_c *GameRoleCreate) check() error {
 			return &ValidationError{Name: "game_id", err: fmt.Errorf(`ent: validator failed for field "GameRole.game_id": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.PlayerID(); !ok {
-		return &ValidationError{Name: "player_id", err: errors.New(`ent: missing required field "GameRole.player_id"`)}
-	}
 	if _, ok := _c.mutation.RoleID(); !ok {
 		return &ValidationError{Name: "role_id", err: errors.New(`ent: missing required field "GameRole.role_id"`)}
 	}
@@ -133,9 +138,6 @@ func (_c *GameRoleCreate) check() error {
 	}
 	if len(_c.mutation.GameIDs()) == 0 {
 		return &ValidationError{Name: "game", err: errors.New(`ent: missing required edge "GameRole.game"`)}
-	}
-	if len(_c.mutation.PlayerIDs()) == 0 {
-		return &ValidationError{Name: "player", err: errors.New(`ent: missing required edge "GameRole.player"`)}
 	}
 	if len(_c.mutation.RoleIDs()) == 0 {
 		return &ValidationError{Name: "role", err: errors.New(`ent: missing required edge "GameRole.role"`)}
@@ -201,7 +203,7 @@ func (_c *GameRoleCreate) createSpec() (*GameRole, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.PlayerID = nodes[0]
+		_node.PlayerID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.RoleIDs(); len(nodes) > 0 {

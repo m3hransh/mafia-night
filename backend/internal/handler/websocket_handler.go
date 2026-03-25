@@ -126,6 +126,7 @@ type GameUpdateType string
 const (
 	PlayerJoined     GameUpdateType = "player_joined"
 	PlayerLeft       GameUpdateType = "player_left"
+	RolesSelected    GameUpdateType = "roles_selected"
 	RolesDistributed GameUpdateType = "roles_distributed"
 	GameDeleted      GameUpdateType = "game_deleted"
 )
@@ -426,6 +427,11 @@ func (h *WebSocketHandler) BroadcastPlayerLeft(gameID string, playerID string) {
 	h.hub.BroadcastToGame(gameID, PlayerLeft, map[string]string{"player_id": playerID})
 }
 
+// BroadcastRolesSelected sends a roles-selected update so all players know the moderator has locked in the role list
+func (h *WebSocketHandler) BroadcastRolesSelected(gameID string) {
+	h.hub.BroadcastToGame(gameID, RolesSelected, nil)
+}
+
 // BroadcastRolesDistributed sends a roles distributed update
 func (h *WebSocketHandler) BroadcastRolesDistributed(gameID string) {
 	h.hub.BroadcastToGame(gameID, RolesDistributed, nil)
@@ -458,6 +464,8 @@ func NotifyPlayerUpdate(handler http.HandlerFunc, wsHandler *WebSocketHandler, u
 			case PlayerLeft:
 				playerID := chi.URLParam(r, "player_id")
 				wsHandler.BroadcastPlayerLeft(gameID, playerID)
+			case RolesSelected:
+				wsHandler.BroadcastRolesSelected(gameID)
 			case RolesDistributed:
 				wsHandler.BroadcastRolesDistributed(gameID)
 			case GameDeleted:

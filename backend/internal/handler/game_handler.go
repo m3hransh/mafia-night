@@ -286,22 +286,22 @@ func playerToJSON(p *ent.Player) map[string]any {
 	}
 }
 
-// DistributeRoles handles POST /api/games/{id}/distribute-roles
-// @Summary      Distribute roles to players
-// @Description  Randomly assigns roles to all players. Only the moderator can trigger this.
+// SelectRoles handles POST /api/games/{id}/select-roles
+// @Summary      Select roles for a game
+// @Description  Persists the moderator's role selection without assigning to players. Broadcasts roles_selected via WebSocket.
 // @Tags         games
 // @Accept       json
 // @Produce      json
 // @Param        id              path      string                                         true  "Game ID"
 // @Param        X-Moderator-ID  header    string                                         true  "Moderator identifier"
 // @Param        body            body      object{roles=[]service.RoleSelection}          true  "Role selections"
-// @Success      200             {object}  DistributeRolesSuccessResponse
+// @Success      200             {object}  map[string]string
 // @Failure      400             {object}  ErrorResponseBody
 // @Failure      403             {object}  ErrorResponseBody
 // @Failure      409             {object}  ErrorResponseBody
 // @Failure      500             {object}  ErrorResponseBody
-// @Router       /games/{id}/distribute-roles [post]
-func (h *GameHandler) DistributeRoles(w http.ResponseWriter, r *http.Request) {
+// @Router       /games/{id}/select-roles [post]
+func (h *GameHandler) SelectRoles(w http.ResponseWriter, r *http.Request) {
 	gameID := chi.URLParam(r, "id")
 	moderatorID := r.Header.Get("X-Moderator-ID")
 
@@ -319,7 +319,52 @@ func (h *GameHandler) DistributeRoles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.gameService.DistributeRoles(r.Context(), gameID, moderatorID, req.Roles)
+	err := h.gameService.SelectRoles(r.Context(), gameID, moderatorID, req.Roles)
+	if err != nil {
+		if errors.Is(err, service.ErrNotAuthorized) {
+			ErrorResponse(w, http.StatusForbidden, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrRolesAlreadyAssigned) {
+			ErrorResponse(w, http.StatusConflict, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrEmptyGameID) || errors.Is(err, service.ErrEmptyModeratorID) {
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	JSONResponse(w, http.StatusOK, map[string]any{
+		"message": "roles selected successfully",
+	})
+}
+
+
+// @Summary      Distribute pre-selected roles to players
+// @Description  Randomly assigns the pre-selected roles to all players. Requires SelectRoles to have been called first. Only the moderator can trigger this.
+// @Tags         games
+// @Produce      json
+// @Param        id              path      string  true  "Game ID"
+// @Param        X-Moderator-ID  header    string  true  "Moderator identifier"
+// @Success      200             {object}  DistributeRolesSuccessResponse
+// @Failure      400             {object}  ErrorResponseBody
+// @Failure      403             {object}  ErrorResponseBody
+// @Failure      409             {object}  ErrorResponseBody
+// @Failure      500             {object}  ErrorResponseBody
+// @Router       /games/{id}/distribute-roles [post]
+func (h *GameHandler) DistributeRoles(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+	moderatorID := r.Header.Get("X-Moderator-ID")
+
+	if moderatorID == "" {
+		ErrorResponse(w, http.StatusBadRequest, "X-Moderator-ID header is required")
+		return
+	}
+
+	err := h.gameService.DistributeRoles(r.Context(), gameID, moderatorID)
 	if err != nil {
 		if errors.Is(err, service.ErrNotAuthorized) {
 			ErrorResponse(w, http.StatusForbidden, err.Error())
@@ -331,6 +376,10 @@ func (h *GameHandler) DistributeRoles(w http.ResponseWriter, r *http.Request) {
 		}
 		if errors.Is(err, service.ErrRolesAlreadyAssigned) {
 			ErrorResponse(w, http.StatusConflict, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrRolesNotSelected) {
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
 		if errors.Is(err, service.ErrEmptyGameID) || errors.Is(err, service.ErrEmptyModeratorID) {
@@ -436,6 +485,16 @@ func (h *GameHandler) GetGameRoles(w http.ResponseWriter, r *http.Request) {
 			response = append(response, map[string]any{
 				"player_id":   player.ID,
 				"player_name": player.Name,
+				"role_id":     role.ID,
+				"role_name":   role.Name,
+				"role_slug":   role.Slug,
+				"video":       role.Video,
+				"team":        role.Team,
+				"assigned_at": gameRole.AssignedAt,
+			})
+		}
+		if role != nil {
+			response = append(response, map[string]any{
 				"role_id":     role.ID,
 				"role_name":   role.Name,
 				"role_slug":   role.Slug,

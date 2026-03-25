@@ -1504,7 +1504,7 @@ func (m *GameRoleMutation) PlayerID() (r uuid.UUID, exists bool) {
 // OldPlayerID returns the old "player_id" field's value of the GameRole entity.
 // If the GameRole object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GameRoleMutation) OldPlayerID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *GameRoleMutation) OldPlayerID(ctx context.Context) (v *uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldPlayerID is only allowed on UpdateOne operations")
 	}
@@ -1518,9 +1518,22 @@ func (m *GameRoleMutation) OldPlayerID(ctx context.Context) (v uuid.UUID, err er
 	return oldValue.PlayerID, nil
 }
 
+// ClearPlayerID clears the value of the "player_id" field.
+func (m *GameRoleMutation) ClearPlayerID() {
+	m.player = nil
+	m.clearedFields[gamerole.FieldPlayerID] = struct{}{}
+}
+
+// PlayerIDCleared returns if the "player_id" field was cleared in this mutation.
+func (m *GameRoleMutation) PlayerIDCleared() bool {
+	_, ok := m.clearedFields[gamerole.FieldPlayerID]
+	return ok
+}
+
 // ResetPlayerID resets all changes to the "player_id" field.
 func (m *GameRoleMutation) ResetPlayerID() {
 	m.player = nil
+	delete(m.clearedFields, gamerole.FieldPlayerID)
 }
 
 // SetRoleID sets the "role_id" field.
@@ -1630,7 +1643,7 @@ func (m *GameRoleMutation) ClearPlayer() {
 
 // PlayerCleared reports if the "player" edge to the Player entity was cleared.
 func (m *GameRoleMutation) PlayerCleared() bool {
-	return m.clearedplayer
+	return m.PlayerIDCleared() || m.clearedplayer
 }
 
 // PlayerIDs returns the "player" edge IDs in the mutation.
@@ -1822,7 +1835,11 @@ func (m *GameRoleMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *GameRoleMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(gamerole.FieldPlayerID) {
+		fields = append(fields, gamerole.FieldPlayerID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1835,6 +1852,11 @@ func (m *GameRoleMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *GameRoleMutation) ClearField(name string) error {
+	switch name {
+	case gamerole.FieldPlayerID:
+		m.ClearPlayerID()
+		return nil
+	}
 	return fmt.Errorf("unknown GameRole nullable field %s", name)
 }
 
