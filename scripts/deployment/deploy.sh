@@ -30,53 +30,69 @@ echo -e "${GREEN}Starting deployment to $DEPLOY_HOST${NC}"
 
 # Create deployment directory on remote server
 echo -e "${YELLOW}Creating deployment directory...${NC}"
-ssh $DEPLOY_USER@$DEPLOY_HOST "mkdir -p $DEPLOY_PATH"
+ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p $DEPLOY_PATH"
 
-# Copy files to remote server
-echo -e "${YELLOW}Copying files to remote server...${NC}"
-rsync -avz --exclude 'node_modules' \
+# Sync files to remote server
+# --delete ensures files removed from git are also removed on the server (fixes stale file issues)
+# --checksum only transfers files whose content has changed
+echo -e "${YELLOW}Syncing files to remote server...${NC}"
+rsync -avz --checksum --delete \
+    --exclude 'node_modules' \
     --exclude '.git' \
     --exclude '.next' \
+    --exclude '.direnv' \
+    --exclude '.swc' \
     --exclude 'backend/bin' \
     --exclude '.env*' \
-    ./ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/
+    --exclude 'nginx/ssl' \
+    --exclude 'frontend/certs' \
+    --exclude 'frontend/playwright-report' \
+    --exclude 'frontend/test-results' \
+    --exclude 'frontend/tsconfig.tsbuildinfo' \
+    --exclude 'docs' \
+    ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
 
 # Copy production environment file
 echo -e "${YELLOW}Copying environment configuration...${NC}"
-scp .env.production $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.env
+scp .env.production "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.env"
 
 # Deploy on remote server
+# Build first (fail fast before touching running containers), then rolling restart
 echo -e "${YELLOW}Deploying application...${NC}"
-ssh $DEPLOY_USER@$DEPLOY_HOST << EOF
+ssh "$DEPLOY_USER@$DEPLOY_HOST" "
+    set -e
     cd $DEPLOY_PATH
 
-    # Pull latest images or build
-    docker compose -f docker-compose.prod.yml pull || true
+    # Build new images first so we fail before taking down the running app
+    docker compose -f docker-compose.prod.yml build
 
-    # Stop existing containers
-    docker compose -f docker-compose.prod.yml down
-
-    # Build and start containers
-    docker compose -f docker-compose.prod.yml up -d --build
+    # Rolling restart: bring new containers up, wait for healthchecks, then swap
+    docker compose -f docker-compose.prod.yml up -d --no-build --wait
 
     # Clean up old images
     docker image prune -f
 
     # Show running containers
     docker compose -f docker-compose.prod.yml ps
-EOF
+"
 
 echo -e "${GREEN}Deployment completed successfully!${NC}"
 echo -e "${YELLOW}Application should be available at: https://$DEPLOY_HOST${NC}"
 
-# Health check
+# Health check with retries (backend has a 40s start_period healthcheck)
 echo -e "${YELLOW}Performing health check...${NC}"
-sleep 10
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://$DEPLOY_HOST/health || echo "000")
+MAX_RETRIES=12
+RETRY_INTERVAL=10
+for i in $(seq 1 $MAX_RETRIES); do
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "https://$DEPLOY_HOST/health" 2>/dev/null || echo "000")
+    if [ "$HTTP_CODE" = "200" ]; then
+        echo -e "${GREEN}Health check passed!${NC}"
+        exit 0
+    fi
+    echo -e "${YELLOW}[$i/$MAX_RETRIES] Waiting for app to be ready (got $HTTP_CODE)...${NC}"
+    sleep $RETRY_INTERVAL
+done
 
-if [ "$HTTP_CODE" = "200" ]; then
-    echo -e "${GREEN}Health check passed!${NC}"
-else
-    echo -e "${RED}Health check failed with code: $HTTP_CODE${NC}"
-    echo -e "${YELLOW}Check logs with: ssh $DEPLOY_USER@$DEPLOY_HOST 'cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml logs'${NC}"
-fi
+echo -e "${RED}Health check failed after $((MAX_RETRIES * RETRY_INTERVAL))s${NC}"
+echo -e "${YELLOW}Check logs with: ssh $DEPLOY_USER@$DEPLOY_HOST 'cd $DEPLOY_PATH && docker compose -f docker-compose.prod.yml logs --tail=50'${NC}"
+exit 1
