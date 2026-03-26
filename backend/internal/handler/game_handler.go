@@ -273,6 +273,8 @@ func gameToJSON(g *ent.Game) map[string]any {
 		"id":           g.ID,
 		"moderator_id": g.ModeratorID,
 		"status":       g.Status,
+		"phase":        g.Phase,
+		"round_number": g.RoundNumber,
 		"created_at":   g.CreatedAt,
 	}
 }

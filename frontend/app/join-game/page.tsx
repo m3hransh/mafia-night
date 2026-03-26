@@ -4,7 +4,7 @@ import { useReducer, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { savePlayerGame, clearPlayerGame, validatePlayerGameState, setPlayerRoleSeen } from '@/lib/gameStorage';
-import { getPlayerRole, getSelectedRoles, fetchPlayers, castBallot, Role, Player, SelectedRoleEntry, VoteSessionResult } from '@/lib/api';
+import { getPlayerRole, getSelectedRoles, fetchPlayers, castBallot, getCurrentVoteSession, Role, Player, SelectedRoleEntry, VoteSessionResult } from '@/lib/api';
 import { JoinLobby } from '@/components/JoinLobby';
 import { VoteOverlay } from '@/components/VoteOverlay';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
@@ -51,7 +51,7 @@ const initialState: State = {
 
 type Action =
   | { type: 'INIT'; gameCode?: string }
-  | { type: 'RESTORE'; gameCode: string; playerName: string; playerId: string; assignedRole: Role | null; roleSeen: boolean }
+  | { type: 'RESTORE'; gameCode: string; playerName: string; playerId: string; assignedRole: Role | null; roleSeen: boolean; dayNightPhase: DayNightPhase; roundNumber: number; activeVoteSession: VoteSessionResult | null }
   | { type: 'SET_GAME_CODE'; code: string }
   | { type: 'JOINED'; gameCode: string; playerId: string; playerName: string }
   | { type: 'PLAYER_JOINED'; player: Player }
@@ -80,6 +80,9 @@ function reducer(state: State, action: Action): State {
         playerId: action.playerId,
         assignedRole: action.assignedRole,
         roleSeen: action.roleSeen,
+        dayNightPhase: action.dayNightPhase,
+        roundNumber: action.roundNumber,
+        activeVoteSession: action.activeVoteSession,
       };
 
     case 'SET_GAME_CODE':
@@ -156,6 +159,27 @@ function JoinGameContent() {
           } catch {
             // No role assigned yet — that's fine
           }
+
+          // Fetch current game phase and active vote session in parallel
+          let dayNightPhase: DayNightPhase = 'waiting';
+          let roundNumber = 0;
+          let activeVoteSession: VoteSessionResult | null = null;
+          try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+            const [gameRes, voteSession] = await Promise.all([
+              fetch(`${API_BASE_URL}/api/games/${validatedState.gameId}`, { signal: controller.signal }),
+              getCurrentVoteSession(validatedState.gameId).catch(() => null),
+            ]);
+            if (gameRes.ok) {
+              const gameData = await gameRes.json();
+              dayNightPhase = (gameData.phase ?? 'waiting') as DayNightPhase;
+              roundNumber = gameData.round_number ?? 0;
+            }
+            activeVoteSession = voteSession;
+          } catch {
+            // Non-critical — lobby still loads without phase info
+          }
+
           if (!controller.signal.aborted) {
             dispatch({
               type: 'RESTORE',
@@ -164,6 +188,9 @@ function JoinGameContent() {
               playerId: validatedState.playerId,
               assignedRole: role,
               roleSeen: validatedState.roleSeen ?? false,
+              dayNightPhase,
+              roundNumber,
+              activeVoteSession,
             });
           }
         } else {

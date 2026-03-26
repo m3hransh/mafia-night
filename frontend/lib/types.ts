@@ -12,6 +12,8 @@ export interface Game {
   id: string;
   moderator_id: string;
   status: "waiting" | "active" | "finished";
+  phase: 'waiting' | 'day' | 'night' | 'ended';
+  round_number: number;
   created_at: string;
 }
 

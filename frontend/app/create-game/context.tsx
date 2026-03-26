@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { apiClient } from '@/lib/api-client';
 import type { Role } from '@/lib/types';
 import { saveModeratorGame, clearModeratorGame, validateModeratorGameState } from '@/lib/gameStorage';
-import { deleteGame, removePlayer, distributeRoles, selectRoles, getSelectedRoles, getGameRoles, PlayerRoleAssignment, startDay, startNight, endGame, eliminatePlayer, openVoteSession, closeVoteSession, VoteSessionResult } from '@/lib/api';
+import { deleteGame, removePlayer, distributeRoles, selectRoles, getSelectedRoles, getGameRoles, PlayerRoleAssignment, startDay, startNight, endGame, eliminatePlayer, openVoteSession, closeVoteSession, getCurrentVoteSession, VoteSessionResult } from '@/lib/api';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -18,15 +18,17 @@ export interface Player {
   created_at: string;
 }
 
+export type GamePhase = 'not-created' | 'waiting-for-players' | 'selecting-roles' | 'game-started';
+export type DayNightPhase = 'waiting' | 'day' | 'night' | 'ended';
+
 export interface Game {
   id: string;
   moderator_id: string;
   status: string;
+  phase: DayNightPhase;
+  round_number: number;
   created_at: string;
 }
-
-export type GamePhase = 'not-created' | 'waiting-for-players' | 'selecting-roles' | 'game-started';
-export type DayNightPhase = 'waiting' | 'day' | 'night' | 'ended';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -55,7 +57,7 @@ export type State = {
 
 type Action =
   | { type: 'INIT'; moderatorId: string }
-  | { type: 'RESTORE'; game: Game; moderatorId: string; phase: GamePhase; roleAssignments: PlayerRoleAssignment[]; selectedRoles: Map<string, number> }
+  | { type: 'RESTORE'; game: Game; moderatorId: string; phase: GamePhase; roleAssignments: PlayerRoleAssignment[]; selectedRoles: Map<string, number>; dayNightPhase: DayNightPhase; roundNumber: number; activeVoteSession: VoteSessionResult | null }
   | { type: 'CREATING' }
   | { type: 'CREATED'; game: Game }
   | { type: 'CREATE_FAILED'; error: string }
@@ -131,7 +133,17 @@ function reducer(state: State, action: Action): State {
     case 'INIT':
       return { ...state, moderatorId: action.moderatorId };
     case 'RESTORE':
-      return { ...state, game: action.game, moderatorId: action.moderatorId, phase: action.phase, roleAssignments: action.roleAssignments, selectedRoles: action.selectedRoles };
+      return {
+        ...state,
+        game: action.game,
+        moderatorId: action.moderatorId,
+        phase: action.phase,
+        roleAssignments: action.roleAssignments,
+        selectedRoles: action.selectedRoles,
+        dayNightPhase: action.dayNightPhase,
+        roundNumber: action.roundNumber,
+        activeVoteSession: action.activeVoteSession,
+      };
     case 'CREATING':
       return { ...state, loading: true, error: '' };
     case 'CREATED':
@@ -238,10 +250,11 @@ async function restoreModeratorSession(
     try {
       const res = await fetch(`${apiBaseUrl}/api/games/${validatedState.gameId}`, { signal });
       if (res.ok) {
-        const gameData = await res.json();
-        const [roles, selectedEntries] = await Promise.all([
+        const gameData: Game = await res.json();
+        const [roles, selectedEntries, activeVoteSession] = await Promise.all([
           getGameRoles(validatedState.gameId, validatedState.moderatorId),
           getSelectedRoles(validatedState.gameId),
+          getCurrentVoteSession(validatedState.gameId),
         ]);
 
         const selectedRoles = new Map<string, number>(
@@ -256,6 +269,9 @@ async function restoreModeratorSession(
             phase: roles?.length > 0 ? 'game-started' : validatedState.phase,
             roleAssignments: roles ?? [],
             selectedRoles,
+            dayNightPhase: (gameData.phase ?? 'waiting') as DayNightPhase,
+            roundNumber: gameData.round_number ?? 0,
+            activeVoteSession,
           });
         }
       } else {
