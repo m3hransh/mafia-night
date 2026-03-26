@@ -18,18 +18,21 @@ import (
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/predicate"
+	"github.com/mafia-night/backend/ent/vote"
 )
 
 // PlayerQuery is the builder for querying Player entities.
 type PlayerQuery struct {
 	config
-	ctx              *QueryContext
-	order            []player.OrderOption
-	inters           []Interceptor
-	predicates       []predicate.Player
-	withGame         *GameQuery
-	withGameRole     *GameRoleQuery
-	withEliminations *EliminationQuery
+	ctx               *QueryContext
+	order             []player.OrderOption
+	inters            []Interceptor
+	predicates        []predicate.Player
+	withGame          *GameQuery
+	withGameRole      *GameRoleQuery
+	withEliminations  *EliminationQuery
+	withCastVotes     *VoteQuery
+	withReceivedVotes *VoteQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -125,6 +128,50 @@ func (_q *PlayerQuery) QueryEliminations() *EliminationQuery {
 			sqlgraph.From(player.Table, player.FieldID, selector),
 			sqlgraph.To(elimination.Table, elimination.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, player.EliminationsTable, player.EliminationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCastVotes chains the current query on the "cast_votes" edge.
+func (_q *PlayerQuery) QueryCastVotes() *VoteQuery {
+	query := (&VoteClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, selector),
+			sqlgraph.To(vote.Table, vote.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.CastVotesTable, player.CastVotesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReceivedVotes chains the current query on the "received_votes" edge.
+func (_q *PlayerQuery) QueryReceivedVotes() *VoteQuery {
+	query := (&VoteClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, selector),
+			sqlgraph.To(vote.Table, vote.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.ReceivedVotesTable, player.ReceivedVotesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -319,14 +366,16 @@ func (_q *PlayerQuery) Clone() *PlayerQuery {
 		return nil
 	}
 	return &PlayerQuery{
-		config:           _q.config,
-		ctx:              _q.ctx.Clone(),
-		order:            append([]player.OrderOption{}, _q.order...),
-		inters:           append([]Interceptor{}, _q.inters...),
-		predicates:       append([]predicate.Player{}, _q.predicates...),
-		withGame:         _q.withGame.Clone(),
-		withGameRole:     _q.withGameRole.Clone(),
-		withEliminations: _q.withEliminations.Clone(),
+		config:            _q.config,
+		ctx:               _q.ctx.Clone(),
+		order:             append([]player.OrderOption{}, _q.order...),
+		inters:            append([]Interceptor{}, _q.inters...),
+		predicates:        append([]predicate.Player{}, _q.predicates...),
+		withGame:          _q.withGame.Clone(),
+		withGameRole:      _q.withGameRole.Clone(),
+		withEliminations:  _q.withEliminations.Clone(),
+		withCastVotes:     _q.withCastVotes.Clone(),
+		withReceivedVotes: _q.withReceivedVotes.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -363,6 +412,28 @@ func (_q *PlayerQuery) WithEliminations(opts ...func(*EliminationQuery)) *Player
 		opt(query)
 	}
 	_q.withEliminations = query
+	return _q
+}
+
+// WithCastVotes tells the query-builder to eager-load the nodes that are connected to
+// the "cast_votes" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *PlayerQuery) WithCastVotes(opts ...func(*VoteQuery)) *PlayerQuery {
+	query := (&VoteClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCastVotes = query
+	return _q
+}
+
+// WithReceivedVotes tells the query-builder to eager-load the nodes that are connected to
+// the "received_votes" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *PlayerQuery) WithReceivedVotes(opts ...func(*VoteQuery)) *PlayerQuery {
+	query := (&VoteClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withReceivedVotes = query
 	return _q
 }
 
@@ -444,10 +515,12 @@ func (_q *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 	var (
 		nodes       = []*Player{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [5]bool{
 			_q.withGame != nil,
 			_q.withGameRole != nil,
 			_q.withEliminations != nil,
+			_q.withCastVotes != nil,
+			_q.withReceivedVotes != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -483,6 +556,20 @@ func (_q *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 	if query := _q.withEliminations; query != nil {
 		if err := _q.loadEliminations(ctx, query, nodes, nil,
 			func(n *Player, e *Elimination) { n.Edges.Eliminations = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCastVotes; query != nil {
+		if err := _q.loadCastVotes(ctx, query, nodes,
+			func(n *Player) { n.Edges.CastVotes = []*Vote{} },
+			func(n *Player, e *Vote) { n.Edges.CastVotes = append(n.Edges.CastVotes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withReceivedVotes; query != nil {
+		if err := _q.loadReceivedVotes(ctx, query, nodes,
+			func(n *Player) { n.Edges.ReceivedVotes = []*Vote{} },
+			func(n *Player, e *Vote) { n.Edges.ReceivedVotes = append(n.Edges.ReceivedVotes, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -570,6 +657,66 @@ func (_q *PlayerQuery) loadEliminations(ctx context.Context, query *EliminationQ
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "player_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *PlayerQuery) loadCastVotes(ctx context.Context, query *VoteQuery, nodes []*Player, init func(*Player), assign func(*Player, *Vote)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Player)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(vote.FieldVoterID)
+	}
+	query.Where(predicate.Vote(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(player.CastVotesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.VoterID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "voter_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *PlayerQuery) loadReceivedVotes(ctx context.Context, query *VoteQuery, nodes []*Player, init func(*Player), assign func(*Player, *Vote)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Player)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(vote.FieldTargetID)
+	}
+	query.Where(predicate.Vote(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(player.ReceivedVotesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.TargetID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "target_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

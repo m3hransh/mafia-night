@@ -42,6 +42,8 @@ func (Player) Edges() []ent.Edge {
 			Unique(),
 		edge.To("eliminations", Elimination.Type).
 			Unique(),
+		edge.To("cast_votes", Vote.Type),
+		edge.To("received_votes", Vote.Type),
 	}
 }
 

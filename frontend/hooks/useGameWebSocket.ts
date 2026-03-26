@@ -7,7 +7,9 @@ export type GameUpdateType =
   | 'roles_selected'
   | 'roles_distributed'
   | 'game_deleted'
-  | 'phase_changed';
+  | 'phase_changed'
+  | 'vote_cast'
+  | 'player_eliminated';
 
 export interface GameUpdate {
   type: GameUpdateType;
@@ -24,6 +26,8 @@ interface UseGameWebSocketOptions {
   onRolesDistributed?: () => void;
   onGameDeleted?: () => void;
   onPhaseChanged?: (phase: string, roundNumber: number) => void;
+  onVoteCast?: (stage: string, tally: any) => void;
+  onPlayerEliminated?: (playerId: string, playerName: string, cause: string) => void;
   enabled?: boolean;
 }
 
@@ -36,6 +40,8 @@ export function useGameWebSocket({
   onRolesDistributed,
   onGameDeleted,
   onPhaseChanged,
+  onVoteCast,
+  onPlayerEliminated,
   enabled = true,
 }: UseGameWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -51,6 +57,8 @@ export function useGameWebSocket({
   const onRolesDistributedRef = useRef(onRolesDistributed);
   const onGameDeletedRef = useRef(onGameDeleted);
   const onPhaseChangedRef = useRef(onPhaseChanged);
+  const onVoteCastRef = useRef(onVoteCast);
+  const onPlayerEliminatedRef = useRef(onPlayerEliminated);
 
   useEffect(() => {
     onUpdateRef.current = onUpdate;
@@ -60,7 +68,9 @@ export function useGameWebSocket({
     onRolesDistributedRef.current = onRolesDistributed;
     onGameDeletedRef.current = onGameDeleted;
     onPhaseChangedRef.current = onPhaseChanged;
-  }, [onUpdate, onPlayerJoined, onPlayerLeft, onRolesSelected, onRolesDistributed, onGameDeleted]);
+    onVoteCastRef.current = onVoteCast;
+    onPlayerEliminatedRef.current = onPlayerEliminated;
+  }, [onUpdate, onPlayerJoined, onPlayerLeft, onRolesSelected, onRolesDistributed, onGameDeleted, onPhaseChanged, onVoteCast, onPlayerEliminated]);
 
   const connect = useCallback(() => {
     if (!enabled || !gameId) return;
@@ -106,6 +116,16 @@ export function useGameWebSocket({
               onPhaseChangedRef.current?.(
                 update.payload?.phase,
                 update.payload?.round_number ?? 0,
+              );
+              break;
+            case 'vote_cast':
+              onVoteCastRef.current?.(update.payload?.stage, update.payload?.tally);
+              break;
+            case 'player_eliminated':
+              onPlayerEliminatedRef.current?.(
+                update.payload?.player_id,
+                update.payload?.player_name,
+                update.payload?.cause,
               );
               break;
           }

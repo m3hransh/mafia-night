@@ -16,6 +16,7 @@ import (
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/predicate"
+	"github.com/mafia-night/backend/ent/vote"
 )
 
 // PlayerUpdate is the builder for updating Player entities.
@@ -102,6 +103,36 @@ func (_u *PlayerUpdate) SetEliminations(v *Elimination) *PlayerUpdate {
 	return _u.SetEliminationsID(v.ID)
 }
 
+// AddCastVoteIDs adds the "cast_votes" edge to the Vote entity by IDs.
+func (_u *PlayerUpdate) AddCastVoteIDs(ids ...uuid.UUID) *PlayerUpdate {
+	_u.mutation.AddCastVoteIDs(ids...)
+	return _u
+}
+
+// AddCastVotes adds the "cast_votes" edges to the Vote entity.
+func (_u *PlayerUpdate) AddCastVotes(v ...*Vote) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCastVoteIDs(ids...)
+}
+
+// AddReceivedVoteIDs adds the "received_votes" edge to the Vote entity by IDs.
+func (_u *PlayerUpdate) AddReceivedVoteIDs(ids ...uuid.UUID) *PlayerUpdate {
+	_u.mutation.AddReceivedVoteIDs(ids...)
+	return _u
+}
+
+// AddReceivedVotes adds the "received_votes" edges to the Vote entity.
+func (_u *PlayerUpdate) AddReceivedVotes(v ...*Vote) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddReceivedVoteIDs(ids...)
+}
+
 // Mutation returns the PlayerMutation object of the builder.
 func (_u *PlayerUpdate) Mutation() *PlayerMutation {
 	return _u.mutation
@@ -123,6 +154,48 @@ func (_u *PlayerUpdate) ClearGameRole() *PlayerUpdate {
 func (_u *PlayerUpdate) ClearEliminations() *PlayerUpdate {
 	_u.mutation.ClearEliminations()
 	return _u
+}
+
+// ClearCastVotes clears all "cast_votes" edges to the Vote entity.
+func (_u *PlayerUpdate) ClearCastVotes() *PlayerUpdate {
+	_u.mutation.ClearCastVotes()
+	return _u
+}
+
+// RemoveCastVoteIDs removes the "cast_votes" edge to Vote entities by IDs.
+func (_u *PlayerUpdate) RemoveCastVoteIDs(ids ...uuid.UUID) *PlayerUpdate {
+	_u.mutation.RemoveCastVoteIDs(ids...)
+	return _u
+}
+
+// RemoveCastVotes removes "cast_votes" edges to Vote entities.
+func (_u *PlayerUpdate) RemoveCastVotes(v ...*Vote) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCastVoteIDs(ids...)
+}
+
+// ClearReceivedVotes clears all "received_votes" edges to the Vote entity.
+func (_u *PlayerUpdate) ClearReceivedVotes() *PlayerUpdate {
+	_u.mutation.ClearReceivedVotes()
+	return _u
+}
+
+// RemoveReceivedVoteIDs removes the "received_votes" edge to Vote entities by IDs.
+func (_u *PlayerUpdate) RemoveReceivedVoteIDs(ids ...uuid.UUID) *PlayerUpdate {
+	_u.mutation.RemoveReceivedVoteIDs(ids...)
+	return _u
+}
+
+// RemoveReceivedVotes removes "received_votes" edges to Vote entities.
+func (_u *PlayerUpdate) RemoveReceivedVotes(v ...*Vote) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveReceivedVoteIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -272,6 +345,96 @@ func (_u *PlayerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.CastVotesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.CastVotesTable,
+			Columns: []string{player.CastVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCastVotesIDs(); len(nodes) > 0 && !_u.mutation.CastVotesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.CastVotesTable,
+			Columns: []string{player.CastVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CastVotesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.CastVotesTable,
+			Columns: []string{player.CastVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ReceivedVotesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.ReceivedVotesTable,
+			Columns: []string{player.ReceivedVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedReceivedVotesIDs(); len(nodes) > 0 && !_u.mutation.ReceivedVotesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.ReceivedVotesTable,
+			Columns: []string{player.ReceivedVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ReceivedVotesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.ReceivedVotesTable,
+			Columns: []string{player.ReceivedVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{player.Label}
@@ -363,6 +526,36 @@ func (_u *PlayerUpdateOne) SetEliminations(v *Elimination) *PlayerUpdateOne {
 	return _u.SetEliminationsID(v.ID)
 }
 
+// AddCastVoteIDs adds the "cast_votes" edge to the Vote entity by IDs.
+func (_u *PlayerUpdateOne) AddCastVoteIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	_u.mutation.AddCastVoteIDs(ids...)
+	return _u
+}
+
+// AddCastVotes adds the "cast_votes" edges to the Vote entity.
+func (_u *PlayerUpdateOne) AddCastVotes(v ...*Vote) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCastVoteIDs(ids...)
+}
+
+// AddReceivedVoteIDs adds the "received_votes" edge to the Vote entity by IDs.
+func (_u *PlayerUpdateOne) AddReceivedVoteIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	_u.mutation.AddReceivedVoteIDs(ids...)
+	return _u
+}
+
+// AddReceivedVotes adds the "received_votes" edges to the Vote entity.
+func (_u *PlayerUpdateOne) AddReceivedVotes(v ...*Vote) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddReceivedVoteIDs(ids...)
+}
+
 // Mutation returns the PlayerMutation object of the builder.
 func (_u *PlayerUpdateOne) Mutation() *PlayerMutation {
 	return _u.mutation
@@ -384,6 +577,48 @@ func (_u *PlayerUpdateOne) ClearGameRole() *PlayerUpdateOne {
 func (_u *PlayerUpdateOne) ClearEliminations() *PlayerUpdateOne {
 	_u.mutation.ClearEliminations()
 	return _u
+}
+
+// ClearCastVotes clears all "cast_votes" edges to the Vote entity.
+func (_u *PlayerUpdateOne) ClearCastVotes() *PlayerUpdateOne {
+	_u.mutation.ClearCastVotes()
+	return _u
+}
+
+// RemoveCastVoteIDs removes the "cast_votes" edge to Vote entities by IDs.
+func (_u *PlayerUpdateOne) RemoveCastVoteIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	_u.mutation.RemoveCastVoteIDs(ids...)
+	return _u
+}
+
+// RemoveCastVotes removes "cast_votes" edges to Vote entities.
+func (_u *PlayerUpdateOne) RemoveCastVotes(v ...*Vote) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCastVoteIDs(ids...)
+}
+
+// ClearReceivedVotes clears all "received_votes" edges to the Vote entity.
+func (_u *PlayerUpdateOne) ClearReceivedVotes() *PlayerUpdateOne {
+	_u.mutation.ClearReceivedVotes()
+	return _u
+}
+
+// RemoveReceivedVoteIDs removes the "received_votes" edge to Vote entities by IDs.
+func (_u *PlayerUpdateOne) RemoveReceivedVoteIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	_u.mutation.RemoveReceivedVoteIDs(ids...)
+	return _u
+}
+
+// RemoveReceivedVotes removes "received_votes" edges to Vote entities.
+func (_u *PlayerUpdateOne) RemoveReceivedVotes(v ...*Vote) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveReceivedVoteIDs(ids...)
 }
 
 // Where appends a list predicates to the PlayerUpdate builder.
@@ -556,6 +791,96 @@ func (_u *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CastVotesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.CastVotesTable,
+			Columns: []string{player.CastVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCastVotesIDs(); len(nodes) > 0 && !_u.mutation.CastVotesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.CastVotesTable,
+			Columns: []string{player.CastVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CastVotesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.CastVotesTable,
+			Columns: []string{player.CastVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ReceivedVotesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.ReceivedVotesTable,
+			Columns: []string{player.ReceivedVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedReceivedVotesIDs(); len(nodes) > 0 && !_u.mutation.ReceivedVotesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.ReceivedVotesTable,
+			Columns: []string{player.ReceivedVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ReceivedVotesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.ReceivedVotesTable,
+			Columns: []string{player.ReceivedVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

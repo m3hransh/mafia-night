@@ -30,6 +30,8 @@ const (
 	EdgeGame = "game"
 	// EdgeEliminations holds the string denoting the eliminations edge name in mutations.
 	EdgeEliminations = "eliminations"
+	// EdgeVotes holds the string denoting the votes edge name in mutations.
+	EdgeVotes = "votes"
 	// Table holds the table name of the gameround in the database.
 	Table = "game_rounds"
 	// GameTable is the table that holds the game relation/edge.
@@ -46,6 +48,13 @@ const (
 	EliminationsInverseTable = "eliminations"
 	// EliminationsColumn is the table column denoting the eliminations relation/edge.
 	EliminationsColumn = "round_id"
+	// VotesTable is the table that holds the votes relation/edge.
+	VotesTable = "votes"
+	// VotesInverseTable is the table name for the Vote entity.
+	// It exists in this package in order to avoid circular dependency with the "vote" package.
+	VotesInverseTable = "votes"
+	// VotesColumn is the table column denoting the votes relation/edge.
+	VotesColumn = "round_id"
 )
 
 // Columns holds all SQL columns for gameround fields.
@@ -155,6 +164,20 @@ func ByEliminations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newEliminationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByVotesCount orders the results by votes count.
+func ByVotesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVotesStep(), opts...)
+	}
+}
+
+// ByVotes orders the results by votes terms.
+func ByVotes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVotesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newGameStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -167,5 +190,12 @@ func newEliminationsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EliminationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, EliminationsTable, EliminationsColumn),
+	)
+}
+func newVotesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VotesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VotesTable, VotesColumn),
 	)
 }

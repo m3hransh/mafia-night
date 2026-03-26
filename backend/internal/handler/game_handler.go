@@ -636,3 +636,90 @@ return
 
 JSONResponse(w, http.StatusOK, g)
 }
+
+// CastVote handles POST /api/games/{id}/votes
+func (h *GameHandler) CastVote(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+	var req struct {
+		VoterID  string `json:"voter_id"`
+		TargetID string `json:"target_id"`
+		Stage    string `json:"stage"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		ErrorResponse(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.VoterID == "" || req.TargetID == "" || req.Stage == "" {
+		ErrorResponse(w, http.StatusBadRequest, "voter_id, target_id, and stage are required")
+		return
+	}
+	if err := h.gameService.CastVote(r.Context(), gameID, req.VoterID, req.TargetID, req.Stage); err != nil {
+		switch {
+		case errors.Is(err, service.ErrWrongPhase):
+			ErrorResponse(w, http.StatusConflict, err.Error())
+		case errors.Is(err, service.ErrCannotVoteForSelf), errors.Is(err, service.ErrInvalidVoteStage):
+			ErrorResponse(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, service.ErrNoActiveRound):
+			ErrorResponse(w, http.StatusConflict, err.Error())
+		default:
+			ErrorResponse(w, http.StatusInternalServerError, "failed to cast vote")
+		}
+		return
+	}
+	JSONResponse(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// GetVoteTally handles GET /api/games/{id}/votes?stage=nomination
+func (h *GameHandler) GetVoteTally(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+	stage := r.URL.Query().Get("stage")
+	if stage == "" {
+		stage = "nomination"
+	}
+	tally, err := h.gameService.GetVoteTally(r.Context(), gameID, stage)
+	if err != nil {
+		ErrorResponse(w, http.StatusInternalServerError, "failed to get vote tally")
+		return
+	}
+	JSONResponse(w, http.StatusOK, tally)
+}
+
+// EliminatePlayer handles POST /api/games/{id}/eliminate
+func (h *GameHandler) EliminatePlayer(w http.ResponseWriter, r *http.Request) {
+	gameID := chi.URLParam(r, "id")
+	moderatorID := r.Header.Get("X-Moderator-ID")
+	if moderatorID == "" {
+		ErrorResponse(w, http.StatusBadRequest, "X-Moderator-ID header is required")
+		return
+	}
+	var req struct {
+		PlayerID string `json:"player_id"`
+		Cause    string `json:"cause"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		ErrorResponse(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.PlayerID == "" {
+		ErrorResponse(w, http.StatusBadRequest, "player_id is required")
+		return
+	}
+	if req.Cause == "" {
+		req.Cause = "vote"
+	}
+	elim, err := h.gameService.EliminatePlayer(r.Context(), gameID, moderatorID, req.PlayerID, req.Cause)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrNotAuthorized):
+			ErrorResponse(w, http.StatusForbidden, err.Error())
+		default:
+			ErrorResponse(w, http.StatusInternalServerError, "failed to eliminate player")
+		}
+		return
+	}
+	JSONResponse(w, http.StatusOK, map[string]any{
+		"player_id":     elim.PlayerID,
+		"cause":         elim.Cause,
+		"eliminated_at": elim.EliminatedAt,
+	})
+}

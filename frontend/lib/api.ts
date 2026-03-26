@@ -286,3 +286,50 @@ export async function startNight(gameId: string, moderatorId: string): Promise<P
 export async function endGame(gameId: string, moderatorId: string): Promise<PhaseResult> {
   return phaseRequest(gameId, moderatorId, 'end-game');
 }
+
+// ── Voting ────────────────────────────────────────────────────────────────────
+
+export interface VoteCount {
+  target_id: string;
+  target_name: string;
+  count: number;
+}
+
+export interface VoteTally {
+  stage: string;
+  votes: VoteCount[];
+  total_voters: number;
+}
+
+export async function castVote(gameId: string, voterId: string, targetId: string, stage: string): Promise<void> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/votes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ voter_id: voterId, target_id: targetId, stage }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new APIError(res.status, err.error || 'Failed to cast vote');
+  }
+}
+
+export async function getVoteTally(gameId: string, stage: string = 'nomination'): Promise<VoteTally> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/votes?stage=${stage}`);
+  if (!res.ok) throw new APIError(res.status, 'Failed to get vote tally');
+  return res.json();
+}
+
+export async function eliminatePlayer(gameId: string, moderatorId: string, playerId: string, cause: string = 'vote'): Promise<void> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/eliminate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Moderator-ID': moderatorId },
+    body: JSON.stringify({ player_id: playerId, cause }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new APIError(res.status, err.error || 'Failed to eliminate player');
+  }
+}

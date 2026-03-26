@@ -357,6 +357,29 @@ func HasEliminationsWith(preds ...predicate.Elimination) predicate.Game {
 	})
 }
 
+// HasVotes applies the HasEdge predicate on the "votes" edge.
+func HasVotes() predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, VotesTable, VotesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasVotesWith applies the HasEdge predicate on the "votes" edge with a given conditions (other predicates).
+func HasVotesWith(preds ...predicate.Vote) predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := newVotesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Game) predicate.Game {
 	return predicate.Game(sql.AndPredicates(predicates...))

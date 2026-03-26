@@ -44,7 +44,7 @@ export function SelectedRolesDisplay({
   return (
     <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-blue-500/30">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
+        <h2 className="text-xl font-bold text-white">{title}</h2>
         {badge !== undefined ? badge : defaultBadge}
       </div>
 
@@ -68,7 +68,7 @@ export function SelectedRolesDisplay({
                     key={role.role_id}
                     className={`bg-black/30 rounded-lg p-4 border border-${color}-500/20 flex items-center justify-between`}
                   >
-                    <span className="text-white font-semibold">{role.name}</span>
+                    <span className="text-white text-sm font-semibold">{role.name}</span>
                     <span className={`bg-${color}-600/50 text-white px-3 py-1 rounded-full text-sm font-bold`}>
                       ×{role.count}
                     </span>

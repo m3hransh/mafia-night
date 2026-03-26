@@ -130,6 +130,9 @@ func main() {
 			r.Post("/{id}/start-day", handler.NotifyPhaseChange(gameHandler.StartDay, wsHandler))
 			r.Post("/{id}/start-night", handler.NotifyPhaseChange(gameHandler.StartNight, wsHandler))
 			r.Post("/{id}/end-game", handler.NotifyPhaseChange(gameHandler.EndGame, wsHandler))
+			r.Post("/{id}/votes", handler.NotifyVoteCast(gameHandler.CastVote, gameService, wsHandler))
+			r.Get("/{id}/votes", gameHandler.GetVoteTally)
+			r.Post("/{id}/eliminate", handler.NotifyElimination(gameHandler.EliminatePlayer, wsHandler))
 			r.Get("/{id}/ws", wsHandler.HandleGameWebSocket)
 		})
 

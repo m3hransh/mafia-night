@@ -30,6 +30,8 @@ type Tx struct {
 	RoleTemplate *RoleTemplateClient
 	// RoleTemplateRole is the client for interacting with the RoleTemplateRole builders.
 	RoleTemplateRole *RoleTemplateRoleClient
+	// Vote is the client for interacting with the Vote builders.
+	Vote *VoteClient
 
 	// lazily loaded.
 	client     *Client
@@ -170,6 +172,7 @@ func (tx *Tx) init() {
 	tx.Role = NewRoleClient(tx.config)
 	tx.RoleTemplate = NewRoleTemplateClient(tx.config)
 	tx.RoleTemplateRole = NewRoleTemplateRoleClient(tx.config)
+	tx.Vote = NewVoteClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

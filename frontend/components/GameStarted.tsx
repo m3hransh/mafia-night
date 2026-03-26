@@ -1,5 +1,6 @@
 import { Button } from './Button';
 import { useCreateGameContext } from '@/app/create-game/context';
+import { VotingPanel } from './VotingPanel';
 
 const PHASE_LABELS: Record<string, { icon: string; label: string; desc: string }> = {
   waiting: { icon: '⏳', label: 'Waiting', desc: 'Game is waiting to begin' },
@@ -9,10 +10,11 @@ const PHASE_LABELS: Record<string, { icon: string; label: string; desc: string }
 };
 
 export function GameStarted() {
-  const { state, closeGame, handleStartDay, handleStartNight, handleEndGame } = useCreateGameContext();
-  const { roleAssignments, error, closing, dayNightPhase, roundNumber, players } = state;
+  const { state, closeGame, handleStartDay, handleStartNight, handleEndGame, handleEliminate, handleVoteStageChange } = useCreateGameContext();
+  const { roleAssignments, error, closing, dayNightPhase, roundNumber, players, voteTally, voteStage, eliminatingPlayerId, eliminatedPlayerIds } = state;
 
-  const alive = players.length; // TODO: update when eliminations land
+  const alivePlayers = players.filter(p => !eliminatedPlayerIds.has(p.id));
+  const alive = alivePlayers.length;
 
   return (
     <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 space-y-6">
@@ -68,6 +70,20 @@ export function GameStarted() {
             🏁 End Game
           </button>
         </div>
+      )}
+
+      {/* Voting panel - only shown during day phase */}
+      {dayNightPhase === 'day' && (
+        <VotingPanel
+          gameId={state.game?.id ?? ''}
+          moderatorId={state.moderatorId}
+          alivePlayers={alivePlayers}
+          tally={voteTally}
+          currentStage={voteStage}
+          onStageChange={handleVoteStageChange}
+          onEliminate={handleEliminate}
+          eliminatingId={eliminatingPlayerId}
+        />
       )}
 
       {error && (

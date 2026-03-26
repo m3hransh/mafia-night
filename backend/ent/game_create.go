@@ -16,6 +16,7 @@ import (
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/player"
+	"github.com/mafia-night/backend/ent/vote"
 )
 
 // GameCreate is the builder for creating a Game entity.
@@ -151,6 +152,21 @@ func (_c *GameCreate) AddEliminations(v ...*Elimination) *GameCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddEliminationIDs(ids...)
+}
+
+// AddVoteIDs adds the "votes" edge to the Vote entity by IDs.
+func (_c *GameCreate) AddVoteIDs(ids ...uuid.UUID) *GameCreate {
+	_c.mutation.AddVoteIDs(ids...)
+	return _c
+}
+
+// AddVotes adds the "votes" edges to the Vote entity.
+func (_c *GameCreate) AddVotes(v ...*Vote) *GameCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddVoteIDs(ids...)
 }
 
 // Mutation returns the GameMutation object of the builder.
@@ -360,6 +376,22 @@ func (_c *GameCreate) createSpec() (*Game, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.VotesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.VotesTable,
+			Columns: []string{game.VotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

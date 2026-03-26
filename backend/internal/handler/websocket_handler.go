@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -130,6 +131,8 @@ const (
 	RolesDistributed GameUpdateType = "roles_distributed"
 	GameDeleted      GameUpdateType = "game_deleted"
 	PhaseChanged     GameUpdateType = "phase_changed"
+	VoteCast         GameUpdateType = "vote_cast"
+	PlayerEliminated GameUpdateType = "player_eliminated"
 )
 
 type GameUpdate struct {
@@ -456,6 +459,23 @@ func (h *WebSocketHandler) BroadcastPhaseChanged(gameID string, phase string, ro
 	})
 }
 
+// BroadcastVoteCast sends updated vote tally to all clients in the game.
+func (h *WebSocketHandler) BroadcastVoteCast(gameID, stage string, tally any) {
+	h.hub.BroadcastToGame(gameID, VoteCast, map[string]any{
+		"stage": stage,
+		"tally": tally,
+	})
+}
+
+// BroadcastPlayerEliminated sends elimination event to all clients.
+func (h *WebSocketHandler) BroadcastPlayerEliminated(gameID, playerID, playerName, cause string) {
+	h.hub.BroadcastToGame(gameID, PlayerEliminated, map[string]any{
+		"player_id":   playerID,
+		"player_name": playerName,
+		"cause":       cause,
+	})
+}
+
 // NotifyPlayerUpdate wraps game handler methods to send WebSocket updates
 func NotifyPlayerUpdate(handler http.HandlerFunc, wsHandler *WebSocketHandler, updateType GameUpdateType) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -508,6 +528,42 @@ func NotifyPhaseChange(h http.HandlerFunc, wsHandler *WebSocketHandler) http.Han
 				if phase != "" {
 					wsHandler.BroadcastPhaseChanged(gameID, phase, roundNumber)
 				}
+			}
+		}
+	}
+}
+
+// NotifyVoteCast wraps CastVote handler: after success, fetches tally and broadcasts vote_cast.
+func NotifyVoteCast(next http.HandlerFunc, gameService *service.GameService, wsHandler *WebSocketHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gameID := chi.URLParam(r, "id")
+		rec := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
+		next(rec, r)
+		if rec.statusCode == http.StatusOK && gameID != "" {
+			for _, stage := range []string{"nomination", "final"} {
+				tally, err := gameService.GetVoteTally(r.Context(), gameID, stage)
+				if err == nil {
+					wsHandler.BroadcastVoteCast(gameID, stage, tally)
+				}
+			}
+		}
+	}
+}
+
+// NotifyElimination wraps EliminatePlayer: after success, parses player info and broadcasts.
+func NotifyElimination(next http.HandlerFunc, wsHandler *WebSocketHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gameID := chi.URLParam(r, "id")
+		rec := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
+		next(rec, r)
+		if rec.statusCode == http.StatusOK && gameID != "" && len(rec.body) > 0 {
+			var payload struct {
+				PlayerID interface{} `json:"player_id"`
+				Cause    string      `json:"cause"`
+			}
+			if err := json.Unmarshal(rec.body, &payload); err == nil {
+				playerIDStr := fmt.Sprintf("%v", payload.PlayerID)
+				wsHandler.BroadcastPlayerEliminated(gameID, playerIDStr, "", payload.Cause)
 			}
 		}
 	}

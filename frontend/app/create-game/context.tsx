@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { apiClient } from '@/lib/api-client';
 import type { Role } from '@/lib/types';
 import { saveModeratorGame, clearModeratorGame, validateModeratorGameState } from '@/lib/gameStorage';
-import { deleteGame, removePlayer, distributeRoles, selectRoles, getSelectedRoles, getGameRoles, PlayerRoleAssignment, startDay, startNight, endGame, PhaseResult } from '@/lib/api';
+import { deleteGame, removePlayer, distributeRoles, selectRoles, getSelectedRoles, getGameRoles, PlayerRoleAssignment, startDay, startNight, endGame, PhaseResult, eliminatePlayer, VoteTally } from '@/lib/api';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -45,6 +45,10 @@ export type State = {
   removingPlayerId: string | null;
   distributingRoles: boolean;
   copySuccess: boolean;
+  voteTally: VoteTally | null;
+  voteStage: 'nomination' | 'final';
+  eliminatingPlayerId: string | null;
+  eliminatedPlayerIds: Set<string>;
 };
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -70,7 +74,13 @@ type Action =
   | { type: 'SET_COPY_SUCCESS'; value: boolean }
   | { type: 'SET_ERROR'; error: string }
   | { type: 'ROLES_CHANGED'; roles: Map<string, number> }
-  | { type: 'PHASE_CHANGED'; dayNightPhase: DayNightPhase; roundNumber: number };
+  | { type: 'PHASE_CHANGED'; dayNightPhase: DayNightPhase; roundNumber: number }
+  | { type: 'VOTE_TALLY_UPDATED'; tally: VoteTally }
+  | { type: 'SET_VOTE_STAGE'; stage: 'nomination' | 'final' }
+  | { type: 'ELIMINATING_PLAYER'; playerId: string }
+  | { type: 'PLAYER_ELIMINATED'; playerId: string }
+  | { type: 'ELIMINATE_FAILED' }
+  | { type: 'RESET_VOTE_TALLY' };
 
 // ── localStorage helpers ──────────────────────────────────────────────────────
 
@@ -110,6 +120,10 @@ const initialState: State = {
   removingPlayerId: null,
   distributingRoles: false,
   copySuccess: false,
+  voteTally: null,
+  voteStage: 'nomination',
+  eliminatingPlayerId: null,
+  eliminatedPlayerIds: new Set<string>(),
 };
 
 function reducer(state: State, action: Action): State {
@@ -157,6 +171,22 @@ function reducer(state: State, action: Action): State {
       return { ...state, selectedRoles: action.roles };
     case 'PHASE_CHANGED':
       return { ...state, dayNightPhase: action.dayNightPhase, roundNumber: action.roundNumber };
+    case 'VOTE_TALLY_UPDATED':
+      return { ...state, voteTally: action.tally };
+    case 'SET_VOTE_STAGE':
+      return { ...state, voteStage: action.stage };
+    case 'ELIMINATING_PLAYER':
+      return { ...state, eliminatingPlayerId: action.playerId };
+    case 'PLAYER_ELIMINATED':
+      return {
+        ...state,
+        eliminatingPlayerId: null,
+        eliminatedPlayerIds: new Set([...state.eliminatedPlayerIds, action.playerId]),
+      };
+    case 'ELIMINATE_FAILED':
+      return { ...state, eliminatingPlayerId: null };
+    case 'RESET_VOTE_TALLY':
+      return { ...state, voteTally: null, voteStage: 'nomination' };
     default:
       return state;
   }
@@ -179,6 +209,8 @@ type CreateGameContextValue = {
   handleStartDay: () => Promise<void>;
   handleStartNight: () => Promise<void>;
   handleEndGame: () => Promise<void>;
+  handleEliminate: (playerId: string) => Promise<void>;
+  handleVoteStageChange: (stage: 'nomination' | 'final') => void;
 };
 
 const CreateGameContext = createContext<CreateGameContextValue | null>(null);
@@ -275,6 +307,13 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     onGameDeleted: () => { clearModeratorGame(); router.push('/'); },
     onPhaseChanged: (phase, roundNumber) => {
       dispatch({ type: 'PHASE_CHANGED', dayNightPhase: phase as DayNightPhase, roundNumber });
+      if (phase === 'day') dispatch({ type: 'RESET_VOTE_TALLY' });
+    },
+    onVoteCast: (stage, tally) => {
+      if (tally) dispatch({ type: 'VOTE_TALLY_UPDATED', tally });
+    },
+    onPlayerEliminated: (playerId) => {
+      if (playerId) dispatch({ type: 'PLAYER_ELIMINATED', playerId });
     },
     onUpdate: (update) => {
       if (update.type === 'initial_state' && update.payload?.players) {
@@ -431,6 +470,22 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const handleEliminate = async (playerId: string) => {
+    if (!game) return;
+    dispatch({ type: 'ELIMINATING_PLAYER', playerId });
+    try {
+      await eliminatePlayer(game.id, moderatorId, playerId);
+      dispatch({ type: 'PLAYER_ELIMINATED', playerId });
+    } catch (err) {
+      dispatch({ type: 'ELIMINATE_FAILED' });
+      dispatch({ type: 'SET_ERROR', error: err instanceof Error ? err.message : 'Failed to eliminate player' });
+    }
+  };
+
+  const handleVoteStageChange = (stage: 'nomination' | 'final') => {
+    dispatch({ type: 'SET_VOTE_STAGE', stage });
+  };
+
   const value = useMemo(() => ({
     state,
     allRoles,
@@ -446,6 +501,8 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     handleStartDay,
     handleStartNight,
     handleEndGame,
+    handleEliminate,
+    handleVoteStageChange,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [state, allRoles]);
 

@@ -310,6 +310,52 @@ func HasEliminationsWith(preds ...predicate.Elimination) predicate.Player {
 	})
 }
 
+// HasCastVotes applies the HasEdge predicate on the "cast_votes" edge.
+func HasCastVotes() predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CastVotesTable, CastVotesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCastVotesWith applies the HasEdge predicate on the "cast_votes" edge with a given conditions (other predicates).
+func HasCastVotesWith(preds ...predicate.Vote) predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := newCastVotesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasReceivedVotes applies the HasEdge predicate on the "received_votes" edge.
+func HasReceivedVotes() predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ReceivedVotesTable, ReceivedVotesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasReceivedVotesWith applies the HasEdge predicate on the "received_votes" edge with a given conditions (other predicates).
+func HasReceivedVotesWith(preds ...predicate.Vote) predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := newReceivedVotesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Player) predicate.Player {
 	return predicate.Player(sql.AndPredicates(predicates...))

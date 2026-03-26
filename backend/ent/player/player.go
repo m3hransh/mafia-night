@@ -27,6 +27,10 @@ const (
 	EdgeGameRole = "game_role"
 	// EdgeEliminations holds the string denoting the eliminations edge name in mutations.
 	EdgeEliminations = "eliminations"
+	// EdgeCastVotes holds the string denoting the cast_votes edge name in mutations.
+	EdgeCastVotes = "cast_votes"
+	// EdgeReceivedVotes holds the string denoting the received_votes edge name in mutations.
+	EdgeReceivedVotes = "received_votes"
 	// Table holds the table name of the player in the database.
 	Table = "players"
 	// GameTable is the table that holds the game relation/edge.
@@ -50,6 +54,20 @@ const (
 	EliminationsInverseTable = "eliminations"
 	// EliminationsColumn is the table column denoting the eliminations relation/edge.
 	EliminationsColumn = "player_id"
+	// CastVotesTable is the table that holds the cast_votes relation/edge.
+	CastVotesTable = "votes"
+	// CastVotesInverseTable is the table name for the Vote entity.
+	// It exists in this package in order to avoid circular dependency with the "vote" package.
+	CastVotesInverseTable = "votes"
+	// CastVotesColumn is the table column denoting the cast_votes relation/edge.
+	CastVotesColumn = "voter_id"
+	// ReceivedVotesTable is the table that holds the received_votes relation/edge.
+	ReceivedVotesTable = "votes"
+	// ReceivedVotesInverseTable is the table name for the Vote entity.
+	// It exists in this package in order to avoid circular dependency with the "vote" package.
+	ReceivedVotesInverseTable = "votes"
+	// ReceivedVotesColumn is the table column denoting the received_votes relation/edge.
+	ReceivedVotesColumn = "target_id"
 )
 
 // Columns holds all SQL columns for player fields.
@@ -124,6 +142,34 @@ func ByEliminationsField(field string, opts ...sql.OrderTermOption) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newEliminationsStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByCastVotesCount orders the results by cast_votes count.
+func ByCastVotesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCastVotesStep(), opts...)
+	}
+}
+
+// ByCastVotes orders the results by cast_votes terms.
+func ByCastVotes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCastVotesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByReceivedVotesCount orders the results by received_votes count.
+func ByReceivedVotesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newReceivedVotesStep(), opts...)
+	}
+}
+
+// ByReceivedVotes orders the results by received_votes terms.
+func ByReceivedVotes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newReceivedVotesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newGameStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -143,5 +189,19 @@ func newEliminationsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EliminationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, EliminationsTable, EliminationsColumn),
+	)
+}
+func newCastVotesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CastVotesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CastVotesTable, CastVotesColumn),
+	)
+}
+func newReceivedVotesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ReceivedVotesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ReceivedVotesTable, ReceivedVotesColumn),
 	)
 }

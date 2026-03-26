@@ -15,6 +15,7 @@ import (
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
+	"github.com/mafia-night/backend/ent/vote"
 )
 
 // PlayerCreate is the builder for creating a Player entity.
@@ -105,6 +106,36 @@ func (_c *PlayerCreate) SetNillableEliminationsID(id *uuid.UUID) *PlayerCreate {
 // SetEliminations sets the "eliminations" edge to the Elimination entity.
 func (_c *PlayerCreate) SetEliminations(v *Elimination) *PlayerCreate {
 	return _c.SetEliminationsID(v.ID)
+}
+
+// AddCastVoteIDs adds the "cast_votes" edge to the Vote entity by IDs.
+func (_c *PlayerCreate) AddCastVoteIDs(ids ...uuid.UUID) *PlayerCreate {
+	_c.mutation.AddCastVoteIDs(ids...)
+	return _c
+}
+
+// AddCastVotes adds the "cast_votes" edges to the Vote entity.
+func (_c *PlayerCreate) AddCastVotes(v ...*Vote) *PlayerCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCastVoteIDs(ids...)
+}
+
+// AddReceivedVoteIDs adds the "received_votes" edge to the Vote entity by IDs.
+func (_c *PlayerCreate) AddReceivedVoteIDs(ids ...uuid.UUID) *PlayerCreate {
+	_c.mutation.AddReceivedVoteIDs(ids...)
+	return _c
+}
+
+// AddReceivedVotes adds the "received_votes" edges to the Vote entity.
+func (_c *PlayerCreate) AddReceivedVotes(v ...*Vote) *PlayerCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddReceivedVoteIDs(ids...)
 }
 
 // Mutation returns the PlayerMutation object of the builder.
@@ -261,6 +292,38 @@ func (_c *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CastVotesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.CastVotesTable,
+			Columns: []string{player.CastVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ReceivedVotesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.ReceivedVotesTable,
+			Columns: []string{player.ReceivedVotesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(vote.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -16,6 +16,7 @@ import (
 	"github.com/mafia-night/backend/ent/roletemplate"
 	"github.com/mafia-night/backend/ent/roletemplaterole"
 	"github.com/mafia-night/backend/ent/schema"
+	"github.com/mafia-night/backend/ent/vote"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -322,4 +323,32 @@ func init() {
 	roletemplateroleDescCount := roletemplateroleFields[2].Descriptor()
 	// roletemplaterole.CountValidator is a validator for the "count" field. It is called by the builders before save.
 	roletemplaterole.CountValidator = roletemplateroleDescCount.Validators[0].(func(int) error)
+	voteFields := schema.Vote{}.Fields()
+	_ = voteFields
+	// voteDescGameID is the schema descriptor for game_id field.
+	voteDescGameID := voteFields[1].Descriptor()
+	// vote.GameIDValidator is a validator for the "game_id" field. It is called by the builders before save.
+	vote.GameIDValidator = func() func(string) error {
+		validators := voteDescGameID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(game string) error {
+			for _, fn := range fns {
+				if err := fn(game); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// voteDescCreatedAt is the schema descriptor for created_at field.
+	voteDescCreatedAt := voteFields[6].Descriptor()
+	// vote.DefaultCreatedAt holds the default value on creation for the created_at field.
+	vote.DefaultCreatedAt = voteDescCreatedAt.Default.(func() time.Time)
+	// voteDescID is the schema descriptor for id field.
+	voteDescID := voteFields[0].Descriptor()
+	// vote.DefaultID holds the default value on creation for the id field.
+	vote.DefaultID = voteDescID.Default.(func() uuid.UUID)
 }

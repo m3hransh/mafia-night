@@ -299,6 +299,60 @@ var (
 			},
 		},
 	}
+	// VotesColumns holds the columns for the "votes" table.
+	VotesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "stage", Type: field.TypeEnum, Enums: []string{"nomination", "final"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "game_id", Type: field.TypeString, Size: 12},
+		{Name: "round_id", Type: field.TypeUUID},
+		{Name: "voter_id", Type: field.TypeUUID},
+		{Name: "target_id", Type: field.TypeUUID},
+	}
+	// VotesTable holds the schema information for the "votes" table.
+	VotesTable = &schema.Table{
+		Name:       "votes",
+		Columns:    VotesColumns,
+		PrimaryKey: []*schema.Column{VotesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "votes_games_votes",
+				Columns:    []*schema.Column{VotesColumns[3]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "votes_game_rounds_votes",
+				Columns:    []*schema.Column{VotesColumns[4]},
+				RefColumns: []*schema.Column{GameRoundsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "votes_players_cast_votes",
+				Columns:    []*schema.Column{VotesColumns[5]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "votes_players_received_votes",
+				Columns:    []*schema.Column{VotesColumns[6]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "vote_round_id_voter_id_stage",
+				Unique:  true,
+				Columns: []*schema.Column{VotesColumns[4], VotesColumns[5], VotesColumns[1]},
+			},
+			{
+				Name:    "vote_game_id",
+				Unique:  false,
+				Columns: []*schema.Column{VotesColumns[3]},
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AdminsTable,
@@ -310,6 +364,7 @@ var (
 		RolesTable,
 		RoleTemplatesTable,
 		RoleTemplateRolesTable,
+		VotesTable,
 	}
 )
 
@@ -324,4 +379,8 @@ func init() {
 	PlayersTable.ForeignKeys[0].RefTable = GamesTable
 	RoleTemplateRolesTable.ForeignKeys[0].RefTable = RolesTable
 	RoleTemplateRolesTable.ForeignKeys[1].RefTable = RoleTemplatesTable
+	VotesTable.ForeignKeys[0].RefTable = GamesTable
+	VotesTable.ForeignKeys[1].RefTable = GameRoundsTable
+	VotesTable.ForeignKeys[2].RefTable = PlayersTable
+	VotesTable.ForeignKeys[3].RefTable = PlayersTable
 }

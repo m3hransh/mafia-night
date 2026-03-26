@@ -43,6 +43,7 @@ func (GameRound) Edges() []ent.Edge {
 			Required().
 			Unique(),
 		edge.To("eliminations", Elimination.Type),
+		edge.To("votes", Vote.Type),
 	}
 }
 

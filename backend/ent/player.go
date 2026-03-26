@@ -41,9 +41,13 @@ type PlayerEdges struct {
 	GameRole *GameRole `json:"game_role,omitempty"`
 	// Eliminations holds the value of the eliminations edge.
 	Eliminations *Elimination `json:"eliminations,omitempty"`
+	// CastVotes holds the value of the cast_votes edge.
+	CastVotes []*Vote `json:"cast_votes,omitempty"`
+	// ReceivedVotes holds the value of the received_votes edge.
+	ReceivedVotes []*Vote `json:"received_votes,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [5]bool
 }
 
 // GameOrErr returns the Game value or an error if the edge
@@ -77,6 +81,24 @@ func (e PlayerEdges) EliminationsOrErr() (*Elimination, error) {
 		return nil, &NotFoundError{label: elimination.Label}
 	}
 	return nil, &NotLoadedError{edge: "eliminations"}
+}
+
+// CastVotesOrErr returns the CastVotes value or an error if the edge
+// was not loaded in eager-loading.
+func (e PlayerEdges) CastVotesOrErr() ([]*Vote, error) {
+	if e.loadedTypes[3] {
+		return e.CastVotes, nil
+	}
+	return nil, &NotLoadedError{edge: "cast_votes"}
+}
+
+// ReceivedVotesOrErr returns the ReceivedVotes value or an error if the edge
+// was not loaded in eager-loading.
+func (e PlayerEdges) ReceivedVotesOrErr() ([]*Vote, error) {
+	if e.loadedTypes[4] {
+		return e.ReceivedVotes, nil
+	}
+	return nil, &NotLoadedError{edge: "received_votes"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -155,6 +177,16 @@ func (_m *Player) QueryGameRole() *GameRoleQuery {
 // QueryEliminations queries the "eliminations" edge of the Player entity.
 func (_m *Player) QueryEliminations() *EliminationQuery {
 	return NewPlayerClient(_m.config).QueryEliminations(_m)
+}
+
+// QueryCastVotes queries the "cast_votes" edge of the Player entity.
+func (_m *Player) QueryCastVotes() *VoteQuery {
+	return NewPlayerClient(_m.config).QueryCastVotes(_m)
+}
+
+// QueryReceivedVotes queries the "received_votes" edge of the Player entity.
+func (_m *Player) QueryReceivedVotes() *VoteQuery {
+	return NewPlayerClient(_m.config).QueryReceivedVotes(_m)
 }
 
 // Update returns a builder for updating this Player.

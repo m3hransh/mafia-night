@@ -18,6 +18,7 @@ import (
 	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/predicate"
+	"github.com/mafia-night/backend/ent/vote"
 )
 
 // GameQuery is the builder for querying Game entities.
@@ -31,6 +32,7 @@ type GameQuery struct {
 	withGameRoles    *GameRoleQuery
 	withRounds       *GameRoundQuery
 	withEliminations *EliminationQuery
+	withVotes        *VoteQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -148,6 +150,28 @@ func (_q *GameQuery) QueryEliminations() *EliminationQuery {
 			sqlgraph.From(game.Table, game.FieldID, selector),
 			sqlgraph.To(elimination.Table, elimination.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, game.EliminationsTable, game.EliminationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVotes chains the current query on the "votes" edge.
+func (_q *GameQuery) QueryVotes() *VoteQuery {
+	query := (&VoteClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, selector),
+			sqlgraph.To(vote.Table, vote.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.VotesTable, game.VotesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -351,6 +375,7 @@ func (_q *GameQuery) Clone() *GameQuery {
 		withGameRoles:    _q.withGameRoles.Clone(),
 		withRounds:       _q.withRounds.Clone(),
 		withEliminations: _q.withEliminations.Clone(),
+		withVotes:        _q.withVotes.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -398,6 +423,17 @@ func (_q *GameQuery) WithEliminations(opts ...func(*EliminationQuery)) *GameQuer
 		opt(query)
 	}
 	_q.withEliminations = query
+	return _q
+}
+
+// WithVotes tells the query-builder to eager-load the nodes that are connected to
+// the "votes" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GameQuery) WithVotes(opts ...func(*VoteQuery)) *GameQuery {
+	query := (&VoteClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withVotes = query
 	return _q
 }
 
@@ -479,11 +515,12 @@ func (_q *GameQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Game, e
 	var (
 		nodes       = []*Game{}
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			_q.withPlayers != nil,
 			_q.withGameRoles != nil,
 			_q.withRounds != nil,
 			_q.withEliminations != nil,
+			_q.withVotes != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -529,6 +566,13 @@ func (_q *GameQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Game, e
 		if err := _q.loadEliminations(ctx, query, nodes,
 			func(n *Game) { n.Edges.Eliminations = []*Elimination{} },
 			func(n *Game, e *Elimination) { n.Edges.Eliminations = append(n.Edges.Eliminations, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withVotes; query != nil {
+		if err := _q.loadVotes(ctx, query, nodes,
+			func(n *Game) { n.Edges.Votes = []*Vote{} },
+			func(n *Game, e *Vote) { n.Edges.Votes = append(n.Edges.Votes, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -640,6 +684,36 @@ func (_q *GameQuery) loadEliminations(ctx context.Context, query *EliminationQue
 	}
 	query.Where(predicate.Elimination(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(game.EliminationsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.GameID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "game_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *GameQuery) loadVotes(ctx context.Context, query *VoteQuery, nodes []*Game, init func(*Game), assign func(*Game, *Vote)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Game)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(vote.FieldGameID)
+	}
+	query.Where(predicate.Vote(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(game.VotesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

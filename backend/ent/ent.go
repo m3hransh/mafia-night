@@ -21,6 +21,7 @@ import (
 	"github.com/mafia-night/backend/ent/role"
 	"github.com/mafia-night/backend/ent/roletemplate"
 	"github.com/mafia-night/backend/ent/roletemplaterole"
+	"github.com/mafia-night/backend/ent/vote"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -90,6 +91,7 @@ func checkColumn(t, c string) error {
 			role.Table:             role.ValidColumn,
 			roletemplate.Table:     roletemplate.ValidColumn,
 			roletemplaterole.Table: roletemplaterole.ValidColumn,
+			vote.Table:             vote.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

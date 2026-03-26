@@ -7,12 +7,16 @@ import (
 	"strings"
 	"time"
 
+	"sort"
+
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent"
+	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
+	entVote "github.com/mafia-night/backend/ent/vote"
 	"github.com/mafia-night/backend/pkg/gameid"
 )
 
@@ -536,9 +540,14 @@ func (s *GameService) GetGameRoles(ctx context.Context, gameID string, moderator
 // ── Phase management ──────────────────────────────────────────────────────────
 
 var (
-ErrWrongPhase        = errors.New("game is not in the expected phase")
-ErrGameNotActive     = errors.New("game is not active")
-ErrGameAlreadyEnded  = errors.New("game has already ended")
+ErrWrongPhase               = errors.New("game is not in the expected phase")
+ErrGameNotActive            = errors.New("game is not active")
+ErrGameAlreadyEnded         = errors.New("game has already ended")
+ErrGameNotFound             = errors.New("game not found")
+ErrPlayerAlreadyEliminated  = errors.New("player has already been eliminated")
+ErrCannotVoteForSelf        = errors.New("cannot vote for yourself")
+ErrNoActiveRound            = errors.New("no active round")
+ErrInvalidVoteStage         = errors.New("invalid vote stage")
 )
 
 // PhaseResult is returned by phase-transition methods.
@@ -711,4 +720,188 @@ gameround.EndedAtIsNil(),
 ).
 Order(ent.Desc(gameround.FieldRoundNumber)).
 First(ctx)
+}
+
+type VoteCount struct {
+	TargetID   uuid.UUID `json:"target_id"`
+	TargetName string    `json:"target_name"`
+	Count      int       `json:"count"`
+}
+
+type VoteTally struct {
+	Stage string      `json:"stage"`
+	Votes []VoteCount `json:"votes"`
+	Total int         `json:"total_voters"`
+}
+
+// CastVote lets a player vote for a target during the current day round.
+func (s *GameService) CastVote(ctx context.Context, gameID, voterID, targetID, stage string) error {
+	g, err := s.client.Game.Get(ctx, gameID)
+	if err != nil {
+		return ErrGameNotFound
+	}
+	if g.Phase != game.PhaseDay {
+		return ErrWrongPhase
+	}
+	if stage != "nomination" && stage != "final" {
+		return ErrInvalidVoteStage
+	}
+	if voterID == targetID {
+		return ErrCannotVoteForSelf
+	}
+
+	voterUUID, err := uuid.Parse(voterID)
+	if err != nil {
+		return errors.New("invalid voter id")
+	}
+	targetUUID, err := uuid.Parse(targetID)
+	if err != nil {
+		return errors.New("invalid target id")
+	}
+
+	round, err := s.GetCurrentRound(ctx, gameID)
+	if err != nil {
+		return ErrNoActiveRound
+	}
+
+	voteStage := entVote.Stage(stage)
+
+	existing, err := s.client.Vote.Query().
+		Where(
+			entVote.RoundID(round.ID),
+			entVote.VoterID(voterUUID),
+			entVote.StageEQ(voteStage),
+		).Only(ctx)
+
+	if err == nil {
+		_, err = s.client.Vote.UpdateOne(existing).
+			SetTargetID(targetUUID).
+			Save(ctx)
+		return err
+	}
+
+	_, err = s.client.Vote.Create().
+		SetGameID(gameID).
+		SetRoundID(round.ID).
+		SetVoterID(voterUUID).
+		SetTargetID(targetUUID).
+		SetStage(voteStage).
+		Save(ctx)
+	return err
+}
+
+// GetVoteTally returns the current vote counts for the active round.
+func (s *GameService) GetVoteTally(ctx context.Context, gameID, stage string) (*VoteTally, error) {
+	_, err := s.client.Game.Get(ctx, gameID)
+	if err != nil {
+		return nil, ErrGameNotFound
+	}
+
+	round, err := s.GetCurrentRound(ctx, gameID)
+	if err != nil {
+		return nil, ErrNoActiveRound
+	}
+
+	voteStage := entVote.Stage(stage)
+
+	votes, err := s.client.Vote.Query().
+		Where(
+			entVote.RoundID(round.ID),
+			entVote.StageEQ(voteStage),
+		).
+		WithTarget().
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	counts := map[uuid.UUID]*VoteCount{}
+	for _, v := range votes {
+		if v.Edges.Target == nil {
+			continue
+		}
+		if _, ok := counts[v.TargetID]; !ok {
+			counts[v.TargetID] = &VoteCount{
+				TargetID:   v.TargetID,
+				TargetName: v.Edges.Target.Name,
+			}
+		}
+		counts[v.TargetID].Count++
+	}
+
+	result := make([]VoteCount, 0, len(counts))
+	for _, c := range counts {
+		result = append(result, *c)
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].Count > result[j].Count })
+
+	alivePlayers, _ := s.GetAlivePlayers(ctx, gameID)
+
+	return &VoteTally{
+		Stage: stage,
+		Votes: result,
+		Total: len(alivePlayers),
+	}, nil
+}
+
+// GetAlivePlayers returns players who have not been eliminated.
+func (s *GameService) GetAlivePlayers(ctx context.Context, gameID string) ([]*ent.Player, error) {
+	allPlayers, err := s.GetPlayers(ctx, gameID)
+	if err != nil {
+		return nil, err
+	}
+
+	elims, err := s.client.Elimination.Query().
+		Where(elimination.GameID(gameID)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	eliminatedIDs := make(map[uuid.UUID]bool, len(elims))
+	for _, e := range elims {
+		eliminatedIDs[e.PlayerID] = true
+	}
+
+	alive := make([]*ent.Player, 0, len(allPlayers))
+	for _, p := range allPlayers {
+		if !eliminatedIDs[p.ID] {
+			alive = append(alive, p)
+		}
+	}
+	return alive, nil
+}
+
+// EliminatePlayer removes a player from the game by creating an Elimination record.
+func (s *GameService) EliminatePlayer(ctx context.Context, gameID, moderatorID, playerID, cause string) (*ent.Elimination, error) {
+	g, err := s.client.Game.Get(ctx, gameID)
+	if err != nil {
+		return nil, ErrGameNotFound
+	}
+	if g.ModeratorID != moderatorID {
+		return nil, ErrNotAuthorized
+	}
+
+	playerUUID, err := uuid.Parse(playerID)
+	if err != nil {
+		return nil, errors.New("invalid player id")
+	}
+
+	elimCause := elimination.Cause(cause)
+
+	var roundID *uuid.UUID
+	round, err := s.GetCurrentRound(ctx, gameID)
+	if err == nil {
+		id := round.ID
+		roundID = &id
+	}
+
+	b := s.client.Elimination.Create().
+		SetGameID(gameID).
+		SetPlayerID(playerUUID).
+		SetCause(elimCause)
+	if roundID != nil {
+		b = b.SetRoundID(*roundID)
+	}
+	return b.Save(ctx)
 }
