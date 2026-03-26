@@ -171,6 +171,7 @@ export function JoinLobby({
 }: JoinLobbyProps) {
   const [showAssignedRole, setShowAssignedRole] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  const [roleSeen, setRoleSeen] = useState(false);
 
   const theme = PHASE_THEME[dayNightPhase];
 
@@ -181,10 +182,15 @@ export function JoinLobby({
     }
   }, [phase]);
 
+  const handleBackFromRole = () => {
+    setShowAssignedRole(false);
+    setRoleSeen(true);
+  };
+
   if (showAssignedRole && assignedRole) {
     return (
       <div className="fixed inset-0 z-50 bg-black">
-        <AssignedRole assignedRole={assignedRole} playerName={playerName} onBack={() => setShowAssignedRole(false)} />
+        <AssignedRole assignedRole={assignedRole} playerName={playerName} onBack={handleBackFromRole} />
       </div>
     );
   }
@@ -206,15 +212,34 @@ export function JoinLobby({
         </div>
       )}
 
-      {/* Role reveal card */}
-      {phase === 'role-assigned' && assignedRole ? (
-        <RoleRevealCard
-          playerName={playerName}
-          revealed={revealed}
-          onReveal={() => setShowAssignedRole(true)}
-          theme={theme}
-        />
-      ) : (
+      {/* Role reveal card — collapses to a compact badge once seen */}
+      {phase === 'role-assigned' && assignedRole && (
+        roleSeen ? (
+          <button
+            onClick={() => setShowAssignedRole(true)}
+            className={`w-full flex items-center justify-between px-5 py-3 rounded-xl border backdrop-blur-md bg-black/30 hover:bg-black/50 transition-all ${theme.border}`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🎭</span>
+              <div className="text-left">
+                <p className="text-white font-semibold text-sm">{assignedRole.name}</p>
+                <p className="text-purple-300 text-xs">Your role</p>
+              </div>
+            </div>
+            <span className="text-purple-400 text-xs font-medium">View again →</span>
+          </button>
+        ) : (
+          <RoleRevealCard
+            playerName={playerName}
+            revealed={revealed}
+            onReveal={() => setShowAssignedRole(true)}
+            theme={theme}
+          />
+        )
+      )}
+
+      {/* "You're In" card — only while waiting for roles */}
+      {phase !== 'role-assigned' && (
         <div className={`bg-black/40 backdrop-blur-md rounded-2xl p-8 border ${theme.border} text-center`}>
           <div className="text-5xl text-green-500 mb-2">✓</div>
           <h2 className="text-2xl font-bold text-white mb-2">You&apos;re In!</h2>
