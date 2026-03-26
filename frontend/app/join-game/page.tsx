@@ -242,20 +242,31 @@ function JoinGameContent() {
       </Link>
 
         <div className="text-center mb-12 space-y-6 p-4">
-          <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-2xl">Join Game</h1>
-          <p className="text-xl text-purple-300 mb-4">Enter the game code to join</p>
           {phase === 'not-joined' ? (
-            <JoinGameForm gameId={gameCode} onJoinGame={joinGameHandler} />
+            <>
+              <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-2xl">Join Game</h1>
+              <p className="text-xl text-purple-300 mb-4">Enter the game code to join</p>
+              <JoinGameForm gameId={gameCode} onJoinGame={joinGameHandler} />
+            </>
           ) : (
-            <JoinLobby
-              players={players}
-              assignedRole={assignedRole}
-              playerName={playerName}
-              leaving={leaving}
-              onLeaveGame={leaveGameHandler}
-              selectedRoles={selectedRoles}
-              phase={phase}
-            />
+            <>
+              <div className="inline-flex flex-col items-center gap-2">
+                <p className="text-sm uppercase tracking-[0.25em] text-purple-400 font-semibold">Game in progress</p>
+                <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md border border-purple-500/30 rounded-2xl px-6 py-3">
+                  <span className="text-purple-300 text-sm font-medium">Code</span>
+                  <span className="text-white font-mono font-bold text-xl tracking-widest">{gameCode}</span>
+                </div>
+              </div>
+              <JoinLobby
+                players={players}
+                assignedRole={assignedRole}
+                playerName={playerName}
+                leaving={leaving}
+                onLeaveGame={leaveGameHandler}
+                selectedRoles={selectedRoles}
+                phase={phase}
+              />
+            </>
           )}
         </div>
     </div>

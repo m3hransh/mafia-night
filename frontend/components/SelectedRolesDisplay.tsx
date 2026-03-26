@@ -38,9 +38,7 @@ export function SelectedRolesDisplay({
   );
 
   const defaultFooter = (
-    <p className="mt-4 text-center text-blue-300 text-sm animate-pulse">
-      Waiting for the moderator to start the game…
-    </p>
+    <> </>
   );
 
   return (

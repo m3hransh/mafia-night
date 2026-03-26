@@ -283,6 +283,16 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
       const gameData = await response.json();
       dispatch({ type: 'CREATED', game: gameData });
       saveModeratorGame(gameData.id, moderatorId, 'waiting-for-players');
+
+      // Sync any pre-selected roles (restored from localStorage) to the backend
+      const currentRoles = selectedRoles;
+      if (currentRoles.size > 0) {
+        selectRoles(
+          gameData.id,
+          moderatorId,
+          Array.from(currentRoles.entries()).map(([role_id, count]) => ({ role_id, count }))
+        ).catch(() => {});
+      }
     } catch (err) {
       dispatch({ type: 'CREATE_FAILED', error: err instanceof Error ? err.message : 'Failed to create game' });
     }

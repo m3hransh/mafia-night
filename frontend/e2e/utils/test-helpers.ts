@@ -252,43 +252,33 @@ export async function confirmRoleDistribution(page: Page) {
   // Wait for success message
   await expect(page.getByText('Roles Distributed!')).toBeVisible({ timeout: 10000 });
 
-  // Small delay to ensure WebSocket broadcasts complete
+  // Brief pause to allow WebSocket broadcasts to reach player pages
   await page.waitForTimeout(500);
 }
 
 /**
  * Wait for player to receive their role
  */
-export async function waitForRoleAssignment(page: Page, timeout = 30000) {
-  // Wait for "Your Role!" heading (increased timeout for WebSocket propagation)
-  const roleHeading = page.locator('h2:has-text("Your Role!")');
-
+export async function waitForRoleAssignment(page: Page, timeout = 15000) {
+  // First wait for the lobby reveal card ("Reveal My Role" button)
+  const revealButton = page.locator('button:has-text("Reveal My Role")');
   try {
-    await roleHeading.waitFor({ state: 'visible', timeout });
+    await revealButton.waitFor({ state: 'visible', timeout });
   } catch (error) {
-    // Enhanced debugging
     const url = page.url();
-
-    // Check if we're still in lobby
     const inLobby = await page.locator('text=/Waiting for|Game Lobby/i').isVisible().catch(() => false);
-
-    throw new Error(`Failed to find "Your Role!" heading after ${timeout}ms. URL: ${url}, In lobby: ${inLobby}`);
+    throw new Error(`Failed to find "Reveal My Role" button after ${timeout}ms. URL: ${url}, In lobby: ${inLobby}`);
   }
+
+  // Click to reveal the 3D card
+  await revealButton.click();
 
   // Wait for Canvas element (3D card) to be visible
   const canvas = page.locator('canvas').first();
   await canvas.waitFor({ state: 'visible', timeout: 10000 });
 
-  // Optionally wait for video element (it may load asynchronously)
-  // Don't fail if video doesn't appear - Three.js manages it internally
-  try {
-    const video = page.locator('video').first();
-    await video.waitFor({ state: 'attached', timeout: 3000 });
-  } catch {
-  }
-
-  // Return player name from the header card instead of role name
-  const playerName = page.locator('.text-white.font-bold.bg-gradient-to-r').first();
+  // Return player name from the header card
+  const playerName = page.getByTestId('player-name').first();
   return await playerName.textContent();
 }
 
@@ -296,32 +286,18 @@ export async function waitForRoleAssignment(page: Page, timeout = 30000) {
  * Verify role card UI elements
  */
 export async function verifyRoleCard(page: Page) {
-  // Check role heading
-  await expect(page.locator('h2:has-text("Your Role!")')).toBeVisible();
-
-  // Check player name display
-  const playerNameDisplay = page.locator('.text-white.font-bold.bg-gradient-to-r');
-  await expect(playerNameDisplay).toBeVisible();
-
-  // Check Canvas element (Three.js renders the 3D card with role name and team badge)
+  // Check Canvas element (Three.js renders the 3D card)
   const canvas = page.locator('canvas').first();
   await expect(canvas).toBeVisible();
 
-  // Optionally check video element (it may load asynchronously via Three.js)
-  // Video is managed by useVideoTexture hook and may not be immediately in DOM
-  try {
-    const video = page.locator('video').first();
-    await expect(video).toBeAttached({ timeout: 3000 });
-    const videoSrc = await video.getAttribute('src');
-    expect(videoSrc, 'Video source should be present').toBeTruthy();
-  } catch {
-    // Video managed by Three.js may not be in DOM yet - this is acceptable
-    console.log('[verifyRoleCard] Video element not yet attached, continuing...');
-  }
-
-  // Check player name is displayed
+  // Check player name display in the header card
+  const playerNameDisplay = page.getByTestId('player-name');
+  await expect(playerNameDisplay).toBeVisible();
   const playerName = await playerNameDisplay.textContent();
   expect(playerName, 'Player name should not be empty').toBeTruthy();
+
+  // Check "Back to Lobby" button is present in the 3D card view
+  await expect(page.locator('button:has-text("Back to Lobby")')).toBeVisible({ timeout: 5000 });
 }
 
 /**

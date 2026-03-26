@@ -183,19 +183,21 @@ test.describe('Game Flow - Create and Join Game', () => {
       // Confirm role distribution
       await confirmRoleDistribution(game.moderatorPage);
 
-      // Verify Player 1 sees their assigned role
+      // Both players should now see "Reveal My Role" — check in parallel
+      await Promise.all([
+        player1.playerPage.locator('button:has-text("Reveal My Role")').waitFor({ state: 'visible', timeout: 15000 }),
+        player2.playerPage.locator('button:has-text("Reveal My Role")').waitFor({ state: 'visible', timeout: 15000 }),
+      ]);
+
+      // Player 1 reveals and verifies their role card
       const player1Role = await waitForRoleAssignment(player1.playerPage);
       expect(player1Role, 'Player 1 should have a role assigned').toBeTruthy();
       expect(player1Role?.length, 'Player 1 role name should not be empty').toBeGreaterThan(0);
-
-      // Verify Player 1 role card UI
       await verifyRoleCard(player1.playerPage);
 
-      // Verify Player 2 sees their assigned role
+      // Player 2 reveals and verifies their role card
       const player2Role = await waitForRoleAssignment(player2.playerPage);
       expect(player2Role, 'Player 2 should have a role assigned').toBeTruthy();
-
-      // Verify Player 2 role card UI
       await verifyRoleCard(player2.playerPage);
 
     } finally {
@@ -224,11 +226,8 @@ test.describe('Game Flow - Create and Join Game', () => {
       // Confirm distribution
       await confirmRoleDistribution(game.moderatorPage);
 
-      // Wait for player to receive role
+      // Wait for player to receive role (clicks "Reveal My Role" and enters 3D card view)
       await waitForRoleAssignment(player.playerPage);
-
-      // Verify role card is displayed
-      await expect(player.playerPage.locator('h2:has-text("Your Role!")')).toBeVisible();
 
       // Verify Canvas element is present (3D card with role name and team badge)
       await expect(player.playerPage.locator('canvas').first()).toBeVisible({ timeout: 5000 });
@@ -236,10 +235,10 @@ test.describe('Game Flow - Create and Join Game', () => {
       // Verify player name is shown in the header card
       await expect(player.playerPage.locator('text=TestPlayer')).toBeVisible({ timeout: 5000 });
 
-      // Video element is managed by Three.js and may not be immediately in DOM
-      // We already verified Canvas is present which confirms the 3D card loaded
+      // Go back to lobby to verify Leave Game is accessible
+      await player.playerPage.locator('button:has-text("Back to Lobby")').click();
 
-      // Verify Leave Game button is available
+      // Verify Leave Game button is available in lobby
       await expect(player.playerPage.locator('button:has-text("Leave Game")')).toBeVisible({ timeout: 5000 });
 
     } finally {
