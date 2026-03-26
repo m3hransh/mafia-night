@@ -11,8 +11,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/predicate"
 )
@@ -41,6 +43,41 @@ func (_u *GameUpdate) SetNillableStatus(v *game.Status) *GameUpdate {
 	if v != nil {
 		_u.SetStatus(*v)
 	}
+	return _u
+}
+
+// SetPhase sets the "phase" field.
+func (_u *GameUpdate) SetPhase(v game.Phase) *GameUpdate {
+	_u.mutation.SetPhase(v)
+	return _u
+}
+
+// SetNillablePhase sets the "phase" field if the given value is not nil.
+func (_u *GameUpdate) SetNillablePhase(v *game.Phase) *GameUpdate {
+	if v != nil {
+		_u.SetPhase(*v)
+	}
+	return _u
+}
+
+// SetRoundNumber sets the "round_number" field.
+func (_u *GameUpdate) SetRoundNumber(v int) *GameUpdate {
+	_u.mutation.ResetRoundNumber()
+	_u.mutation.SetRoundNumber(v)
+	return _u
+}
+
+// SetNillableRoundNumber sets the "round_number" field if the given value is not nil.
+func (_u *GameUpdate) SetNillableRoundNumber(v *int) *GameUpdate {
+	if v != nil {
+		_u.SetRoundNumber(*v)
+	}
+	return _u
+}
+
+// AddRoundNumber adds value to the "round_number" field.
+func (_u *GameUpdate) AddRoundNumber(v int) *GameUpdate {
+	_u.mutation.AddRoundNumber(v)
 	return _u
 }
 
@@ -86,6 +123,36 @@ func (_u *GameUpdate) AddGameRoles(v ...*GameRole) *GameUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddGameRoleIDs(ids...)
+}
+
+// AddRoundIDs adds the "rounds" edge to the GameRound entity by IDs.
+func (_u *GameUpdate) AddRoundIDs(ids ...uuid.UUID) *GameUpdate {
+	_u.mutation.AddRoundIDs(ids...)
+	return _u
+}
+
+// AddRounds adds the "rounds" edges to the GameRound entity.
+func (_u *GameUpdate) AddRounds(v ...*GameRound) *GameUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRoundIDs(ids...)
+}
+
+// AddEliminationIDs adds the "eliminations" edge to the Elimination entity by IDs.
+func (_u *GameUpdate) AddEliminationIDs(ids ...uuid.UUID) *GameUpdate {
+	_u.mutation.AddEliminationIDs(ids...)
+	return _u
+}
+
+// AddEliminations adds the "eliminations" edges to the Elimination entity.
+func (_u *GameUpdate) AddEliminations(v ...*Elimination) *GameUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEliminationIDs(ids...)
 }
 
 // Mutation returns the GameMutation object of the builder.
@@ -135,6 +202,48 @@ func (_u *GameUpdate) RemoveGameRoles(v ...*GameRole) *GameUpdate {
 	return _u.RemoveGameRoleIDs(ids...)
 }
 
+// ClearRounds clears all "rounds" edges to the GameRound entity.
+func (_u *GameUpdate) ClearRounds() *GameUpdate {
+	_u.mutation.ClearRounds()
+	return _u
+}
+
+// RemoveRoundIDs removes the "rounds" edge to GameRound entities by IDs.
+func (_u *GameUpdate) RemoveRoundIDs(ids ...uuid.UUID) *GameUpdate {
+	_u.mutation.RemoveRoundIDs(ids...)
+	return _u
+}
+
+// RemoveRounds removes "rounds" edges to GameRound entities.
+func (_u *GameUpdate) RemoveRounds(v ...*GameRound) *GameUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRoundIDs(ids...)
+}
+
+// ClearEliminations clears all "eliminations" edges to the Elimination entity.
+func (_u *GameUpdate) ClearEliminations() *GameUpdate {
+	_u.mutation.ClearEliminations()
+	return _u
+}
+
+// RemoveEliminationIDs removes the "eliminations" edge to Elimination entities by IDs.
+func (_u *GameUpdate) RemoveEliminationIDs(ids ...uuid.UUID) *GameUpdate {
+	_u.mutation.RemoveEliminationIDs(ids...)
+	return _u
+}
+
+// RemoveEliminations removes "eliminations" edges to Elimination entities.
+func (_u *GameUpdate) RemoveEliminations(v ...*Elimination) *GameUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEliminationIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *GameUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
@@ -169,6 +278,16 @@ func (_u *GameUpdate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Game.status": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Phase(); ok {
+		if err := game.PhaseValidator(v); err != nil {
+			return &ValidationError{Name: "phase", err: fmt.Errorf(`ent: validator failed for field "Game.phase": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.RoundNumber(); ok {
+		if err := game.RoundNumberValidator(v); err != nil {
+			return &ValidationError{Name: "round_number", err: fmt.Errorf(`ent: validator failed for field "Game.round_number": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ModeratorID(); ok {
 		if err := game.ModeratorIDValidator(v); err != nil {
 			return &ValidationError{Name: "moderator_id", err: fmt.Errorf(`ent: validator failed for field "Game.moderator_id": %w`, err)}
@@ -191,6 +310,15 @@ func (_u *GameUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(game.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Phase(); ok {
+		_spec.SetField(game.FieldPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.RoundNumber(); ok {
+		_spec.SetField(game.FieldRoundNumber, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRoundNumber(); ok {
+		_spec.AddField(game.FieldRoundNumber, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ModeratorID(); ok {
 		_spec.SetField(game.FieldModeratorID, field.TypeString, value)
@@ -285,6 +413,96 @@ func (_u *GameUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.RoundsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.RoundsTable,
+			Columns: []string{game.RoundsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(gameround.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRoundsIDs(); len(nodes) > 0 && !_u.mutation.RoundsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.RoundsTable,
+			Columns: []string{game.RoundsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(gameround.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RoundsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.RoundsTable,
+			Columns: []string{game.RoundsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(gameround.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EliminationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.EliminationsTable,
+			Columns: []string{game.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEliminationsIDs(); len(nodes) > 0 && !_u.mutation.EliminationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.EliminationsTable,
+			Columns: []string{game.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EliminationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.EliminationsTable,
+			Columns: []string{game.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{game.Label}
@@ -316,6 +534,41 @@ func (_u *GameUpdateOne) SetNillableStatus(v *game.Status) *GameUpdateOne {
 	if v != nil {
 		_u.SetStatus(*v)
 	}
+	return _u
+}
+
+// SetPhase sets the "phase" field.
+func (_u *GameUpdateOne) SetPhase(v game.Phase) *GameUpdateOne {
+	_u.mutation.SetPhase(v)
+	return _u
+}
+
+// SetNillablePhase sets the "phase" field if the given value is not nil.
+func (_u *GameUpdateOne) SetNillablePhase(v *game.Phase) *GameUpdateOne {
+	if v != nil {
+		_u.SetPhase(*v)
+	}
+	return _u
+}
+
+// SetRoundNumber sets the "round_number" field.
+func (_u *GameUpdateOne) SetRoundNumber(v int) *GameUpdateOne {
+	_u.mutation.ResetRoundNumber()
+	_u.mutation.SetRoundNumber(v)
+	return _u
+}
+
+// SetNillableRoundNumber sets the "round_number" field if the given value is not nil.
+func (_u *GameUpdateOne) SetNillableRoundNumber(v *int) *GameUpdateOne {
+	if v != nil {
+		_u.SetRoundNumber(*v)
+	}
+	return _u
+}
+
+// AddRoundNumber adds value to the "round_number" field.
+func (_u *GameUpdateOne) AddRoundNumber(v int) *GameUpdateOne {
+	_u.mutation.AddRoundNumber(v)
 	return _u
 }
 
@@ -361,6 +614,36 @@ func (_u *GameUpdateOne) AddGameRoles(v ...*GameRole) *GameUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddGameRoleIDs(ids...)
+}
+
+// AddRoundIDs adds the "rounds" edge to the GameRound entity by IDs.
+func (_u *GameUpdateOne) AddRoundIDs(ids ...uuid.UUID) *GameUpdateOne {
+	_u.mutation.AddRoundIDs(ids...)
+	return _u
+}
+
+// AddRounds adds the "rounds" edges to the GameRound entity.
+func (_u *GameUpdateOne) AddRounds(v ...*GameRound) *GameUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRoundIDs(ids...)
+}
+
+// AddEliminationIDs adds the "eliminations" edge to the Elimination entity by IDs.
+func (_u *GameUpdateOne) AddEliminationIDs(ids ...uuid.UUID) *GameUpdateOne {
+	_u.mutation.AddEliminationIDs(ids...)
+	return _u
+}
+
+// AddEliminations adds the "eliminations" edges to the Elimination entity.
+func (_u *GameUpdateOne) AddEliminations(v ...*Elimination) *GameUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEliminationIDs(ids...)
 }
 
 // Mutation returns the GameMutation object of the builder.
@@ -410,6 +693,48 @@ func (_u *GameUpdateOne) RemoveGameRoles(v ...*GameRole) *GameUpdateOne {
 	return _u.RemoveGameRoleIDs(ids...)
 }
 
+// ClearRounds clears all "rounds" edges to the GameRound entity.
+func (_u *GameUpdateOne) ClearRounds() *GameUpdateOne {
+	_u.mutation.ClearRounds()
+	return _u
+}
+
+// RemoveRoundIDs removes the "rounds" edge to GameRound entities by IDs.
+func (_u *GameUpdateOne) RemoveRoundIDs(ids ...uuid.UUID) *GameUpdateOne {
+	_u.mutation.RemoveRoundIDs(ids...)
+	return _u
+}
+
+// RemoveRounds removes "rounds" edges to GameRound entities.
+func (_u *GameUpdateOne) RemoveRounds(v ...*GameRound) *GameUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRoundIDs(ids...)
+}
+
+// ClearEliminations clears all "eliminations" edges to the Elimination entity.
+func (_u *GameUpdateOne) ClearEliminations() *GameUpdateOne {
+	_u.mutation.ClearEliminations()
+	return _u
+}
+
+// RemoveEliminationIDs removes the "eliminations" edge to Elimination entities by IDs.
+func (_u *GameUpdateOne) RemoveEliminationIDs(ids ...uuid.UUID) *GameUpdateOne {
+	_u.mutation.RemoveEliminationIDs(ids...)
+	return _u
+}
+
+// RemoveEliminations removes "eliminations" edges to Elimination entities.
+func (_u *GameUpdateOne) RemoveEliminations(v ...*Elimination) *GameUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEliminationIDs(ids...)
+}
+
 // Where appends a list predicates to the GameUpdate builder.
 func (_u *GameUpdateOne) Where(ps ...predicate.Game) *GameUpdateOne {
 	_u.mutation.Where(ps...)
@@ -457,6 +782,16 @@ func (_u *GameUpdateOne) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Game.status": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Phase(); ok {
+		if err := game.PhaseValidator(v); err != nil {
+			return &ValidationError{Name: "phase", err: fmt.Errorf(`ent: validator failed for field "Game.phase": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.RoundNumber(); ok {
+		if err := game.RoundNumberValidator(v); err != nil {
+			return &ValidationError{Name: "round_number", err: fmt.Errorf(`ent: validator failed for field "Game.round_number": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ModeratorID(); ok {
 		if err := game.ModeratorIDValidator(v); err != nil {
 			return &ValidationError{Name: "moderator_id", err: fmt.Errorf(`ent: validator failed for field "Game.moderator_id": %w`, err)}
@@ -496,6 +831,15 @@ func (_u *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) {
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(game.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Phase(); ok {
+		_spec.SetField(game.FieldPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.RoundNumber(); ok {
+		_spec.SetField(game.FieldRoundNumber, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRoundNumber(); ok {
+		_spec.AddField(game.FieldRoundNumber, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ModeratorID(); ok {
 		_spec.SetField(game.FieldModeratorID, field.TypeString, value)
@@ -583,6 +927,96 @@ func (_u *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(gamerole.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RoundsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.RoundsTable,
+			Columns: []string{game.RoundsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(gameround.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRoundsIDs(); len(nodes) > 0 && !_u.mutation.RoundsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.RoundsTable,
+			Columns: []string{game.RoundsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(gameround.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RoundsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.RoundsTable,
+			Columns: []string{game.RoundsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(gameround.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EliminationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.EliminationsTable,
+			Columns: []string{game.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEliminationsIDs(); len(nodes) > 0 && !_u.mutation.EliminationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.EliminationsTable,
+			Columns: []string{game.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EliminationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.EliminationsTable,
+			Columns: []string{game.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

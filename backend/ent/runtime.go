@@ -7,8 +7,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent/admin"
+	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/role"
 	"github.com/mafia-night/backend/ent/roletemplate"
@@ -80,14 +82,48 @@ func init() {
 	adminDescID := adminFields[0].Descriptor()
 	// admin.DefaultID holds the default value on creation for the id field.
 	admin.DefaultID = adminDescID.Default.(func() uuid.UUID)
+	eliminationFields := schema.Elimination{}.Fields()
+	_ = eliminationFields
+	// eliminationDescGameID is the schema descriptor for game_id field.
+	eliminationDescGameID := eliminationFields[1].Descriptor()
+	// elimination.GameIDValidator is a validator for the "game_id" field. It is called by the builders before save.
+	elimination.GameIDValidator = func() func(string) error {
+		validators := eliminationDescGameID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(game string) error {
+			for _, fn := range fns {
+				if err := fn(game); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// eliminationDescEliminatedAt is the schema descriptor for eliminated_at field.
+	eliminationDescEliminatedAt := eliminationFields[5].Descriptor()
+	// elimination.DefaultEliminatedAt holds the default value on creation for the eliminated_at field.
+	elimination.DefaultEliminatedAt = eliminationDescEliminatedAt.Default.(func() time.Time)
+	// eliminationDescID is the schema descriptor for id field.
+	eliminationDescID := eliminationFields[0].Descriptor()
+	// elimination.DefaultID holds the default value on creation for the id field.
+	elimination.DefaultID = eliminationDescID.Default.(func() uuid.UUID)
 	gameFields := schema.Game{}.Fields()
 	_ = gameFields
+	// gameDescRoundNumber is the schema descriptor for round_number field.
+	gameDescRoundNumber := gameFields[3].Descriptor()
+	// game.DefaultRoundNumber holds the default value on creation for the round_number field.
+	game.DefaultRoundNumber = gameDescRoundNumber.Default.(int)
+	// game.RoundNumberValidator is a validator for the "round_number" field. It is called by the builders before save.
+	game.RoundNumberValidator = gameDescRoundNumber.Validators[0].(func(int) error)
 	// gameDescModeratorID is the schema descriptor for moderator_id field.
-	gameDescModeratorID := gameFields[2].Descriptor()
+	gameDescModeratorID := gameFields[4].Descriptor()
 	// game.ModeratorIDValidator is a validator for the "moderator_id" field. It is called by the builders before save.
 	game.ModeratorIDValidator = gameDescModeratorID.Validators[0].(func(string) error)
 	// gameDescCreatedAt is the schema descriptor for created_at field.
-	gameDescCreatedAt := gameFields[3].Descriptor()
+	gameDescCreatedAt := gameFields[5].Descriptor()
 	// game.DefaultCreatedAt holds the default value on creation for the created_at field.
 	game.DefaultCreatedAt = gameDescCreatedAt.Default.(func() time.Time)
 	// gameDescID is the schema descriptor for id field.
@@ -132,6 +168,38 @@ func init() {
 	gameroleDescAssignedAt := gameroleFields[3].Descriptor()
 	// gamerole.DefaultAssignedAt holds the default value on creation for the assigned_at field.
 	gamerole.DefaultAssignedAt = gameroleDescAssignedAt.Default.(func() time.Time)
+	gameroundFields := schema.GameRound{}.Fields()
+	_ = gameroundFields
+	// gameroundDescGameID is the schema descriptor for game_id field.
+	gameroundDescGameID := gameroundFields[1].Descriptor()
+	// gameround.GameIDValidator is a validator for the "game_id" field. It is called by the builders before save.
+	gameround.GameIDValidator = func() func(string) error {
+		validators := gameroundDescGameID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(game string) error {
+			for _, fn := range fns {
+				if err := fn(game); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// gameroundDescRoundNumber is the schema descriptor for round_number field.
+	gameroundDescRoundNumber := gameroundFields[2].Descriptor()
+	// gameround.RoundNumberValidator is a validator for the "round_number" field. It is called by the builders before save.
+	gameround.RoundNumberValidator = gameroundDescRoundNumber.Validators[0].(func(int) error)
+	// gameroundDescStartedAt is the schema descriptor for started_at field.
+	gameroundDescStartedAt := gameroundFields[4].Descriptor()
+	// gameround.DefaultStartedAt holds the default value on creation for the started_at field.
+	gameround.DefaultStartedAt = gameroundDescStartedAt.Default.(func() time.Time)
+	// gameroundDescID is the schema descriptor for id field.
+	gameroundDescID := gameroundFields[0].Descriptor()
+	// gameround.DefaultID holds the default value on creation for the id field.
+	gameround.DefaultID = gameroundDescID.Default.(func() uuid.UUID)
 	playerFields := schema.Player{}.Fields()
 	_ = playerFields
 	// playerDescName is the schema descriptor for name field.

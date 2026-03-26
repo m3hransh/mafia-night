@@ -12,8 +12,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/predicate"
 )
@@ -21,12 +23,14 @@ import (
 // GameQuery is the builder for querying Game entities.
 type GameQuery struct {
 	config
-	ctx           *QueryContext
-	order         []game.OrderOption
-	inters        []Interceptor
-	predicates    []predicate.Game
-	withPlayers   *PlayerQuery
-	withGameRoles *GameRoleQuery
+	ctx              *QueryContext
+	order            []game.OrderOption
+	inters           []Interceptor
+	predicates       []predicate.Game
+	withPlayers      *PlayerQuery
+	withGameRoles    *GameRoleQuery
+	withRounds       *GameRoundQuery
+	withEliminations *EliminationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -100,6 +104,50 @@ func (_q *GameQuery) QueryGameRoles() *GameRoleQuery {
 			sqlgraph.From(game.Table, game.FieldID, selector),
 			sqlgraph.To(gamerole.Table, gamerole.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, game.GameRolesTable, game.GameRolesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRounds chains the current query on the "rounds" edge.
+func (_q *GameQuery) QueryRounds() *GameRoundQuery {
+	query := (&GameRoundClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, selector),
+			sqlgraph.To(gameround.Table, gameround.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.RoundsTable, game.RoundsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEliminations chains the current query on the "eliminations" edge.
+func (_q *GameQuery) QueryEliminations() *EliminationQuery {
+	query := (&EliminationClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, selector),
+			sqlgraph.To(elimination.Table, elimination.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.EliminationsTable, game.EliminationsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -294,13 +342,15 @@ func (_q *GameQuery) Clone() *GameQuery {
 		return nil
 	}
 	return &GameQuery{
-		config:        _q.config,
-		ctx:           _q.ctx.Clone(),
-		order:         append([]game.OrderOption{}, _q.order...),
-		inters:        append([]Interceptor{}, _q.inters...),
-		predicates:    append([]predicate.Game{}, _q.predicates...),
-		withPlayers:   _q.withPlayers.Clone(),
-		withGameRoles: _q.withGameRoles.Clone(),
+		config:           _q.config,
+		ctx:              _q.ctx.Clone(),
+		order:            append([]game.OrderOption{}, _q.order...),
+		inters:           append([]Interceptor{}, _q.inters...),
+		predicates:       append([]predicate.Game{}, _q.predicates...),
+		withPlayers:      _q.withPlayers.Clone(),
+		withGameRoles:    _q.withGameRoles.Clone(),
+		withRounds:       _q.withRounds.Clone(),
+		withEliminations: _q.withEliminations.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -326,6 +376,28 @@ func (_q *GameQuery) WithGameRoles(opts ...func(*GameRoleQuery)) *GameQuery {
 		opt(query)
 	}
 	_q.withGameRoles = query
+	return _q
+}
+
+// WithRounds tells the query-builder to eager-load the nodes that are connected to
+// the "rounds" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GameQuery) WithRounds(opts ...func(*GameRoundQuery)) *GameQuery {
+	query := (&GameRoundClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRounds = query
+	return _q
+}
+
+// WithEliminations tells the query-builder to eager-load the nodes that are connected to
+// the "eliminations" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GameQuery) WithEliminations(opts ...func(*EliminationQuery)) *GameQuery {
+	query := (&EliminationClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEliminations = query
 	return _q
 }
 
@@ -407,9 +479,11 @@ func (_q *GameQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Game, e
 	var (
 		nodes       = []*Game{}
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [4]bool{
 			_q.withPlayers != nil,
 			_q.withGameRoles != nil,
+			_q.withRounds != nil,
+			_q.withEliminations != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -441,6 +515,20 @@ func (_q *GameQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Game, e
 		if err := _q.loadGameRoles(ctx, query, nodes,
 			func(n *Game) { n.Edges.GameRoles = []*GameRole{} },
 			func(n *Game, e *GameRole) { n.Edges.GameRoles = append(n.Edges.GameRoles, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRounds; query != nil {
+		if err := _q.loadRounds(ctx, query, nodes,
+			func(n *Game) { n.Edges.Rounds = []*GameRound{} },
+			func(n *Game, e *GameRound) { n.Edges.Rounds = append(n.Edges.Rounds, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEliminations; query != nil {
+		if err := _q.loadEliminations(ctx, query, nodes,
+			func(n *Game) { n.Edges.Eliminations = []*Elimination{} },
+			func(n *Game, e *Elimination) { n.Edges.Eliminations = append(n.Edges.Eliminations, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -492,6 +580,66 @@ func (_q *GameQuery) loadGameRoles(ctx context.Context, query *GameRoleQuery, no
 	}
 	query.Where(predicate.GameRole(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(game.GameRolesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.GameID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "game_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *GameQuery) loadRounds(ctx context.Context, query *GameRoundQuery, nodes []*Game, init func(*Game), assign func(*Game, *GameRound)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Game)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(gameround.FieldGameID)
+	}
+	query.Where(predicate.GameRound(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(game.RoundsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.GameID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "game_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *GameQuery) loadEliminations(ctx context.Context, query *EliminationQuery, nodes []*Game, init func(*Game), assign func(*Game, *Elimination)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Game)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(elimination.FieldGameID)
+	}
+	query.Where(predicate.Elimination(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(game.EliminationsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

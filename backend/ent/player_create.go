@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
@@ -85,6 +86,25 @@ func (_c *PlayerCreate) SetNillableGameRoleID(id *int) *PlayerCreate {
 // SetGameRole sets the "game_role" edge to the GameRole entity.
 func (_c *PlayerCreate) SetGameRole(v *GameRole) *PlayerCreate {
 	return _c.SetGameRoleID(v.ID)
+}
+
+// SetEliminationsID sets the "eliminations" edge to the Elimination entity by ID.
+func (_c *PlayerCreate) SetEliminationsID(id uuid.UUID) *PlayerCreate {
+	_c.mutation.SetEliminationsID(id)
+	return _c
+}
+
+// SetNillableEliminationsID sets the "eliminations" edge to the Elimination entity by ID if the given value is not nil.
+func (_c *PlayerCreate) SetNillableEliminationsID(id *uuid.UUID) *PlayerCreate {
+	if id != nil {
+		_c = _c.SetEliminationsID(*id)
+	}
+	return _c
+}
+
+// SetEliminations sets the "eliminations" edge to the Elimination entity.
+func (_c *PlayerCreate) SetEliminations(v *Elimination) *PlayerCreate {
+	return _c.SetEliminationsID(v.ID)
 }
 
 // Mutation returns the PlayerMutation object of the builder.
@@ -225,6 +245,22 @@ func (_c *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(gamerole.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EliminationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   player.EliminationsTable,
+			Columns: []string{player.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

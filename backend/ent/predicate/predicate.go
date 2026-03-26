@@ -9,11 +9,17 @@ import (
 // Admin is the predicate function for admin builders.
 type Admin func(*sql.Selector)
 
+// Elimination is the predicate function for elimination builders.
+type Elimination func(*sql.Selector)
+
 // Game is the predicate function for game builders.
 type Game func(*sql.Selector)
 
 // GameRole is the predicate function for gamerole builders.
 type GameRole func(*sql.Selector)
+
+// GameRound is the predicate function for gameround builders.
+type GameRound func(*sql.Selector)
 
 // Player is the predicate function for player builders.
 type Player func(*sql.Selector)

@@ -14,10 +14,14 @@ type Tx struct {
 	config
 	// Admin is the client for interacting with the Admin builders.
 	Admin *AdminClient
+	// Elimination is the client for interacting with the Elimination builders.
+	Elimination *EliminationClient
 	// Game is the client for interacting with the Game builders.
 	Game *GameClient
 	// GameRole is the client for interacting with the GameRole builders.
 	GameRole *GameRoleClient
+	// GameRound is the client for interacting with the GameRound builders.
+	GameRound *GameRoundClient
 	// Player is the client for interacting with the Player builders.
 	Player *PlayerClient
 	// Role is the client for interacting with the Role builders.
@@ -158,8 +162,10 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Admin = NewAdminClient(tx.config)
+	tx.Elimination = NewEliminationClient(tx.config)
 	tx.Game = NewGameClient(tx.config)
 	tx.GameRole = NewGameRoleClient(tx.config)
+	tx.GameRound = NewGameRoundClient(tx.config)
 	tx.Player = NewPlayerClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)
 	tx.RoleTemplate = NewRoleTemplateClient(tx.config)

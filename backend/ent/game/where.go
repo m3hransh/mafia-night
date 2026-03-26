@@ -65,6 +65,11 @@ func IDContainsFold(id string) predicate.Game {
 	return predicate.Game(sql.FieldContainsFold(FieldID, id))
 }
 
+// RoundNumber applies equality check predicate on the "round_number" field. It's identical to RoundNumberEQ.
+func RoundNumber(v int) predicate.Game {
+	return predicate.Game(sql.FieldEQ(FieldRoundNumber, v))
+}
+
 // ModeratorID applies equality check predicate on the "moderator_id" field. It's identical to ModeratorIDEQ.
 func ModeratorID(v string) predicate.Game {
 	return predicate.Game(sql.FieldEQ(FieldModeratorID, v))
@@ -93,6 +98,66 @@ func StatusIn(vs ...Status) predicate.Game {
 // StatusNotIn applies the NotIn predicate on the "status" field.
 func StatusNotIn(vs ...Status) predicate.Game {
 	return predicate.Game(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// PhaseEQ applies the EQ predicate on the "phase" field.
+func PhaseEQ(v Phase) predicate.Game {
+	return predicate.Game(sql.FieldEQ(FieldPhase, v))
+}
+
+// PhaseNEQ applies the NEQ predicate on the "phase" field.
+func PhaseNEQ(v Phase) predicate.Game {
+	return predicate.Game(sql.FieldNEQ(FieldPhase, v))
+}
+
+// PhaseIn applies the In predicate on the "phase" field.
+func PhaseIn(vs ...Phase) predicate.Game {
+	return predicate.Game(sql.FieldIn(FieldPhase, vs...))
+}
+
+// PhaseNotIn applies the NotIn predicate on the "phase" field.
+func PhaseNotIn(vs ...Phase) predicate.Game {
+	return predicate.Game(sql.FieldNotIn(FieldPhase, vs...))
+}
+
+// RoundNumberEQ applies the EQ predicate on the "round_number" field.
+func RoundNumberEQ(v int) predicate.Game {
+	return predicate.Game(sql.FieldEQ(FieldRoundNumber, v))
+}
+
+// RoundNumberNEQ applies the NEQ predicate on the "round_number" field.
+func RoundNumberNEQ(v int) predicate.Game {
+	return predicate.Game(sql.FieldNEQ(FieldRoundNumber, v))
+}
+
+// RoundNumberIn applies the In predicate on the "round_number" field.
+func RoundNumberIn(vs ...int) predicate.Game {
+	return predicate.Game(sql.FieldIn(FieldRoundNumber, vs...))
+}
+
+// RoundNumberNotIn applies the NotIn predicate on the "round_number" field.
+func RoundNumberNotIn(vs ...int) predicate.Game {
+	return predicate.Game(sql.FieldNotIn(FieldRoundNumber, vs...))
+}
+
+// RoundNumberGT applies the GT predicate on the "round_number" field.
+func RoundNumberGT(v int) predicate.Game {
+	return predicate.Game(sql.FieldGT(FieldRoundNumber, v))
+}
+
+// RoundNumberGTE applies the GTE predicate on the "round_number" field.
+func RoundNumberGTE(v int) predicate.Game {
+	return predicate.Game(sql.FieldGTE(FieldRoundNumber, v))
+}
+
+// RoundNumberLT applies the LT predicate on the "round_number" field.
+func RoundNumberLT(v int) predicate.Game {
+	return predicate.Game(sql.FieldLT(FieldRoundNumber, v))
+}
+
+// RoundNumberLTE applies the LTE predicate on the "round_number" field.
+func RoundNumberLTE(v int) predicate.Game {
+	return predicate.Game(sql.FieldLTE(FieldRoundNumber, v))
 }
 
 // ModeratorIDEQ applies the EQ predicate on the "moderator_id" field.
@@ -238,6 +303,52 @@ func HasGameRoles() predicate.Game {
 func HasGameRolesWith(preds ...predicate.GameRole) predicate.Game {
 	return predicate.Game(func(s *sql.Selector) {
 		step := newGameRolesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRounds applies the HasEdge predicate on the "rounds" edge.
+func HasRounds() predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RoundsTable, RoundsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRoundsWith applies the HasEdge predicate on the "rounds" edge with a given conditions (other predicates).
+func HasRoundsWith(preds ...predicate.GameRound) predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := newRoundsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEliminations applies the HasEdge predicate on the "eliminations" edge.
+func HasEliminations() predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EliminationsTable, EliminationsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEliminationsWith applies the HasEdge predicate on the "eliminations" edge with a given conditions (other predicates).
+func HasEliminationsWith(preds ...predicate.Elimination) predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := newEliminationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

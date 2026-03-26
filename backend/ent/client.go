@@ -17,8 +17,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/mafia-night/backend/ent/admin"
+	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/role"
 	"github.com/mafia-night/backend/ent/roletemplate"
@@ -32,10 +34,14 @@ type Client struct {
 	Schema *migrate.Schema
 	// Admin is the client for interacting with the Admin builders.
 	Admin *AdminClient
+	// Elimination is the client for interacting with the Elimination builders.
+	Elimination *EliminationClient
 	// Game is the client for interacting with the Game builders.
 	Game *GameClient
 	// GameRole is the client for interacting with the GameRole builders.
 	GameRole *GameRoleClient
+	// GameRound is the client for interacting with the GameRound builders.
+	GameRound *GameRoundClient
 	// Player is the client for interacting with the Player builders.
 	Player *PlayerClient
 	// Role is the client for interacting with the Role builders.
@@ -56,8 +62,10 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Admin = NewAdminClient(c.config)
+	c.Elimination = NewEliminationClient(c.config)
 	c.Game = NewGameClient(c.config)
 	c.GameRole = NewGameRoleClient(c.config)
+	c.GameRound = NewGameRoundClient(c.config)
 	c.Player = NewPlayerClient(c.config)
 	c.Role = NewRoleClient(c.config)
 	c.RoleTemplate = NewRoleTemplateClient(c.config)
@@ -155,8 +163,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:              ctx,
 		config:           cfg,
 		Admin:            NewAdminClient(cfg),
+		Elimination:      NewEliminationClient(cfg),
 		Game:             NewGameClient(cfg),
 		GameRole:         NewGameRoleClient(cfg),
+		GameRound:        NewGameRoundClient(cfg),
 		Player:           NewPlayerClient(cfg),
 		Role:             NewRoleClient(cfg),
 		RoleTemplate:     NewRoleTemplateClient(cfg),
@@ -181,8 +191,10 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:              ctx,
 		config:           cfg,
 		Admin:            NewAdminClient(cfg),
+		Elimination:      NewEliminationClient(cfg),
 		Game:             NewGameClient(cfg),
 		GameRole:         NewGameRoleClient(cfg),
+		GameRound:        NewGameRoundClient(cfg),
 		Player:           NewPlayerClient(cfg),
 		Role:             NewRoleClient(cfg),
 		RoleTemplate:     NewRoleTemplateClient(cfg),
@@ -216,8 +228,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Admin, c.Game, c.GameRole, c.Player, c.Role, c.RoleTemplate,
-		c.RoleTemplateRole,
+		c.Admin, c.Elimination, c.Game, c.GameRole, c.GameRound, c.Player, c.Role,
+		c.RoleTemplate, c.RoleTemplateRole,
 	} {
 		n.Use(hooks...)
 	}
@@ -227,8 +239,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Admin, c.Game, c.GameRole, c.Player, c.Role, c.RoleTemplate,
-		c.RoleTemplateRole,
+		c.Admin, c.Elimination, c.Game, c.GameRole, c.GameRound, c.Player, c.Role,
+		c.RoleTemplate, c.RoleTemplateRole,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -239,10 +251,14 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *AdminMutation:
 		return c.Admin.mutate(ctx, m)
+	case *EliminationMutation:
+		return c.Elimination.mutate(ctx, m)
 	case *GameMutation:
 		return c.Game.mutate(ctx, m)
 	case *GameRoleMutation:
 		return c.GameRole.mutate(ctx, m)
+	case *GameRoundMutation:
+		return c.GameRound.mutate(ctx, m)
 	case *PlayerMutation:
 		return c.Player.mutate(ctx, m)
 	case *RoleMutation:
@@ -389,6 +405,187 @@ func (c *AdminClient) mutate(ctx context.Context, m *AdminMutation) (Value, erro
 	}
 }
 
+// EliminationClient is a client for the Elimination schema.
+type EliminationClient struct {
+	config
+}
+
+// NewEliminationClient returns a client for the Elimination from the given config.
+func NewEliminationClient(c config) *EliminationClient {
+	return &EliminationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `elimination.Hooks(f(g(h())))`.
+func (c *EliminationClient) Use(hooks ...Hook) {
+	c.hooks.Elimination = append(c.hooks.Elimination, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `elimination.Intercept(f(g(h())))`.
+func (c *EliminationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Elimination = append(c.inters.Elimination, interceptors...)
+}
+
+// Create returns a builder for creating a Elimination entity.
+func (c *EliminationClient) Create() *EliminationCreate {
+	mutation := newEliminationMutation(c.config, OpCreate)
+	return &EliminationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Elimination entities.
+func (c *EliminationClient) CreateBulk(builders ...*EliminationCreate) *EliminationCreateBulk {
+	return &EliminationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *EliminationClient) MapCreateBulk(slice any, setFunc func(*EliminationCreate, int)) *EliminationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &EliminationCreateBulk{err: fmt.Errorf("calling to EliminationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*EliminationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &EliminationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Elimination.
+func (c *EliminationClient) Update() *EliminationUpdate {
+	mutation := newEliminationMutation(c.config, OpUpdate)
+	return &EliminationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EliminationClient) UpdateOne(_m *Elimination) *EliminationUpdateOne {
+	mutation := newEliminationMutation(c.config, OpUpdateOne, withElimination(_m))
+	return &EliminationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EliminationClient) UpdateOneID(id uuid.UUID) *EliminationUpdateOne {
+	mutation := newEliminationMutation(c.config, OpUpdateOne, withEliminationID(id))
+	return &EliminationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Elimination.
+func (c *EliminationClient) Delete() *EliminationDelete {
+	mutation := newEliminationMutation(c.config, OpDelete)
+	return &EliminationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EliminationClient) DeleteOne(_m *Elimination) *EliminationDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EliminationClient) DeleteOneID(id uuid.UUID) *EliminationDeleteOne {
+	builder := c.Delete().Where(elimination.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EliminationDeleteOne{builder}
+}
+
+// Query returns a query builder for Elimination.
+func (c *EliminationClient) Query() *EliminationQuery {
+	return &EliminationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeElimination},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Elimination entity by its id.
+func (c *EliminationClient) Get(ctx context.Context, id uuid.UUID) (*Elimination, error) {
+	return c.Query().Where(elimination.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EliminationClient) GetX(ctx context.Context, id uuid.UUID) *Elimination {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGame queries the game edge of a Elimination.
+func (c *EliminationClient) QueryGame(_m *Elimination) *GameQuery {
+	query := (&GameClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(elimination.Table, elimination.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, elimination.GameTable, elimination.GameColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRound queries the round edge of a Elimination.
+func (c *EliminationClient) QueryRound(_m *Elimination) *GameRoundQuery {
+	query := (&GameRoundClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(elimination.Table, elimination.FieldID, id),
+			sqlgraph.To(gameround.Table, gameround.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, elimination.RoundTable, elimination.RoundColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPlayer queries the player edge of a Elimination.
+func (c *EliminationClient) QueryPlayer(_m *Elimination) *PlayerQuery {
+	query := (&PlayerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(elimination.Table, elimination.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, elimination.PlayerTable, elimination.PlayerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EliminationClient) Hooks() []Hook {
+	return c.hooks.Elimination
+}
+
+// Interceptors returns the client interceptors.
+func (c *EliminationClient) Interceptors() []Interceptor {
+	return c.inters.Elimination
+}
+
+func (c *EliminationClient) mutate(ctx context.Context, m *EliminationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&EliminationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&EliminationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&EliminationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&EliminationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Elimination mutation op: %q", m.Op())
+	}
+}
+
 // GameClient is a client for the Game schema.
 type GameClient struct {
 	config
@@ -522,6 +719,38 @@ func (c *GameClient) QueryGameRoles(_m *Game) *GameRoleQuery {
 			sqlgraph.From(game.Table, game.FieldID, id),
 			sqlgraph.To(gamerole.Table, gamerole.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, game.GameRolesTable, game.GameRolesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRounds queries the rounds edge of a Game.
+func (c *GameClient) QueryRounds(_m *Game) *GameRoundQuery {
+	query := (&GameRoundClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, id),
+			sqlgraph.To(gameround.Table, gameround.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.RoundsTable, game.RoundsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEliminations queries the eliminations edge of a Game.
+func (c *GameClient) QueryEliminations(_m *Game) *EliminationQuery {
+	query := (&EliminationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, id),
+			sqlgraph.To(elimination.Table, elimination.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.EliminationsTable, game.EliminationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -735,6 +964,171 @@ func (c *GameRoleClient) mutate(ctx context.Context, m *GameRoleMutation) (Value
 	}
 }
 
+// GameRoundClient is a client for the GameRound schema.
+type GameRoundClient struct {
+	config
+}
+
+// NewGameRoundClient returns a client for the GameRound from the given config.
+func NewGameRoundClient(c config) *GameRoundClient {
+	return &GameRoundClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `gameround.Hooks(f(g(h())))`.
+func (c *GameRoundClient) Use(hooks ...Hook) {
+	c.hooks.GameRound = append(c.hooks.GameRound, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `gameround.Intercept(f(g(h())))`.
+func (c *GameRoundClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GameRound = append(c.inters.GameRound, interceptors...)
+}
+
+// Create returns a builder for creating a GameRound entity.
+func (c *GameRoundClient) Create() *GameRoundCreate {
+	mutation := newGameRoundMutation(c.config, OpCreate)
+	return &GameRoundCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GameRound entities.
+func (c *GameRoundClient) CreateBulk(builders ...*GameRoundCreate) *GameRoundCreateBulk {
+	return &GameRoundCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GameRoundClient) MapCreateBulk(slice any, setFunc func(*GameRoundCreate, int)) *GameRoundCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GameRoundCreateBulk{err: fmt.Errorf("calling to GameRoundClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GameRoundCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GameRoundCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GameRound.
+func (c *GameRoundClient) Update() *GameRoundUpdate {
+	mutation := newGameRoundMutation(c.config, OpUpdate)
+	return &GameRoundUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GameRoundClient) UpdateOne(_m *GameRound) *GameRoundUpdateOne {
+	mutation := newGameRoundMutation(c.config, OpUpdateOne, withGameRound(_m))
+	return &GameRoundUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GameRoundClient) UpdateOneID(id uuid.UUID) *GameRoundUpdateOne {
+	mutation := newGameRoundMutation(c.config, OpUpdateOne, withGameRoundID(id))
+	return &GameRoundUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GameRound.
+func (c *GameRoundClient) Delete() *GameRoundDelete {
+	mutation := newGameRoundMutation(c.config, OpDelete)
+	return &GameRoundDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GameRoundClient) DeleteOne(_m *GameRound) *GameRoundDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GameRoundClient) DeleteOneID(id uuid.UUID) *GameRoundDeleteOne {
+	builder := c.Delete().Where(gameround.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GameRoundDeleteOne{builder}
+}
+
+// Query returns a query builder for GameRound.
+func (c *GameRoundClient) Query() *GameRoundQuery {
+	return &GameRoundQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGameRound},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GameRound entity by its id.
+func (c *GameRoundClient) Get(ctx context.Context, id uuid.UUID) (*GameRound, error) {
+	return c.Query().Where(gameround.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GameRoundClient) GetX(ctx context.Context, id uuid.UUID) *GameRound {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGame queries the game edge of a GameRound.
+func (c *GameRoundClient) QueryGame(_m *GameRound) *GameQuery {
+	query := (&GameClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gameround.Table, gameround.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, gameround.GameTable, gameround.GameColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEliminations queries the eliminations edge of a GameRound.
+func (c *GameRoundClient) QueryEliminations(_m *GameRound) *EliminationQuery {
+	query := (&EliminationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gameround.Table, gameround.FieldID, id),
+			sqlgraph.To(elimination.Table, elimination.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, gameround.EliminationsTable, gameround.EliminationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GameRoundClient) Hooks() []Hook {
+	return c.hooks.GameRound
+}
+
+// Interceptors returns the client interceptors.
+func (c *GameRoundClient) Interceptors() []Interceptor {
+	return c.inters.GameRound
+}
+
+func (c *GameRoundClient) mutate(ctx context.Context, m *GameRoundMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GameRoundCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GameRoundUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GameRoundUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GameRoundDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GameRound mutation op: %q", m.Op())
+	}
+}
+
 // PlayerClient is a client for the Player schema.
 type PlayerClient struct {
 	config
@@ -868,6 +1262,22 @@ func (c *PlayerClient) QueryGameRole(_m *Player) *GameRoleQuery {
 			sqlgraph.From(player.Table, player.FieldID, id),
 			sqlgraph.To(gamerole.Table, gamerole.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, player.GameRoleTable, player.GameRoleColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEliminations queries the eliminations edge of a Player.
+func (c *PlayerClient) QueryEliminations(_m *Player) *EliminationQuery {
+	query := (&EliminationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(elimination.Table, elimination.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, player.EliminationsTable, player.EliminationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1382,10 +1792,11 @@ func (c *RoleTemplateRoleClient) mutate(ctx context.Context, m *RoleTemplateRole
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Admin, Game, GameRole, Player, Role, RoleTemplate, RoleTemplateRole []ent.Hook
+		Admin, Elimination, Game, GameRole, GameRound, Player, Role, RoleTemplate,
+		RoleTemplateRole []ent.Hook
 	}
 	inters struct {
-		Admin, Game, GameRole, Player, Role, RoleTemplate,
+		Admin, Elimination, Game, GameRole, GameRound, Player, Role, RoleTemplate,
 		RoleTemplateRole []ent.Interceptor
 	}
 )

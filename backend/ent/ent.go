@@ -13,8 +13,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/mafia-night/backend/ent/admin"
+	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/role"
 	"github.com/mafia-night/backend/ent/roletemplate"
@@ -80,8 +82,10 @@ func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			admin.Table:            admin.ValidColumn,
+			elimination.Table:      elimination.ValidColumn,
 			game.Table:             game.ValidColumn,
 			gamerole.Table:         gamerole.ValidColumn,
+			gameround.Table:        gameround.ValidColumn,
 			player.Table:           player.ValidColumn,
 			role.Table:             role.ValidColumn,
 			roletemplate.Table:     roletemplate.ValidColumn,

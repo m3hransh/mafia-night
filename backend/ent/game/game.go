@@ -17,6 +17,10 @@ const (
 	FieldID = "id"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldPhase holds the string denoting the phase field in the database.
+	FieldPhase = "phase"
+	// FieldRoundNumber holds the string denoting the round_number field in the database.
+	FieldRoundNumber = "round_number"
 	// FieldModeratorID holds the string denoting the moderator_id field in the database.
 	FieldModeratorID = "moderator_id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -25,6 +29,10 @@ const (
 	EdgePlayers = "players"
 	// EdgeGameRoles holds the string denoting the game_roles edge name in mutations.
 	EdgeGameRoles = "game_roles"
+	// EdgeRounds holds the string denoting the rounds edge name in mutations.
+	EdgeRounds = "rounds"
+	// EdgeEliminations holds the string denoting the eliminations edge name in mutations.
+	EdgeEliminations = "eliminations"
 	// Table holds the table name of the game in the database.
 	Table = "games"
 	// PlayersTable is the table that holds the players relation/edge.
@@ -41,12 +49,28 @@ const (
 	GameRolesInverseTable = "game_roles"
 	// GameRolesColumn is the table column denoting the game_roles relation/edge.
 	GameRolesColumn = "game_id"
+	// RoundsTable is the table that holds the rounds relation/edge.
+	RoundsTable = "game_rounds"
+	// RoundsInverseTable is the table name for the GameRound entity.
+	// It exists in this package in order to avoid circular dependency with the "gameround" package.
+	RoundsInverseTable = "game_rounds"
+	// RoundsColumn is the table column denoting the rounds relation/edge.
+	RoundsColumn = "game_id"
+	// EliminationsTable is the table that holds the eliminations relation/edge.
+	EliminationsTable = "eliminations"
+	// EliminationsInverseTable is the table name for the Elimination entity.
+	// It exists in this package in order to avoid circular dependency with the "elimination" package.
+	EliminationsInverseTable = "eliminations"
+	// EliminationsColumn is the table column denoting the eliminations relation/edge.
+	EliminationsColumn = "game_id"
 )
 
 // Columns holds all SQL columns for game fields.
 var Columns = []string{
 	FieldID,
 	FieldStatus,
+	FieldPhase,
+	FieldRoundNumber,
 	FieldModeratorID,
 	FieldCreatedAt,
 }
@@ -62,6 +86,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultRoundNumber holds the default value on creation for the "round_number" field.
+	DefaultRoundNumber int
+	// RoundNumberValidator is a validator for the "round_number" field. It is called by the builders before save.
+	RoundNumberValidator func(int) error
 	// ModeratorIDValidator is a validator for the "moderator_id" field. It is called by the builders before save.
 	ModeratorIDValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -97,6 +125,34 @@ func StatusValidator(s Status) error {
 	}
 }
 
+// Phase defines the type for the "phase" enum field.
+type Phase string
+
+// PhaseWaiting is the default value of the Phase enum.
+const DefaultPhase = PhaseWaiting
+
+// Phase values.
+const (
+	PhaseWaiting Phase = "waiting"
+	PhaseDay     Phase = "day"
+	PhaseNight   Phase = "night"
+	PhaseEnded   Phase = "ended"
+)
+
+func (ph Phase) String() string {
+	return string(ph)
+}
+
+// PhaseValidator is a validator for the "phase" field enum values. It is called by the builders before save.
+func PhaseValidator(ph Phase) error {
+	switch ph {
+	case PhaseWaiting, PhaseDay, PhaseNight, PhaseEnded:
+		return nil
+	default:
+		return fmt.Errorf("game: invalid enum value for phase field: %q", ph)
+	}
+}
+
 // OrderOption defines the ordering options for the Game queries.
 type OrderOption func(*sql.Selector)
 
@@ -108,6 +164,16 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByPhase orders the results by the phase field.
+func ByPhase(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPhase, opts...).ToFunc()
+}
+
+// ByRoundNumber orders the results by the round_number field.
+func ByRoundNumber(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRoundNumber, opts...).ToFunc()
 }
 
 // ByModeratorID orders the results by the moderator_id field.
@@ -147,6 +213,34 @@ func ByGameRoles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newGameRolesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByRoundsCount orders the results by rounds count.
+func ByRoundsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRoundsStep(), opts...)
+	}
+}
+
+// ByRounds orders the results by rounds terms.
+func ByRounds(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRoundsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByEliminationsCount orders the results by eliminations count.
+func ByEliminationsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEliminationsStep(), opts...)
+	}
+}
+
+// ByEliminations orders the results by eliminations terms.
+func ByEliminations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEliminationsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newPlayersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -159,5 +253,19 @@ func newGameRolesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GameRolesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, GameRolesTable, GameRolesColumn),
+	)
+}
+func newRoundsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RoundsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RoundsTable, RoundsColumn),
+	)
+}
+func newEliminationsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EliminationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EliminationsTable, EliminationsColumn),
 	)
 }

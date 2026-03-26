@@ -25,6 +25,8 @@ const (
 	EdgeGame = "game"
 	// EdgeGameRole holds the string denoting the game_role edge name in mutations.
 	EdgeGameRole = "game_role"
+	// EdgeEliminations holds the string denoting the eliminations edge name in mutations.
+	EdgeEliminations = "eliminations"
 	// Table holds the table name of the player in the database.
 	Table = "players"
 	// GameTable is the table that holds the game relation/edge.
@@ -41,6 +43,13 @@ const (
 	GameRoleInverseTable = "game_roles"
 	// GameRoleColumn is the table column denoting the game_role relation/edge.
 	GameRoleColumn = "player_id"
+	// EliminationsTable is the table that holds the eliminations relation/edge.
+	EliminationsTable = "eliminations"
+	// EliminationsInverseTable is the table name for the Elimination entity.
+	// It exists in this package in order to avoid circular dependency with the "elimination" package.
+	EliminationsInverseTable = "eliminations"
+	// EliminationsColumn is the table column denoting the eliminations relation/edge.
+	EliminationsColumn = "player_id"
 )
 
 // Columns holds all SQL columns for player fields.
@@ -108,6 +117,13 @@ func ByGameRoleField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newGameRoleStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByEliminationsField orders the results by eliminations field.
+func ByEliminationsField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEliminationsStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newGameStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -120,5 +136,12 @@ func newGameRoleStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GameRoleInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, GameRoleTable, GameRoleColumn),
+	)
+}
+func newEliminationsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EliminationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, EliminationsTable, EliminationsColumn),
 	)
 }

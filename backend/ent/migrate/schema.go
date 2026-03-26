@@ -37,10 +37,59 @@ var (
 			},
 		},
 	}
+	// EliminationsColumns holds the columns for the "eliminations" table.
+	EliminationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "cause", Type: field.TypeEnum, Enums: []string{"vote", "night_kill", "moderator"}},
+		{Name: "eliminated_at", Type: field.TypeTime},
+		{Name: "game_id", Type: field.TypeString, Size: 12},
+		{Name: "round_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "player_id", Type: field.TypeUUID, Unique: true},
+	}
+	// EliminationsTable holds the schema information for the "eliminations" table.
+	EliminationsTable = &schema.Table{
+		Name:       "eliminations",
+		Columns:    EliminationsColumns,
+		PrimaryKey: []*schema.Column{EliminationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "eliminations_games_eliminations",
+				Columns:    []*schema.Column{EliminationsColumns[3]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "eliminations_game_rounds_eliminations",
+				Columns:    []*schema.Column{EliminationsColumns[4]},
+				RefColumns: []*schema.Column{GameRoundsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "eliminations_players_eliminations",
+				Columns:    []*schema.Column{EliminationsColumns[5]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "elimination_game_id",
+				Unique:  false,
+				Columns: []*schema.Column{EliminationsColumns[3]},
+			},
+			{
+				Name:    "elimination_player_id",
+				Unique:  false,
+				Columns: []*schema.Column{EliminationsColumns[5]},
+			},
+		},
+	}
 	// GamesColumns holds the columns for the "games" table.
 	GamesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true, Size: 12},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "active", "completed"}, Default: "pending"},
+		{Name: "phase", Type: field.TypeEnum, Enums: []string{"waiting", "day", "night", "ended"}, Default: "waiting"},
+		{Name: "round_number", Type: field.TypeInt, Default: 0},
 		{Name: "moderator_id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 	}
@@ -58,7 +107,7 @@ var (
 			{
 				Name:    "game_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{GamesColumns[3]},
+				Columns: []*schema.Column{GamesColumns[5]},
 			},
 		},
 	}
@@ -100,6 +149,36 @@ var (
 				Name:    "gamerole_game_id_player_id",
 				Unique:  true,
 				Columns: []*schema.Column{GameRolesColumns[2], GameRolesColumns[3]},
+			},
+		},
+	}
+	// GameRoundsColumns holds the columns for the "game_rounds" table.
+	GameRoundsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "round_number", Type: field.TypeInt},
+		{Name: "phase", Type: field.TypeEnum, Enums: []string{"day", "night"}},
+		{Name: "started_at", Type: field.TypeTime},
+		{Name: "ended_at", Type: field.TypeTime, Nullable: true},
+		{Name: "game_id", Type: field.TypeString, Size: 12},
+	}
+	// GameRoundsTable holds the schema information for the "game_rounds" table.
+	GameRoundsTable = &schema.Table{
+		Name:       "game_rounds",
+		Columns:    GameRoundsColumns,
+		PrimaryKey: []*schema.Column{GameRoundsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "game_rounds_games_rounds",
+				Columns:    []*schema.Column{GameRoundsColumns[5]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "gameround_game_id_round_number",
+				Unique:  false,
+				Columns: []*schema.Column{GameRoundsColumns[5], GameRoundsColumns[1]},
 			},
 		},
 	}
@@ -223,8 +302,10 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AdminsTable,
+		EliminationsTable,
 		GamesTable,
 		GameRolesTable,
+		GameRoundsTable,
 		PlayersTable,
 		RolesTable,
 		RoleTemplatesTable,
@@ -233,9 +314,13 @@ var (
 )
 
 func init() {
+	EliminationsTable.ForeignKeys[0].RefTable = GamesTable
+	EliminationsTable.ForeignKeys[1].RefTable = GameRoundsTable
+	EliminationsTable.ForeignKeys[2].RefTable = PlayersTable
 	GameRolesTable.ForeignKeys[0].RefTable = GamesTable
 	GameRolesTable.ForeignKeys[1].RefTable = PlayersTable
 	GameRolesTable.ForeignKeys[2].RefTable = RolesTable
+	GameRoundsTable.ForeignKeys[0].RefTable = GamesTable
 	PlayersTable.ForeignKeys[0].RefTable = GamesTable
 	RoleTemplateRolesTable.ForeignKeys[0].RefTable = RolesTable
 	RoleTemplateRolesTable.ForeignKeys[1].RefTable = RoleTemplatesTable

@@ -26,6 +26,12 @@ func (Game) Fields() []ent.Field {
 		field.Enum("status").
 			Values("pending", "active", "completed").
 			Default("pending"),
+		field.Enum("phase").
+			Values("waiting", "day", "night", "ended").
+			Default("waiting"),
+		field.Int("round_number").
+			Default(0).
+			NonNegative(),
 		field.String("moderator_id").
 			NotEmpty(),
 		field.Time("created_at").
@@ -40,6 +46,10 @@ func (Game) Edges() []ent.Edge {
 		edge.To("players", Player.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("game_roles", GameRole.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("rounds", GameRound.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("eliminations", Elimination.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }

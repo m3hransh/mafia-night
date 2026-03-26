@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { apiClient } from '@/lib/api-client';
 import type { Role } from '@/lib/types';
 import { saveModeratorGame, clearModeratorGame, validateModeratorGameState } from '@/lib/gameStorage';
-import { deleteGame, removePlayer, distributeRoles, selectRoles, getSelectedRoles, getGameRoles, PlayerRoleAssignment } from '@/lib/api';
+import { deleteGame, removePlayer, distributeRoles, selectRoles, getSelectedRoles, getGameRoles, PlayerRoleAssignment, startDay, startNight, endGame, PhaseResult } from '@/lib/api';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -26,6 +26,7 @@ export interface Game {
 }
 
 export type GamePhase = 'not-created' | 'waiting-for-players' | 'selecting-roles' | 'game-started';
+export type DayNightPhase = 'waiting' | 'day' | 'night' | 'ended';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,8 @@ export type State = {
   players: Player[];
   moderatorId: string;
   phase: GamePhase;
+  dayNightPhase: DayNightPhase;
+  roundNumber: number;
   roleAssignments: PlayerRoleAssignment[];
   selectedRoles: Map<string, number>;
   error: string;
@@ -66,7 +69,8 @@ type Action =
   | { type: 'CLOSING' }
   | { type: 'SET_COPY_SUCCESS'; value: boolean }
   | { type: 'SET_ERROR'; error: string }
-  | { type: 'ROLES_CHANGED'; roles: Map<string, number> };
+  | { type: 'ROLES_CHANGED'; roles: Map<string, number> }
+  | { type: 'PHASE_CHANGED'; dayNightPhase: DayNightPhase; roundNumber: number };
 
 // ── localStorage helpers ──────────────────────────────────────────────────────
 
@@ -96,6 +100,8 @@ const initialState: State = {
   players: [],
   moderatorId: '',
   phase: 'not-created',
+  dayNightPhase: 'waiting',
+  roundNumber: 0,
   roleAssignments: [],
   selectedRoles: loadSelectedRolesFromStorage(),
   error: '',
@@ -149,6 +155,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, error: action.error };
     case 'ROLES_CHANGED':
       return { ...state, selectedRoles: action.roles };
+    case 'PHASE_CHANGED':
+      return { ...state, dayNightPhase: action.dayNightPhase, roundNumber: action.roundNumber };
     default:
       return state;
   }
@@ -168,6 +176,9 @@ type CreateGameContextValue = {
   handleRolesDistribute: () => Promise<void>;
   handleCancelRoleSelection: () => void;
   handleRolesChanged: (roles: Map<string, number>) => void;
+  handleStartDay: () => Promise<void>;
+  handleStartNight: () => Promise<void>;
+  handleEndGame: () => Promise<void>;
 };
 
 const CreateGameContext = createContext<CreateGameContextValue | null>(null);
@@ -257,11 +268,14 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
 
   useGameWebSocket({
     gameId: game?.id || '',
-    enabled: !!game && phase !== 'game-started',
+    enabled: !!game,
     onPlayerJoined: (player) => dispatch({ type: 'PLAYER_JOINED', player }),
     onPlayerLeft: (playerId) => dispatch({ type: 'PLAYER_LEFT', playerId }),
     onRolesDistributed: () => {},
     onGameDeleted: () => { clearModeratorGame(); router.push('/'); },
+    onPhaseChanged: (phase, roundNumber) => {
+      dispatch({ type: 'PHASE_CHANGED', dayNightPhase: phase as DayNightPhase, roundNumber });
+    },
     onUpdate: (update) => {
       if (update.type === 'initial_state' && update.payload?.players) {
         dispatch({ type: 'PLAYERS_LOADED', players: update.payload.players });
@@ -387,6 +401,36 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const handleStartDay = async () => {
+    if (!game) return;
+    try {
+      const result = await startDay(game.id, moderatorId);
+      dispatch({ type: 'PHASE_CHANGED', dayNightPhase: result.phase, roundNumber: result.round_number });
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', error: err instanceof Error ? err.message : 'Failed to start day' });
+    }
+  };
+
+  const handleStartNight = async () => {
+    if (!game) return;
+    try {
+      const result = await startNight(game.id, moderatorId);
+      dispatch({ type: 'PHASE_CHANGED', dayNightPhase: result.phase, roundNumber: result.round_number });
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', error: err instanceof Error ? err.message : 'Failed to start night' });
+    }
+  };
+
+  const handleEndGame = async () => {
+    if (!game) return;
+    try {
+      const result = await endGame(game.id, moderatorId);
+      dispatch({ type: 'PHASE_CHANGED', dayNightPhase: result.phase, roundNumber: result.round_number });
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', error: err instanceof Error ? err.message : 'Failed to end game' });
+    }
+  };
+
   const value = useMemo(() => ({
     state,
     allRoles,
@@ -399,6 +443,9 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     handleRolesDistribute,
     handleCancelRoleSelection,
     handleRolesChanged,
+    handleStartDay,
+    handleStartNight,
+    handleEndGame,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [state, allRoles]);
 

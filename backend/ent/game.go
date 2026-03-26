@@ -19,6 +19,10 @@ type Game struct {
 	ID string `json:"id,omitempty"`
 	// Status holds the value of the "status" field.
 	Status game.Status `json:"status,omitempty"`
+	// Phase holds the value of the "phase" field.
+	Phase game.Phase `json:"phase,omitempty"`
+	// RoundNumber holds the value of the "round_number" field.
+	RoundNumber int `json:"round_number,omitempty"`
 	// ModeratorID holds the value of the "moderator_id" field.
 	ModeratorID string `json:"moderator_id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -35,9 +39,13 @@ type GameEdges struct {
 	Players []*Player `json:"players,omitempty"`
 	// GameRoles holds the value of the game_roles edge.
 	GameRoles []*GameRole `json:"game_roles,omitempty"`
+	// Rounds holds the value of the rounds edge.
+	Rounds []*GameRound `json:"rounds,omitempty"`
+	// Eliminations holds the value of the eliminations edge.
+	Eliminations []*Elimination `json:"eliminations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 }
 
 // PlayersOrErr returns the Players value or an error if the edge
@@ -58,12 +66,32 @@ func (e GameEdges) GameRolesOrErr() ([]*GameRole, error) {
 	return nil, &NotLoadedError{edge: "game_roles"}
 }
 
+// RoundsOrErr returns the Rounds value or an error if the edge
+// was not loaded in eager-loading.
+func (e GameEdges) RoundsOrErr() ([]*GameRound, error) {
+	if e.loadedTypes[2] {
+		return e.Rounds, nil
+	}
+	return nil, &NotLoadedError{edge: "rounds"}
+}
+
+// EliminationsOrErr returns the Eliminations value or an error if the edge
+// was not loaded in eager-loading.
+func (e GameEdges) EliminationsOrErr() ([]*Elimination, error) {
+	if e.loadedTypes[3] {
+		return e.Eliminations, nil
+	}
+	return nil, &NotLoadedError{edge: "eliminations"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Game) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case game.FieldID, game.FieldStatus, game.FieldModeratorID:
+		case game.FieldRoundNumber:
+			values[i] = new(sql.NullInt64)
+		case game.FieldID, game.FieldStatus, game.FieldPhase, game.FieldModeratorID:
 			values[i] = new(sql.NullString)
 		case game.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -93,6 +121,18 @@ func (_m *Game) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = game.Status(value.String)
+			}
+		case game.FieldPhase:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field phase", values[i])
+			} else if value.Valid {
+				_m.Phase = game.Phase(value.String)
+			}
+		case game.FieldRoundNumber:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field round_number", values[i])
+			} else if value.Valid {
+				_m.RoundNumber = int(value.Int64)
 			}
 		case game.FieldModeratorID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -129,6 +169,16 @@ func (_m *Game) QueryGameRoles() *GameRoleQuery {
 	return NewGameClient(_m.config).QueryGameRoles(_m)
 }
 
+// QueryRounds queries the "rounds" edge of the Game entity.
+func (_m *Game) QueryRounds() *GameRoundQuery {
+	return NewGameClient(_m.config).QueryRounds(_m)
+}
+
+// QueryEliminations queries the "eliminations" edge of the Game entity.
+func (_m *Game) QueryEliminations() *EliminationQuery {
+	return NewGameClient(_m.config).QueryEliminations(_m)
+}
+
 // Update returns a builder for updating this Game.
 // Note that you need to call Game.Unwrap() before calling this method if this Game
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -154,6 +204,12 @@ func (_m *Game) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
+	builder.WriteString(", ")
+	builder.WriteString("phase=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Phase))
+	builder.WriteString(", ")
+	builder.WriteString("round_number=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RoundNumber))
 	builder.WriteString(", ")
 	builder.WriteString("moderator_id=")
 	builder.WriteString(_m.ModeratorID)

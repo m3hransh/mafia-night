@@ -524,3 +524,115 @@ func (h *GameHandler) GetSelectedRoles(w http.ResponseWriter, r *http.Request) {
 	JSONResponse(w, http.StatusOK, entries)
 }
 
+
+// ── Phase management ──────────────────────────────────────────────────────────
+
+// StartDay handles POST /api/games/{id}/start-day
+// @Summary      Start the day phase
+// @Description  Transitions the game to the day phase and opens a new round. Only the moderator can call this.
+// @Tags         games
+// @Produce      json
+// @Param        id              path      string  true  "Game ID"
+// @Param        X-Moderator-ID  header    string  true  "Moderator identifier"
+// @Success      200  {object}  map[string]any
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      403  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Router       /games/{id}/start-day [post]
+func (h *GameHandler) StartDay(w http.ResponseWriter, r *http.Request) {
+gameID := chi.URLParam(r, "id")
+moderatorID := r.Header.Get("X-Moderator-ID")
+
+result, err := h.gameService.StartDay(r.Context(), gameID, moderatorID)
+if err != nil {
+switch {
+case errors.Is(err, service.ErrEmptyGameID), errors.Is(err, service.ErrEmptyModeratorID):
+ErrorResponse(w, http.StatusBadRequest, err.Error())
+case errors.Is(err, service.ErrNotAuthorized):
+ErrorResponse(w, http.StatusForbidden, err.Error())
+case errors.Is(err, service.ErrGameAlreadyEnded):
+ErrorResponse(w, http.StatusConflict, err.Error())
+default:
+ErrorResponse(w, http.StatusNotFound, "game not found")
+}
+return
+}
+
+JSONResponse(w, http.StatusOK, map[string]any{
+"phase":        result.Game.Phase,
+"round_number": result.Game.RoundNumber,
+"round_id":     result.Round.ID,
+})
+}
+
+// StartNight handles POST /api/games/{id}/start-night
+// @Summary      Start the night phase
+// @Description  Transitions the game to the night phase and opens a new round. Only the moderator can call this.
+// @Tags         games
+// @Produce      json
+// @Param        id              path      string  true  "Game ID"
+// @Param        X-Moderator-ID  header    string  true  "Moderator identifier"
+// @Success      200  {object}  map[string]any
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      403  {object}  ErrorResponseBody
+// @Failure      404  {object}  ErrorResponseBody
+// @Router       /games/{id}/start-night [post]
+func (h *GameHandler) StartNight(w http.ResponseWriter, r *http.Request) {
+gameID := chi.URLParam(r, "id")
+moderatorID := r.Header.Get("X-Moderator-ID")
+
+result, err := h.gameService.StartNight(r.Context(), gameID, moderatorID)
+if err != nil {
+switch {
+case errors.Is(err, service.ErrEmptyGameID), errors.Is(err, service.ErrEmptyModeratorID):
+ErrorResponse(w, http.StatusBadRequest, err.Error())
+case errors.Is(err, service.ErrNotAuthorized):
+ErrorResponse(w, http.StatusForbidden, err.Error())
+case errors.Is(err, service.ErrGameAlreadyEnded):
+ErrorResponse(w, http.StatusConflict, err.Error())
+default:
+ErrorResponse(w, http.StatusNotFound, "game not found")
+}
+return
+}
+
+JSONResponse(w, http.StatusOK, map[string]any{
+"phase":        result.Game.Phase,
+"round_number": result.Game.RoundNumber,
+"round_id":     result.Round.ID,
+})
+}
+
+// EndGame handles POST /api/games/{id}/end-game
+// @Summary      End the game
+// @Description  Marks the game as ended. Only the moderator can call this.
+// @Tags         games
+// @Produce      json
+// @Param        id              path      string  true  "Game ID"
+// @Param        X-Moderator-ID  header    string  true  "Moderator identifier"
+// @Success      200  {object}  GameResponse
+// @Failure      400  {object}  ErrorResponseBody
+// @Failure      403  {object}  ErrorResponseBody
+// @Failure      409  {object}  ErrorResponseBody
+// @Router       /games/{id}/end-game [post]
+func (h *GameHandler) EndGame(w http.ResponseWriter, r *http.Request) {
+gameID := chi.URLParam(r, "id")
+moderatorID := r.Header.Get("X-Moderator-ID")
+
+g, err := h.gameService.EndGame(r.Context(), gameID, moderatorID)
+if err != nil {
+switch {
+case errors.Is(err, service.ErrEmptyGameID), errors.Is(err, service.ErrEmptyModeratorID):
+ErrorResponse(w, http.StatusBadRequest, err.Error())
+case errors.Is(err, service.ErrNotAuthorized):
+ErrorResponse(w, http.StatusForbidden, err.Error())
+case errors.Is(err, service.ErrGameAlreadyEnded):
+ErrorResponse(w, http.StatusConflict, err.Error())
+default:
+ErrorResponse(w, http.StatusNotFound, "game not found")
+}
+return
+}
+
+JSONResponse(w, http.StatusOK, g)
+}

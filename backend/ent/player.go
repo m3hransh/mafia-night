@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
@@ -38,9 +39,11 @@ type PlayerEdges struct {
 	Game *Game `json:"game,omitempty"`
 	// GameRole holds the value of the game_role edge.
 	GameRole *GameRole `json:"game_role,omitempty"`
+	// Eliminations holds the value of the eliminations edge.
+	Eliminations *Elimination `json:"eliminations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // GameOrErr returns the Game value or an error if the edge
@@ -63,6 +66,17 @@ func (e PlayerEdges) GameRoleOrErr() (*GameRole, error) {
 		return nil, &NotFoundError{label: gamerole.Label}
 	}
 	return nil, &NotLoadedError{edge: "game_role"}
+}
+
+// EliminationsOrErr returns the Eliminations value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PlayerEdges) EliminationsOrErr() (*Elimination, error) {
+	if e.Eliminations != nil {
+		return e.Eliminations, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: elimination.Label}
+	}
+	return nil, &NotLoadedError{edge: "eliminations"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -136,6 +150,11 @@ func (_m *Player) QueryGame() *GameQuery {
 // QueryGameRole queries the "game_role" edge of the Player entity.
 func (_m *Player) QueryGameRole() *GameRoleQuery {
 	return NewPlayerClient(_m.config).QueryGameRole(_m)
+}
+
+// QueryEliminations queries the "eliminations" edge of the Player entity.
+func (_m *Player) QueryEliminations() *EliminationQuery {
+	return NewPlayerClient(_m.config).QueryEliminations(_m)
 }
 
 // Update returns a builder for updating this Player.

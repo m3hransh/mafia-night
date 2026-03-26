@@ -129,6 +129,7 @@ const (
 	RolesSelected    GameUpdateType = "roles_selected"
 	RolesDistributed GameUpdateType = "roles_distributed"
 	GameDeleted      GameUpdateType = "game_deleted"
+	PhaseChanged     GameUpdateType = "phase_changed"
 )
 
 type GameUpdate struct {
@@ -447,6 +448,14 @@ func (h *WebSocketHandler) BroadcastGameDeleted(gameID string) {
 	h.hub.BroadcastToGame(gameID, GameDeleted, nil)
 }
 
+// BroadcastPhaseChanged sends a phase change update to all clients in the game.
+func (h *WebSocketHandler) BroadcastPhaseChanged(gameID string, phase string, roundNumber int) {
+	h.hub.BroadcastToGame(gameID, PhaseChanged, map[string]any{
+		"phase":        phase,
+		"round_number": roundNumber,
+	})
+}
+
 // NotifyPlayerUpdate wraps game handler methods to send WebSocket updates
 func NotifyPlayerUpdate(handler http.HandlerFunc, wsHandler *WebSocketHandler, updateType GameUpdateType) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -475,6 +484,30 @@ func NotifyPlayerUpdate(handler http.HandlerFunc, wsHandler *WebSocketHandler, u
 				wsHandler.BroadcastRolesDistributed(gameID)
 			case GameDeleted:
 				wsHandler.BroadcastGameDeleted(gameID)
+			}
+		}
+	}
+}
+
+// NotifyPhaseChange wraps start-day, start-night and end-game handlers to broadcast phase_changed.
+// It reads the phase and round_number fields from the JSON response body.
+func NotifyPhaseChange(h http.HandlerFunc, wsHandler *WebSocketHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gameID := chi.URLParam(r, "id")
+		rec := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
+		h(rec, r)
+
+		if rec.statusCode < 400 && gameID != "" && rec.body != nil {
+			var resp map[string]any
+			if err := json.Unmarshal(rec.body, &resp); err == nil {
+				phase, _ := resp["phase"].(string)
+				roundNumber := 0
+				if rn, ok := resp["round_number"].(float64); ok {
+					roundNumber = int(rn)
+				}
+				if phase != "" {
+					wsHandler.BroadcastPhaseChanged(gameID, phase, roundNumber)
+				}
 			}
 		}
 	}

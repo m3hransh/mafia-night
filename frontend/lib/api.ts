@@ -253,3 +253,36 @@ export async function joinGame(
 
   return data as Player;
 }
+
+// ── Phase management ──────────────────────────────────────────────────────────
+
+export interface PhaseResult {
+  phase: 'waiting' | 'day' | 'night' | 'ended';
+  round_number: number;
+  round_id?: string;
+}
+
+async function phaseRequest(gameId: string, moderatorId: string, endpoint: string): Promise<PhaseResult> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/${endpoint}`, {
+    method: 'POST',
+    headers: { 'X-Moderator-ID': moderatorId },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new APIError(res.status, err.error || `Failed to ${endpoint}`);
+  }
+  return res.json();
+}
+
+export async function startDay(gameId: string, moderatorId: string): Promise<PhaseResult> {
+  return phaseRequest(gameId, moderatorId, 'start-day');
+}
+
+export async function startNight(gameId: string, moderatorId: string): Promise<PhaseResult> {
+  return phaseRequest(gameId, moderatorId, 'start-night');
+}
+
+export async function endGame(gameId: string, moderatorId: string): Promise<PhaseResult> {
+  return phaseRequest(gameId, moderatorId, 'end-game');
+}

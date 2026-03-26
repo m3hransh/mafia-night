@@ -6,7 +6,8 @@ export type GameUpdateType =
   | 'player_left' 
   | 'roles_selected'
   | 'roles_distributed'
-  | 'game_deleted';
+  | 'game_deleted'
+  | 'phase_changed';
 
 export interface GameUpdate {
   type: GameUpdateType;
@@ -22,6 +23,7 @@ interface UseGameWebSocketOptions {
   onRolesSelected?: () => void;
   onRolesDistributed?: () => void;
   onGameDeleted?: () => void;
+  onPhaseChanged?: (phase: string, roundNumber: number) => void;
   enabled?: boolean;
 }
 
@@ -33,6 +35,7 @@ export function useGameWebSocket({
   onRolesSelected,
   onRolesDistributed,
   onGameDeleted,
+  onPhaseChanged,
   enabled = true,
 }: UseGameWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -47,6 +50,7 @@ export function useGameWebSocket({
   const onRolesSelectedRef = useRef(onRolesSelected);
   const onRolesDistributedRef = useRef(onRolesDistributed);
   const onGameDeletedRef = useRef(onGameDeleted);
+  const onPhaseChangedRef = useRef(onPhaseChanged);
 
   useEffect(() => {
     onUpdateRef.current = onUpdate;
@@ -55,6 +59,7 @@ export function useGameWebSocket({
     onRolesSelectedRef.current = onRolesSelected;
     onRolesDistributedRef.current = onRolesDistributed;
     onGameDeletedRef.current = onGameDeleted;
+    onPhaseChangedRef.current = onPhaseChanged;
   }, [onUpdate, onPlayerJoined, onPlayerLeft, onRolesSelected, onRolesDistributed, onGameDeleted]);
 
   const connect = useCallback(() => {
@@ -96,6 +101,12 @@ export function useGameWebSocket({
               break;
             case 'game_deleted':
               onGameDeletedRef.current?.();
+              break;
+            case 'phase_changed':
+              onPhaseChangedRef.current?.(
+                update.payload?.phase,
+                update.payload?.round_number ?? 0,
+              );
               break;
           }
         } catch {

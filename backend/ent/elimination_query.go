@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -15,59 +14,59 @@ import (
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
-	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/predicate"
 )
 
-// PlayerQuery is the builder for querying Player entities.
-type PlayerQuery struct {
+// EliminationQuery is the builder for querying Elimination entities.
+type EliminationQuery struct {
 	config
-	ctx              *QueryContext
-	order            []player.OrderOption
-	inters           []Interceptor
-	predicates       []predicate.Player
-	withGame         *GameQuery
-	withGameRole     *GameRoleQuery
-	withEliminations *EliminationQuery
+	ctx        *QueryContext
+	order      []elimination.OrderOption
+	inters     []Interceptor
+	predicates []predicate.Elimination
+	withGame   *GameQuery
+	withRound  *GameRoundQuery
+	withPlayer *PlayerQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the PlayerQuery builder.
-func (_q *PlayerQuery) Where(ps ...predicate.Player) *PlayerQuery {
+// Where adds a new predicate for the EliminationQuery builder.
+func (_q *EliminationQuery) Where(ps ...predicate.Elimination) *EliminationQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *PlayerQuery) Limit(limit int) *PlayerQuery {
+func (_q *EliminationQuery) Limit(limit int) *EliminationQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *PlayerQuery) Offset(offset int) *PlayerQuery {
+func (_q *EliminationQuery) Offset(offset int) *EliminationQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *PlayerQuery) Unique(unique bool) *PlayerQuery {
+func (_q *EliminationQuery) Unique(unique bool) *EliminationQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *PlayerQuery) Order(o ...player.OrderOption) *PlayerQuery {
+func (_q *EliminationQuery) Order(o ...elimination.OrderOption) *EliminationQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
 // QueryGame chains the current query on the "game" edge.
-func (_q *PlayerQuery) QueryGame() *GameQuery {
+func (_q *EliminationQuery) QueryGame() *GameQuery {
 	query := (&GameClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -78,9 +77,9 @@ func (_q *PlayerQuery) QueryGame() *GameQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(player.Table, player.FieldID, selector),
+			sqlgraph.From(elimination.Table, elimination.FieldID, selector),
 			sqlgraph.To(game.Table, game.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, player.GameTable, player.GameColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, elimination.GameTable, elimination.GameColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -88,9 +87,9 @@ func (_q *PlayerQuery) QueryGame() *GameQuery {
 	return query
 }
 
-// QueryGameRole chains the current query on the "game_role" edge.
-func (_q *PlayerQuery) QueryGameRole() *GameRoleQuery {
-	query := (&GameRoleClient{config: _q.config}).Query()
+// QueryRound chains the current query on the "round" edge.
+func (_q *EliminationQuery) QueryRound() *GameRoundQuery {
+	query := (&GameRoundClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -100,9 +99,9 @@ func (_q *PlayerQuery) QueryGameRole() *GameRoleQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(player.Table, player.FieldID, selector),
-			sqlgraph.To(gamerole.Table, gamerole.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, player.GameRoleTable, player.GameRoleColumn),
+			sqlgraph.From(elimination.Table, elimination.FieldID, selector),
+			sqlgraph.To(gameround.Table, gameround.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, elimination.RoundTable, elimination.RoundColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -110,9 +109,9 @@ func (_q *PlayerQuery) QueryGameRole() *GameRoleQuery {
 	return query
 }
 
-// QueryEliminations chains the current query on the "eliminations" edge.
-func (_q *PlayerQuery) QueryEliminations() *EliminationQuery {
-	query := (&EliminationClient{config: _q.config}).Query()
+// QueryPlayer chains the current query on the "player" edge.
+func (_q *EliminationQuery) QueryPlayer() *PlayerQuery {
+	query := (&PlayerClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -122,9 +121,9 @@ func (_q *PlayerQuery) QueryEliminations() *EliminationQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(player.Table, player.FieldID, selector),
-			sqlgraph.To(elimination.Table, elimination.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, player.EliminationsTable, player.EliminationsColumn),
+			sqlgraph.From(elimination.Table, elimination.FieldID, selector),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, elimination.PlayerTable, elimination.PlayerColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -132,21 +131,21 @@ func (_q *PlayerQuery) QueryEliminations() *EliminationQuery {
 	return query
 }
 
-// First returns the first Player entity from the query.
-// Returns a *NotFoundError when no Player was found.
-func (_q *PlayerQuery) First(ctx context.Context) (*Player, error) {
+// First returns the first Elimination entity from the query.
+// Returns a *NotFoundError when no Elimination was found.
+func (_q *EliminationQuery) First(ctx context.Context) (*Elimination, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{player.Label}
+		return nil, &NotFoundError{elimination.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *PlayerQuery) FirstX(ctx context.Context) *Player {
+func (_q *EliminationQuery) FirstX(ctx context.Context) *Elimination {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -154,22 +153,22 @@ func (_q *PlayerQuery) FirstX(ctx context.Context) *Player {
 	return node
 }
 
-// FirstID returns the first Player ID from the query.
-// Returns a *NotFoundError when no Player ID was found.
-func (_q *PlayerQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+// FirstID returns the first Elimination ID from the query.
+// Returns a *NotFoundError when no Elimination ID was found.
+func (_q *EliminationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{player.Label}
+		err = &NotFoundError{elimination.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *PlayerQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (_q *EliminationQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -177,10 +176,10 @@ func (_q *PlayerQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// Only returns a single Player entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Player entity is found.
-// Returns a *NotFoundError when no Player entities are found.
-func (_q *PlayerQuery) Only(ctx context.Context) (*Player, error) {
+// Only returns a single Elimination entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one Elimination entity is found.
+// Returns a *NotFoundError when no Elimination entities are found.
+func (_q *EliminationQuery) Only(ctx context.Context) (*Elimination, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -189,14 +188,14 @@ func (_q *PlayerQuery) Only(ctx context.Context) (*Player, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{player.Label}
+		return nil, &NotFoundError{elimination.Label}
 	default:
-		return nil, &NotSingularError{player.Label}
+		return nil, &NotSingularError{elimination.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *PlayerQuery) OnlyX(ctx context.Context) *Player {
+func (_q *EliminationQuery) OnlyX(ctx context.Context) *Elimination {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -204,10 +203,10 @@ func (_q *PlayerQuery) OnlyX(ctx context.Context) *Player {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Player ID in the query.
-// Returns a *NotSingularError when more than one Player ID is found.
+// OnlyID is like Only, but returns the only Elimination ID in the query.
+// Returns a *NotSingularError when more than one Elimination ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *PlayerQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *EliminationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -216,15 +215,15 @@ func (_q *PlayerQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{player.Label}
+		err = &NotFoundError{elimination.Label}
 	default:
-		err = &NotSingularError{player.Label}
+		err = &NotSingularError{elimination.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *PlayerQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (_q *EliminationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -232,18 +231,18 @@ func (_q *PlayerQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// All executes the query and returns a list of Players.
-func (_q *PlayerQuery) All(ctx context.Context) ([]*Player, error) {
+// All executes the query and returns a list of Eliminations.
+func (_q *EliminationQuery) All(ctx context.Context) ([]*Elimination, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Player, *PlayerQuery]()
-	return withInterceptors[[]*Player](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*Elimination, *EliminationQuery]()
+	return withInterceptors[[]*Elimination](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *PlayerQuery) AllX(ctx context.Context) []*Player {
+func (_q *EliminationQuery) AllX(ctx context.Context) []*Elimination {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -251,20 +250,20 @@ func (_q *PlayerQuery) AllX(ctx context.Context) []*Player {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Player IDs.
-func (_q *PlayerQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+// IDs executes the query and returns a list of Elimination IDs.
+func (_q *EliminationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(player.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(elimination.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *PlayerQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (_q *EliminationQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -273,16 +272,16 @@ func (_q *PlayerQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (_q *PlayerQuery) Count(ctx context.Context) (int, error) {
+func (_q *EliminationQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*PlayerQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*EliminationQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *PlayerQuery) CountX(ctx context.Context) int {
+func (_q *EliminationQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -291,7 +290,7 @@ func (_q *PlayerQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *PlayerQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *EliminationQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -304,7 +303,7 @@ func (_q *PlayerQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *PlayerQuery) ExistX(ctx context.Context) bool {
+func (_q *EliminationQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -312,21 +311,21 @@ func (_q *PlayerQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the PlayerQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the EliminationQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *PlayerQuery) Clone() *PlayerQuery {
+func (_q *EliminationQuery) Clone() *EliminationQuery {
 	if _q == nil {
 		return nil
 	}
-	return &PlayerQuery{
-		config:           _q.config,
-		ctx:              _q.ctx.Clone(),
-		order:            append([]player.OrderOption{}, _q.order...),
-		inters:           append([]Interceptor{}, _q.inters...),
-		predicates:       append([]predicate.Player{}, _q.predicates...),
-		withGame:         _q.withGame.Clone(),
-		withGameRole:     _q.withGameRole.Clone(),
-		withEliminations: _q.withEliminations.Clone(),
+	return &EliminationQuery{
+		config:     _q.config,
+		ctx:        _q.ctx.Clone(),
+		order:      append([]elimination.OrderOption{}, _q.order...),
+		inters:     append([]Interceptor{}, _q.inters...),
+		predicates: append([]predicate.Elimination{}, _q.predicates...),
+		withGame:   _q.withGame.Clone(),
+		withRound:  _q.withRound.Clone(),
+		withPlayer: _q.withPlayer.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -335,7 +334,7 @@ func (_q *PlayerQuery) Clone() *PlayerQuery {
 
 // WithGame tells the query-builder to eager-load the nodes that are connected to
 // the "game" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *PlayerQuery) WithGame(opts ...func(*GameQuery)) *PlayerQuery {
+func (_q *EliminationQuery) WithGame(opts ...func(*GameQuery)) *EliminationQuery {
 	query := (&GameClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -344,25 +343,25 @@ func (_q *PlayerQuery) WithGame(opts ...func(*GameQuery)) *PlayerQuery {
 	return _q
 }
 
-// WithGameRole tells the query-builder to eager-load the nodes that are connected to
-// the "game_role" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *PlayerQuery) WithGameRole(opts ...func(*GameRoleQuery)) *PlayerQuery {
-	query := (&GameRoleClient{config: _q.config}).Query()
+// WithRound tells the query-builder to eager-load the nodes that are connected to
+// the "round" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *EliminationQuery) WithRound(opts ...func(*GameRoundQuery)) *EliminationQuery {
+	query := (&GameRoundClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withGameRole = query
+	_q.withRound = query
 	return _q
 }
 
-// WithEliminations tells the query-builder to eager-load the nodes that are connected to
-// the "eliminations" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *PlayerQuery) WithEliminations(opts ...func(*EliminationQuery)) *PlayerQuery {
-	query := (&EliminationClient{config: _q.config}).Query()
+// WithPlayer tells the query-builder to eager-load the nodes that are connected to
+// the "player" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *EliminationQuery) WithPlayer(opts ...func(*PlayerQuery)) *EliminationQuery {
+	query := (&PlayerClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withEliminations = query
+	_q.withPlayer = query
 	return _q
 }
 
@@ -372,19 +371,19 @@ func (_q *PlayerQuery) WithEliminations(opts ...func(*EliminationQuery)) *Player
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		GameID string `json:"game_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Player.Query().
-//		GroupBy(player.FieldName).
+//	client.Elimination.Query().
+//		GroupBy(elimination.FieldGameID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *PlayerQuery) GroupBy(field string, fields ...string) *PlayerGroupBy {
+func (_q *EliminationQuery) GroupBy(field string, fields ...string) *EliminationGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &PlayerGroupBy{build: _q}
+	grbuild := &EliminationGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = player.Label
+	grbuild.label = elimination.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -395,26 +394,26 @@ func (_q *PlayerQuery) GroupBy(field string, fields ...string) *PlayerGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		GameID string `json:"game_id,omitempty"`
 //	}
 //
-//	client.Player.Query().
-//		Select(player.FieldName).
+//	client.Elimination.Query().
+//		Select(elimination.FieldGameID).
 //		Scan(ctx, &v)
-func (_q *PlayerQuery) Select(fields ...string) *PlayerSelect {
+func (_q *EliminationQuery) Select(fields ...string) *EliminationSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &PlayerSelect{PlayerQuery: _q}
-	sbuild.label = player.Label
+	sbuild := &EliminationSelect{EliminationQuery: _q}
+	sbuild.label = elimination.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a PlayerSelect configured with the given aggregations.
-func (_q *PlayerQuery) Aggregate(fns ...AggregateFunc) *PlayerSelect {
+// Aggregate returns a EliminationSelect configured with the given aggregations.
+func (_q *EliminationQuery) Aggregate(fns ...AggregateFunc) *EliminationSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *PlayerQuery) prepareQuery(ctx context.Context) error {
+func (_q *EliminationQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -426,7 +425,7 @@ func (_q *PlayerQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !player.ValidColumn(f) {
+		if !elimination.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -440,21 +439,21 @@ func (_q *PlayerQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Player, error) {
+func (_q *EliminationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Elimination, error) {
 	var (
-		nodes       = []*Player{}
+		nodes       = []*Elimination{}
 		_spec       = _q.querySpec()
 		loadedTypes = [3]bool{
 			_q.withGame != nil,
-			_q.withGameRole != nil,
-			_q.withEliminations != nil,
+			_q.withRound != nil,
+			_q.withPlayer != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Player).scanValues(nil, columns)
+		return (*Elimination).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Player{config: _q.config}
+		node := &Elimination{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -470,28 +469,28 @@ func (_q *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 	}
 	if query := _q.withGame; query != nil {
 		if err := _q.loadGame(ctx, query, nodes, nil,
-			func(n *Player, e *Game) { n.Edges.Game = e }); err != nil {
+			func(n *Elimination, e *Game) { n.Edges.Game = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := _q.withGameRole; query != nil {
-		if err := _q.loadGameRole(ctx, query, nodes, nil,
-			func(n *Player, e *GameRole) { n.Edges.GameRole = e }); err != nil {
+	if query := _q.withRound; query != nil {
+		if err := _q.loadRound(ctx, query, nodes, nil,
+			func(n *Elimination, e *GameRound) { n.Edges.Round = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := _q.withEliminations; query != nil {
-		if err := _q.loadEliminations(ctx, query, nodes, nil,
-			func(n *Player, e *Elimination) { n.Edges.Eliminations = e }); err != nil {
+	if query := _q.withPlayer; query != nil {
+		if err := _q.loadPlayer(ctx, query, nodes, nil,
+			func(n *Elimination, e *Player) { n.Edges.Player = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *PlayerQuery) loadGame(ctx context.Context, query *GameQuery, nodes []*Player, init func(*Player), assign func(*Player, *Game)) error {
+func (_q *EliminationQuery) loadGame(ctx context.Context, query *GameQuery, nodes []*Elimination, init func(*Elimination), assign func(*Elimination, *Game)) error {
 	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Player)
+	nodeids := make(map[string][]*Elimination)
 	for i := range nodes {
 		fk := nodes[i].GameID
 		if _, ok := nodeids[fk]; !ok {
@@ -518,65 +517,69 @@ func (_q *PlayerQuery) loadGame(ctx context.Context, query *GameQuery, nodes []*
 	}
 	return nil
 }
-func (_q *PlayerQuery) loadGameRole(ctx context.Context, query *GameRoleQuery, nodes []*Player, init func(*Player), assign func(*Player, *GameRole)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Player)
+func (_q *EliminationQuery) loadRound(ctx context.Context, query *GameRoundQuery, nodes []*Elimination, init func(*Elimination), assign func(*Elimination, *GameRound)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Elimination)
 	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+		if nodes[i].RoundID == nil {
+			continue
+		}
+		fk := *nodes[i].RoundID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(gamerole.FieldPlayerID)
+	if len(ids) == 0 {
+		return nil
 	}
-	query.Where(predicate.GameRole(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(player.GameRoleColumn), fks...))
-	}))
+	query.Where(gameround.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.PlayerID
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "player_id" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "player_id" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "round_id" returned %v`, n.ID)
 		}
-		assign(node, n)
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }
-func (_q *PlayerQuery) loadEliminations(ctx context.Context, query *EliminationQuery, nodes []*Player, init func(*Player), assign func(*Player, *Elimination)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Player)
+func (_q *EliminationQuery) loadPlayer(ctx context.Context, query *PlayerQuery, nodes []*Elimination, init func(*Elimination), assign func(*Elimination, *Player)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Elimination)
 	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+		fk := nodes[i].PlayerID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(elimination.FieldPlayerID)
+	if len(ids) == 0 {
+		return nil
 	}
-	query.Where(predicate.Elimination(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(player.EliminationsColumn), fks...))
-	}))
+	query.Where(player.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.PlayerID
-		node, ok := nodeids[fk]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "player_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "player_id" returned %v`, n.ID)
 		}
-		assign(node, n)
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }
 
-func (_q *PlayerQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *EliminationQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	_spec.Node.Columns = _q.ctx.Fields
 	if len(_q.ctx.Fields) > 0 {
@@ -585,8 +588,8 @@ func (_q *PlayerQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *PlayerQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(player.Table, player.Columns, sqlgraph.NewFieldSpec(player.FieldID, field.TypeUUID))
+func (_q *EliminationQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(elimination.Table, elimination.Columns, sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -595,14 +598,20 @@ func (_q *PlayerQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, player.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, elimination.FieldID)
 		for i := range fields {
-			if fields[i] != player.FieldID {
+			if fields[i] != elimination.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
 		if _q.withGame != nil {
-			_spec.Node.AddColumnOnce(player.FieldGameID)
+			_spec.Node.AddColumnOnce(elimination.FieldGameID)
+		}
+		if _q.withRound != nil {
+			_spec.Node.AddColumnOnce(elimination.FieldRoundID)
+		}
+		if _q.withPlayer != nil {
+			_spec.Node.AddColumnOnce(elimination.FieldPlayerID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {
@@ -628,12 +637,12 @@ func (_q *PlayerQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *PlayerQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *EliminationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(player.Table)
+	t1 := builder.Table(elimination.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = player.Columns
+		columns = elimination.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -660,28 +669,28 @@ func (_q *PlayerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// PlayerGroupBy is the group-by builder for Player entities.
-type PlayerGroupBy struct {
+// EliminationGroupBy is the group-by builder for Elimination entities.
+type EliminationGroupBy struct {
 	selector
-	build *PlayerQuery
+	build *EliminationQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *PlayerGroupBy) Aggregate(fns ...AggregateFunc) *PlayerGroupBy {
+func (_g *EliminationGroupBy) Aggregate(fns ...AggregateFunc) *EliminationGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *PlayerGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *EliminationGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*PlayerQuery, *PlayerGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*EliminationQuery, *EliminationGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *PlayerGroupBy) sqlScan(ctx context.Context, root *PlayerQuery, v any) error {
+func (_g *EliminationGroupBy) sqlScan(ctx context.Context, root *EliminationQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -708,28 +717,28 @@ func (_g *PlayerGroupBy) sqlScan(ctx context.Context, root *PlayerQuery, v any) 
 	return sql.ScanSlice(rows, v)
 }
 
-// PlayerSelect is the builder for selecting fields of Player entities.
-type PlayerSelect struct {
-	*PlayerQuery
+// EliminationSelect is the builder for selecting fields of Elimination entities.
+type EliminationSelect struct {
+	*EliminationQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *PlayerSelect) Aggregate(fns ...AggregateFunc) *PlayerSelect {
+func (_s *EliminationSelect) Aggregate(fns ...AggregateFunc) *EliminationSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *PlayerSelect) Scan(ctx context.Context, v any) error {
+func (_s *EliminationSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*PlayerQuery, *PlayerSelect](ctx, _s.PlayerQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*EliminationQuery, *EliminationSelect](ctx, _s.EliminationQuery, _s, _s.inters, v)
 }
 
-func (_s *PlayerSelect) sqlScan(ctx context.Context, root *PlayerQuery, v any) error {
+func (_s *EliminationSelect) sqlScan(ctx context.Context, root *EliminationQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

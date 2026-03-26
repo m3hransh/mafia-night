@@ -10,6 +10,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
@@ -81,6 +83,25 @@ func (_u *PlayerUpdate) SetGameRole(v *GameRole) *PlayerUpdate {
 	return _u.SetGameRoleID(v.ID)
 }
 
+// SetEliminationsID sets the "eliminations" edge to the Elimination entity by ID.
+func (_u *PlayerUpdate) SetEliminationsID(id uuid.UUID) *PlayerUpdate {
+	_u.mutation.SetEliminationsID(id)
+	return _u
+}
+
+// SetNillableEliminationsID sets the "eliminations" edge to the Elimination entity by ID if the given value is not nil.
+func (_u *PlayerUpdate) SetNillableEliminationsID(id *uuid.UUID) *PlayerUpdate {
+	if id != nil {
+		_u = _u.SetEliminationsID(*id)
+	}
+	return _u
+}
+
+// SetEliminations sets the "eliminations" edge to the Elimination entity.
+func (_u *PlayerUpdate) SetEliminations(v *Elimination) *PlayerUpdate {
+	return _u.SetEliminationsID(v.ID)
+}
+
 // Mutation returns the PlayerMutation object of the builder.
 func (_u *PlayerUpdate) Mutation() *PlayerMutation {
 	return _u.mutation
@@ -95,6 +116,12 @@ func (_u *PlayerUpdate) ClearGame() *PlayerUpdate {
 // ClearGameRole clears the "game_role" edge to the GameRole entity.
 func (_u *PlayerUpdate) ClearGameRole() *PlayerUpdate {
 	_u.mutation.ClearGameRole()
+	return _u
+}
+
+// ClearEliminations clears the "eliminations" edge to the Elimination entity.
+func (_u *PlayerUpdate) ClearEliminations() *PlayerUpdate {
+	_u.mutation.ClearEliminations()
 	return _u
 }
 
@@ -216,6 +243,35 @@ func (_u *PlayerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.EliminationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   player.EliminationsTable,
+			Columns: []string{player.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EliminationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   player.EliminationsTable,
+			Columns: []string{player.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{player.Label}
@@ -288,6 +344,25 @@ func (_u *PlayerUpdateOne) SetGameRole(v *GameRole) *PlayerUpdateOne {
 	return _u.SetGameRoleID(v.ID)
 }
 
+// SetEliminationsID sets the "eliminations" edge to the Elimination entity by ID.
+func (_u *PlayerUpdateOne) SetEliminationsID(id uuid.UUID) *PlayerUpdateOne {
+	_u.mutation.SetEliminationsID(id)
+	return _u
+}
+
+// SetNillableEliminationsID sets the "eliminations" edge to the Elimination entity by ID if the given value is not nil.
+func (_u *PlayerUpdateOne) SetNillableEliminationsID(id *uuid.UUID) *PlayerUpdateOne {
+	if id != nil {
+		_u = _u.SetEliminationsID(*id)
+	}
+	return _u
+}
+
+// SetEliminations sets the "eliminations" edge to the Elimination entity.
+func (_u *PlayerUpdateOne) SetEliminations(v *Elimination) *PlayerUpdateOne {
+	return _u.SetEliminationsID(v.ID)
+}
+
 // Mutation returns the PlayerMutation object of the builder.
 func (_u *PlayerUpdateOne) Mutation() *PlayerMutation {
 	return _u.mutation
@@ -302,6 +377,12 @@ func (_u *PlayerUpdateOne) ClearGame() *PlayerUpdateOne {
 // ClearGameRole clears the "game_role" edge to the GameRole entity.
 func (_u *PlayerUpdateOne) ClearGameRole() *PlayerUpdateOne {
 	_u.mutation.ClearGameRole()
+	return _u
+}
+
+// ClearEliminations clears the "eliminations" edge to the Elimination entity.
+func (_u *PlayerUpdateOne) ClearEliminations() *PlayerUpdateOne {
+	_u.mutation.ClearEliminations()
 	return _u
 }
 
@@ -446,6 +527,35 @@ func (_u *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(gamerole.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EliminationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   player.EliminationsTable,
+			Columns: []string{player.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EliminationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   player.EliminationsTable,
+			Columns: []string{player.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

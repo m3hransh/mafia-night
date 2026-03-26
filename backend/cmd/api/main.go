@@ -127,6 +127,9 @@ func main() {
 			r.Get("/{id}/selected-roles", gameHandler.GetSelectedRoles)
 			r.Get("/{id}/roles", gameHandler.GetGameRoles)
 			r.Get("/{id}/players/{player_id}/role", gameHandler.GetPlayerRole)
+			r.Post("/{id}/start-day", handler.NotifyPhaseChange(gameHandler.StartDay, wsHandler))
+			r.Post("/{id}/start-night", handler.NotifyPhaseChange(gameHandler.StartNight, wsHandler))
+			r.Post("/{id}/end-game", handler.NotifyPhaseChange(gameHandler.EndGame, wsHandler))
 			r.Get("/{id}/ws", wsHandler.HandleGameWebSocket)
 		})
 

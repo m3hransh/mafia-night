@@ -11,8 +11,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
+	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/player"
 )
 
@@ -33,6 +35,34 @@ func (_c *GameCreate) SetStatus(v game.Status) *GameCreate {
 func (_c *GameCreate) SetNillableStatus(v *game.Status) *GameCreate {
 	if v != nil {
 		_c.SetStatus(*v)
+	}
+	return _c
+}
+
+// SetPhase sets the "phase" field.
+func (_c *GameCreate) SetPhase(v game.Phase) *GameCreate {
+	_c.mutation.SetPhase(v)
+	return _c
+}
+
+// SetNillablePhase sets the "phase" field if the given value is not nil.
+func (_c *GameCreate) SetNillablePhase(v *game.Phase) *GameCreate {
+	if v != nil {
+		_c.SetPhase(*v)
+	}
+	return _c
+}
+
+// SetRoundNumber sets the "round_number" field.
+func (_c *GameCreate) SetRoundNumber(v int) *GameCreate {
+	_c.mutation.SetRoundNumber(v)
+	return _c
+}
+
+// SetNillableRoundNumber sets the "round_number" field if the given value is not nil.
+func (_c *GameCreate) SetNillableRoundNumber(v *int) *GameCreate {
+	if v != nil {
+		_c.SetRoundNumber(*v)
 	}
 	return _c
 }
@@ -93,6 +123,36 @@ func (_c *GameCreate) AddGameRoles(v ...*GameRole) *GameCreate {
 	return _c.AddGameRoleIDs(ids...)
 }
 
+// AddRoundIDs adds the "rounds" edge to the GameRound entity by IDs.
+func (_c *GameCreate) AddRoundIDs(ids ...uuid.UUID) *GameCreate {
+	_c.mutation.AddRoundIDs(ids...)
+	return _c
+}
+
+// AddRounds adds the "rounds" edges to the GameRound entity.
+func (_c *GameCreate) AddRounds(v ...*GameRound) *GameCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRoundIDs(ids...)
+}
+
+// AddEliminationIDs adds the "eliminations" edge to the Elimination entity by IDs.
+func (_c *GameCreate) AddEliminationIDs(ids ...uuid.UUID) *GameCreate {
+	_c.mutation.AddEliminationIDs(ids...)
+	return _c
+}
+
+// AddEliminations adds the "eliminations" edges to the Elimination entity.
+func (_c *GameCreate) AddEliminations(v ...*Elimination) *GameCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEliminationIDs(ids...)
+}
+
 // Mutation returns the GameMutation object of the builder.
 func (_c *GameCreate) Mutation() *GameMutation {
 	return _c.mutation
@@ -132,6 +192,14 @@ func (_c *GameCreate) defaults() {
 		v := game.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.Phase(); !ok {
+		v := game.DefaultPhase
+		_c.mutation.SetPhase(v)
+	}
+	if _, ok := _c.mutation.RoundNumber(); !ok {
+		v := game.DefaultRoundNumber
+		_c.mutation.SetRoundNumber(v)
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := game.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
@@ -146,6 +214,22 @@ func (_c *GameCreate) check() error {
 	if v, ok := _c.mutation.Status(); ok {
 		if err := game.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Game.status": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Phase(); !ok {
+		return &ValidationError{Name: "phase", err: errors.New(`ent: missing required field "Game.phase"`)}
+	}
+	if v, ok := _c.mutation.Phase(); ok {
+		if err := game.PhaseValidator(v); err != nil {
+			return &ValidationError{Name: "phase", err: fmt.Errorf(`ent: validator failed for field "Game.phase": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.RoundNumber(); !ok {
+		return &ValidationError{Name: "round_number", err: errors.New(`ent: missing required field "Game.round_number"`)}
+	}
+	if v, ok := _c.mutation.RoundNumber(); ok {
+		if err := game.RoundNumberValidator(v); err != nil {
+			return &ValidationError{Name: "round_number", err: fmt.Errorf(`ent: validator failed for field "Game.round_number": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.ModeratorID(); !ok {
@@ -203,6 +287,14 @@ func (_c *GameCreate) createSpec() (*Game, *sqlgraph.CreateSpec) {
 		_spec.SetField(game.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
+	if value, ok := _c.mutation.Phase(); ok {
+		_spec.SetField(game.FieldPhase, field.TypeEnum, value)
+		_node.Phase = value
+	}
+	if value, ok := _c.mutation.RoundNumber(); ok {
+		_spec.SetField(game.FieldRoundNumber, field.TypeInt, value)
+		_node.RoundNumber = value
+	}
 	if value, ok := _c.mutation.ModeratorID(); ok {
 		_spec.SetField(game.FieldModeratorID, field.TypeString, value)
 		_node.ModeratorID = value
@@ -236,6 +328,38 @@ func (_c *GameCreate) createSpec() (*Game, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(gamerole.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RoundsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.RoundsTable,
+			Columns: []string{game.RoundsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(gameround.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EliminationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.EliminationsTable,
+			Columns: []string{game.EliminationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

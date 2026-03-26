@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent"
 	"github.com/mafia-night/backend/ent/game"
+	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/pkg/gameid"
@@ -530,4 +531,184 @@ func (s *GameService) GetGameRoles(ctx context.Context, gameID string, moderator
 	}
 
 	return gameRoles, nil
+}
+
+// ── Phase management ──────────────────────────────────────────────────────────
+
+var (
+ErrWrongPhase        = errors.New("game is not in the expected phase")
+ErrGameNotActive     = errors.New("game is not active")
+ErrGameAlreadyEnded  = errors.New("game has already ended")
+)
+
+// PhaseResult is returned by phase-transition methods.
+type PhaseResult struct {
+Game  *ent.Game
+Round *ent.GameRound
+}
+
+// StartDay transitions the game to the day phase and opens a new round.
+func (s *GameService) StartDay(ctx context.Context, gameID, moderatorID string) (*PhaseResult, error) {
+if gameID == "" {
+return nil, ErrEmptyGameID
+}
+if moderatorID == "" {
+return nil, ErrEmptyModeratorID
+}
+
+g, err := s.GetGameByID(ctx, gameID)
+if err != nil {
+return nil, err
+}
+if g.ModeratorID != moderatorID {
+return nil, ErrNotAuthorized
+}
+if g.Phase == "ended" {
+return nil, ErrGameAlreadyEnded
+}
+
+// Close any open round
+if err := s.closeCurrentRound(ctx, gameID); err != nil {
+return nil, err
+}
+
+newRound := g.RoundNumber + 1
+
+round, err := s.client.GameRound.
+Create().
+SetGameID(gameID).
+SetRoundNumber(newRound).
+SetPhase("day").
+Save(ctx)
+if err != nil {
+return nil, err
+}
+
+updatedGame, err := s.client.Game.
+UpdateOneID(gameID).
+SetPhase("day").
+SetRoundNumber(newRound).
+SetStatus("active").
+Save(ctx)
+if err != nil {
+return nil, err
+}
+
+return &PhaseResult{Game: updatedGame, Round: round}, nil
+}
+
+// StartNight transitions the game to the night phase and opens a new round.
+func (s *GameService) StartNight(ctx context.Context, gameID, moderatorID string) (*PhaseResult, error) {
+if gameID == "" {
+return nil, ErrEmptyGameID
+}
+if moderatorID == "" {
+return nil, ErrEmptyModeratorID
+}
+
+g, err := s.GetGameByID(ctx, gameID)
+if err != nil {
+return nil, err
+}
+if g.ModeratorID != moderatorID {
+return nil, ErrNotAuthorized
+}
+if g.Phase == "ended" {
+return nil, ErrGameAlreadyEnded
+}
+
+if err := s.closeCurrentRound(ctx, gameID); err != nil {
+return nil, err
+}
+
+newRound := g.RoundNumber + 1
+
+round, err := s.client.GameRound.
+Create().
+SetGameID(gameID).
+SetRoundNumber(newRound).
+SetPhase("night").
+Save(ctx)
+if err != nil {
+return nil, err
+}
+
+updatedGame, err := s.client.Game.
+UpdateOneID(gameID).
+SetPhase("night").
+SetRoundNumber(newRound).
+SetStatus("active").
+Save(ctx)
+if err != nil {
+return nil, err
+}
+
+return &PhaseResult{Game: updatedGame, Round: round}, nil
+}
+
+// EndGame marks the game as ended.
+func (s *GameService) EndGame(ctx context.Context, gameID, moderatorID string) (*ent.Game, error) {
+if gameID == "" {
+return nil, ErrEmptyGameID
+}
+if moderatorID == "" {
+return nil, ErrEmptyModeratorID
+}
+
+g, err := s.GetGameByID(ctx, gameID)
+if err != nil {
+return nil, err
+}
+if g.ModeratorID != moderatorID {
+return nil, ErrNotAuthorized
+}
+if g.Phase == "ended" {
+return nil, ErrGameAlreadyEnded
+}
+
+if err := s.closeCurrentRound(ctx, gameID); err != nil {
+return nil, err
+}
+
+return s.client.Game.
+UpdateOneID(gameID).
+SetPhase("ended").
+SetStatus("completed").
+Save(ctx)
+}
+
+// closeCurrentRound stamps ended_at on the most recent open round, if any.
+func (s *GameService) closeCurrentRound(ctx context.Context, gameID string) error {
+openRound, err := s.client.GameRound.
+Query().
+Where(
+gameround.GameID(gameID),
+gameround.EndedAtIsNil(),
+).
+Order(ent.Desc(gameround.FieldRoundNumber)).
+First(ctx)
+if err != nil {
+if ent.IsNotFound(err) {
+return nil
+}
+return err
+}
+
+now := time.Now()
+return s.client.GameRound.
+UpdateOneID(openRound.ID).
+SetEndedAt(now).
+Exec(ctx)
+}
+
+// GetCurrentRound returns the most recent open round for a game.
+func (s *GameService) GetCurrentRound(ctx context.Context, gameID string) (*ent.GameRound, error) {
+return s.client.GameRound.
+Query().
+Where(
+gameround.GameID(gameID),
+gameround.EndedAtIsNil(),
+).
+Order(ent.Desc(gameround.FieldRoundNumber)).
+First(ctx)
 }

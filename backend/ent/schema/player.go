@@ -40,6 +40,8 @@ func (Player) Edges() []ent.Edge {
 			Required(),
 		edge.To("game_role", GameRole.Type).
 			Unique(),
+		edge.To("eliminations", Elimination.Type).
+			Unique(),
 	}
 }
 

@@ -21,6 +21,18 @@ func (f AdminFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AdminMutation", m)
 }
 
+// The EliminationFunc type is an adapter to allow the use of ordinary
+// function as Elimination mutator.
+type EliminationFunc func(context.Context, *ent.EliminationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EliminationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EliminationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EliminationMutation", m)
+}
+
 // The GameFunc type is an adapter to allow the use of ordinary
 // function as Game mutator.
 type GameFunc func(context.Context, *ent.GameMutation) (ent.Value, error)
@@ -43,6 +55,18 @@ func (f GameRoleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GameRoleMutation", m)
+}
+
+// The GameRoundFunc type is an adapter to allow the use of ordinary
+// function as GameRound mutator.
+type GameRoundFunc func(context.Context, *ent.GameRoundMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GameRoundFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GameRoundMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GameRoundMutation", m)
 }
 
 // The PlayerFunc type is an adapter to allow the use of ordinary

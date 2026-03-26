@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "deployment/CI-CD Pipeline.md",
+                "file": "tools/Ent ORM.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "CI-CD Pipeline"
+              "title": "Ent ORM"
             }
           }
         ]
@@ -185,13 +185,14 @@
   },
   "active": "17f743459584f8f3",
   "lastOpenFiles": [
+    "concepts/Go Error Handling.md",
+    "deployment/CI-CD Pipeline.md",
     "concepts/Tech Stack.md",
     "concepts/TDD Approach.md",
     "concepts/Project Structure.md",
     "concepts/Project Overview.md",
     "concepts/Go JSON Encoding.md",
     "concepts/Go HTTP Handlers.md",
-    "concepts/Go Error Handling.md",
     "concepts/Bazel Migration.md",
     "3d-magic-cards.md",
     "CURRENT_FEATURES.md",
