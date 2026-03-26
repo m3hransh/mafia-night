@@ -12,6 +12,7 @@ import { JoinGameForm } from '@/components/JoinGameForm';
 // ── State ─────────────────────────────────────────────────────────────────────
 
 export type Phase = 'loading' | 'not-joined' | 'waiting' | 'role-assigned';
+export type DayNightPhase = 'waiting' | 'day' | 'night' | 'ended';
 
 type State = {
   phase: Phase;
@@ -22,6 +23,8 @@ type State = {
   assignedRole: Role | null;
   selectedRoles: SelectedRoleEntry[];
   leaving: boolean;
+  dayNightPhase: DayNightPhase;
+  roundNumber: number;
 };
 
 const initialState: State = {
@@ -33,6 +36,8 @@ const initialState: State = {
   assignedRole: null,
   selectedRoles: [],
   leaving: false,
+  dayNightPhase: 'waiting',
+  roundNumber: 0,
 };
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -47,7 +52,8 @@ type Action =
   | { type: 'PLAYERS_LOADED'; players: Player[] }
   | { type: 'ROLE_ASSIGNED'; role: Role }
   | { type: 'SELECTED_ROLES_LOADED'; roles: SelectedRoleEntry[] }
-  | { type: 'LEAVING' };
+  | { type: 'LEAVING' }
+  | { type: 'PHASE_CHANGED'; dayNightPhase: DayNightPhase; roundNumber: number };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -95,6 +101,9 @@ function reducer(state: State, action: Action): State {
     case 'LEAVING':
       return { ...state, leaving: true };
 
+    case 'PHASE_CHANGED':
+      return { ...state, dayNightPhase: action.dayNightPhase, roundNumber: action.roundNumber };
+
     default:
       return state;
   }
@@ -104,7 +113,7 @@ function reducer(state: State, action: Action): State {
 
 function JoinGameContent() {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { phase, gameCode, playerName, playerId, players, assignedRole, selectedRoles, leaving } = state;
+  const { phase, gameCode, playerName, playerId, players, assignedRole, selectedRoles, leaving, dayNightPhase, roundNumber } = state;
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -179,7 +188,7 @@ function JoinGameContent() {
 
   useGameWebSocket({
     gameId: gameCode,
-    enabled: phase === 'waiting',
+    enabled: phase === 'waiting' || phase === 'role-assigned',
     onPlayerJoined: (player) => dispatch({ type: 'PLAYER_JOINED', player }),
     onPlayerLeft: (pid) => dispatch({ type: 'PLAYER_LEFT', playerId: pid }),
     onRolesSelected: refreshSelectedRoles,
@@ -196,6 +205,9 @@ function JoinGameContent() {
     onGameDeleted: () => {
       clearPlayerGame();
       router.push('/');
+    },
+    onPhaseChanged: (phase, roundNumber) => {
+      dispatch({ type: 'PHASE_CHANGED', dayNightPhase: phase as DayNightPhase, roundNumber });
     },
     onUpdate: (update) => {
       if (update.type === 'initial_state') {
@@ -265,6 +277,8 @@ function JoinGameContent() {
                 onLeaveGame={leaveGameHandler}
                 selectedRoles={selectedRoles}
                 phase={phase}
+                dayNightPhase={dayNightPhase}
+                roundNumber={roundNumber}
               />
             </>
           )}
