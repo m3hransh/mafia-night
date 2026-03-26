@@ -4,8 +4,9 @@ import { useReducer, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { savePlayerGame, clearPlayerGame, validatePlayerGameState, setPlayerRoleSeen } from '@/lib/gameStorage';
-import { getPlayerRole, getSelectedRoles, fetchPlayers, Role, Player, SelectedRoleEntry } from '@/lib/api';
+import { getPlayerRole, getSelectedRoles, fetchPlayers, castBallot, Role, Player, SelectedRoleEntry, VoteSessionResult } from '@/lib/api';
 import { JoinLobby } from '@/components/JoinLobby';
+import { VoteOverlay } from '@/components/VoteOverlay';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 import { JoinGameForm } from '@/components/JoinGameForm';
 
@@ -26,6 +27,8 @@ type State = {
   dayNightPhase: DayNightPhase;
   roundNumber: number;
   roleSeen: boolean;
+  activeVoteSession: VoteSessionResult | null;
+  voteChoice: 'yes' | 'no' | null;
 };
 
 const initialState: State = {
@@ -40,6 +43,8 @@ const initialState: State = {
   dayNightPhase: 'waiting',
   roundNumber: 0,
   roleSeen: false,
+  activeVoteSession: null,
+  voteChoice: null,
 };
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -56,7 +61,10 @@ type Action =
   | { type: 'SELECTED_ROLES_LOADED'; roles: SelectedRoleEntry[] }
   | { type: 'LEAVING' }
   | { type: 'PHASE_CHANGED'; dayNightPhase: DayNightPhase; roundNumber: number }
-  | { type: 'ROLE_SEEN' };
+  | { type: 'ROLE_SEEN' }
+  | { type: 'VOTE_SESSION_UPDATED'; session: VoteSessionResult }
+  | { type: 'VOTE_SESSION_CLEARED' }
+  | { type: 'VOTE_CHOICE_MADE'; choice: 'yes' | 'no' | null };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -111,6 +119,13 @@ function reducer(state: State, action: Action): State {
     case 'ROLE_SEEN':
       return { ...state, roleSeen: true };
 
+    case 'VOTE_SESSION_UPDATED':
+      return { ...state, activeVoteSession: action.session };
+    case 'VOTE_SESSION_CLEARED':
+      return { ...state, activeVoteSession: null, voteChoice: null };
+    case 'VOTE_CHOICE_MADE':
+      return { ...state, voteChoice: action.choice };
+
     default:
       return state;
   }
@@ -120,7 +135,7 @@ function reducer(state: State, action: Action): State {
 
 function JoinGameContent() {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { phase, gameCode, playerName, playerId, players, assignedRole, selectedRoles, leaving, dayNightPhase, roundNumber, roleSeen } = state;
+  const { phase, gameCode, playerName, playerId, players, assignedRole, selectedRoles, leaving, dayNightPhase, roundNumber, roleSeen, activeVoteSession, voteChoice } = state;
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -217,6 +232,19 @@ function JoinGameContent() {
     onPhaseChanged: (phase, roundNumber) => {
       dispatch({ type: 'PHASE_CHANGED', dayNightPhase: phase as DayNightPhase, roundNumber });
     },
+    onVoteSessionOpened: (session) => {
+      if (session) {
+        // Clear previous choice, then set new session
+        dispatch({ type: 'VOTE_SESSION_CLEARED' });
+        dispatch({ type: 'VOTE_SESSION_UPDATED', session });
+      }
+    },
+    onBallotCast: (session) => {
+      if (session) dispatch({ type: 'VOTE_SESSION_UPDATED', session });
+    },
+    onVoteSessionClosed: (session) => {
+      if (session) dispatch({ type: 'VOTE_SESSION_UPDATED', session });
+    },
     onUpdate: (update) => {
       if (update.type === 'initial_state') {
         if (update.payload?.players) {
@@ -228,6 +256,12 @@ function JoinGameContent() {
       }
     },
   });
+
+  const handleBallot = async (choice: 'yes' | 'no') => {
+    if (!activeVoteSession || !playerId) return;
+    await castBallot(activeVoteSession.session_id, playerId, choice);
+    dispatch({ type: 'VOTE_CHOICE_MADE', choice });
+  };
 
   const joinGameHandler = (gameId: string, player: Player | null) => {
     if (!player) return;
@@ -252,7 +286,8 @@ function JoinGameContent() {
   }
 
   return (
-    <div className="max-w-4xl w-full mx-auto relative z-10">
+    <>
+      <div className="max-w-4xl w-full mx-auto relative z-10">
       <Link href="/"
         className="inline-flex items-center gap-2 mb-4 bg-black/30 backdrop-blur-md rounded-full px-5 py-3 hover:bg-purple-600/30 transition-all">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -296,11 +331,19 @@ function JoinGameContent() {
             </>
           )}
         </div>
+
+      {activeVoteSession && phase !== 'not-joined' && (
+        <VoteOverlay
+          session={activeVoteSession}
+          existingChoice={voteChoice}
+          onVote={handleBallot}
+          onDismiss={() => dispatch({ type: 'VOTE_SESSION_CLEARED' })}
+        />
+      )}
     </div>
+    </>
   );
 }
-
-// ── Page (Suspense boundary required for useSearchParams) ─────────────────────
 
 export default function JoinGamePage() {
   return (

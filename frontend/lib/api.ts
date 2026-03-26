@@ -333,3 +333,56 @@ export async function eliminatePlayer(gameId: string, moderatorId: string, playe
     throw new APIError(res.status, err.error || 'Failed to eliminate player');
   }
 }
+
+// ── Vote sessions ─────────────────────────────────────────────────────────────
+
+export interface VoteSessionResult {
+  session_id: string;
+  game_id: string;
+  accused_player_id: string;
+  accused_player_name: string;
+  message: string;
+  status: 'open' | 'closed';
+  yes_count: number;
+  no_count: number;
+  total_voters: number;
+}
+
+export async function openVoteSession(gameId: string, moderatorId: string, accusedPlayerId: string, message = ''): Promise<VoteSessionResult> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/vote-sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Moderator-ID': moderatorId },
+    body: JSON.stringify({ accused_player_id: accusedPlayerId, message }),
+  });
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new APIError(res.status, err.error || 'Failed to open vote session'); }
+  return res.json();
+}
+
+export async function castBallot(sessionId: string, voterId: string, choice: 'yes' | 'no'): Promise<VoteSessionResult> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_BASE_URL}/api/vote-sessions/${sessionId}/vote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ voter_id: voterId, choice }),
+  });
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new APIError(res.status, err.error || 'Failed to cast ballot'); }
+  return res.json();
+}
+
+export async function closeVoteSession(sessionId: string, moderatorId: string): Promise<VoteSessionResult> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_BASE_URL}/api/vote-sessions/${sessionId}/close`, {
+    method: 'POST',
+    headers: { 'X-Moderator-ID': moderatorId },
+  });
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new APIError(res.status, err.error || 'Failed to close vote session'); }
+  return res.json();
+}
+
+export async function getCurrentVoteSession(gameId: string): Promise<VoteSessionResult | null> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/vote-sessions/current`);
+  if (!res.ok) return null;
+  return res.json();
+}

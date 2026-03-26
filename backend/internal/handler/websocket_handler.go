@@ -133,6 +133,9 @@ const (
 	PhaseChanged     GameUpdateType = "phase_changed"
 	VoteCast         GameUpdateType = "vote_cast"
 	PlayerEliminated GameUpdateType = "player_eliminated"
+	VoteSessionOpened GameUpdateType = "vote_session_opened"
+	BallotCast        GameUpdateType = "ballot_cast"
+	VoteSessionClosed GameUpdateType = "vote_session_closed"
 )
 
 type GameUpdate struct {
@@ -583,4 +586,70 @@ func (r *responseRecorder) WriteHeader(statusCode int) {
 func (r *responseRecorder) Write(b []byte) (int, error) {
 	r.body = append(r.body, b...)
 	return r.ResponseWriter.Write(b)
+}
+
+// BroadcastVoteSessionOpened notifies all clients a vote session was opened.
+func (h *WebSocketHandler) BroadcastVoteSessionOpened(gameID string, payload any) {
+h.hub.BroadcastToGame(gameID, VoteSessionOpened, payload)
+}
+
+// BroadcastBallotCast notifies all clients of updated yes/no counts.
+func (h *WebSocketHandler) BroadcastBallotCast(gameID string, payload any) {
+h.hub.BroadcastToGame(gameID, BallotCast, payload)
+}
+
+// BroadcastVoteSessionClosed notifies all clients the vote is closed with final result.
+func (h *WebSocketHandler) BroadcastVoteSessionClosed(gameID string, payload any) {
+h.hub.BroadcastToGame(gameID, VoteSessionClosed, payload)
+}
+
+// NotifyVoteSessionOpened wraps OpenVoteSession and broadcasts the result.
+func NotifyVoteSessionOpened(next http.HandlerFunc, wsHandler *WebSocketHandler) http.HandlerFunc {
+return func(w http.ResponseWriter, r *http.Request) {
+gameID := chi.URLParam(r, "id")
+rec := &responseRecorder{ResponseWriter: w}
+next(rec, r)
+if (rec.statusCode == 0 || rec.statusCode == http.StatusCreated) && len(rec.body) > 0 {
+var payload any
+if err := json.Unmarshal(rec.body, &payload); err == nil {
+wsHandler.BroadcastVoteSessionOpened(gameID, payload)
+}
+}
+}
+}
+
+// NotifyBallotCast wraps CastBallot and broadcasts updated counts.
+func NotifyBallotCast(next http.HandlerFunc, wsHandler *WebSocketHandler) http.HandlerFunc {
+return func(w http.ResponseWriter, r *http.Request) {
+rec := &responseRecorder{ResponseWriter: w}
+next(rec, r)
+if (rec.statusCode == 0 || rec.statusCode == http.StatusOK) && len(rec.body) > 0 {
+var result struct {
+GameID string `json:"game_id"`
+}
+var payload any
+if err := json.Unmarshal(rec.body, &result); err == nil && result.GameID != "" {
+json.Unmarshal(rec.body, &payload)
+wsHandler.BroadcastBallotCast(result.GameID, payload)
+}
+}
+}
+}
+
+// NotifyVoteSessionClosed wraps CloseVoteSession and broadcasts the final result.
+func NotifyVoteSessionClosed(next http.HandlerFunc, wsHandler *WebSocketHandler) http.HandlerFunc {
+return func(w http.ResponseWriter, r *http.Request) {
+rec := &responseRecorder{ResponseWriter: w}
+next(rec, r)
+if (rec.statusCode == 0 || rec.statusCode == http.StatusOK) && len(rec.body) > 0 {
+var result struct {
+GameID string `json:"game_id"`
+}
+var payload any
+if err := json.Unmarshal(rec.body, &result); err == nil && result.GameID != "" {
+json.Unmarshal(rec.body, &payload)
+wsHandler.BroadcastVoteSessionClosed(result.GameID, payload)
+}
+}
+}
 }

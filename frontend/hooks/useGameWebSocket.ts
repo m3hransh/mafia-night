@@ -9,7 +9,10 @@ export type GameUpdateType =
   | 'game_deleted'
   | 'phase_changed'
   | 'vote_cast'
-  | 'player_eliminated';
+  | 'player_eliminated'
+  | 'vote_session_opened'
+  | 'ballot_cast'
+  | 'vote_session_closed';
 
 export interface GameUpdate {
   type: GameUpdateType;
@@ -28,6 +31,9 @@ interface UseGameWebSocketOptions {
   onPhaseChanged?: (phase: string, roundNumber: number) => void;
   onVoteCast?: (stage: string, tally: any) => void;
   onPlayerEliminated?: (playerId: string, playerName: string, cause: string) => void;
+  onVoteSessionOpened?: (session: any) => void;
+  onBallotCast?: (session: any) => void;
+  onVoteSessionClosed?: (session: any) => void;
   enabled?: boolean;
 }
 
@@ -42,6 +48,9 @@ export function useGameWebSocket({
   onPhaseChanged,
   onVoteCast,
   onPlayerEliminated,
+  onVoteSessionOpened,
+  onBallotCast,
+  onVoteSessionClosed,
   enabled = true,
 }: UseGameWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -59,6 +68,9 @@ export function useGameWebSocket({
   const onPhaseChangedRef = useRef(onPhaseChanged);
   const onVoteCastRef = useRef(onVoteCast);
   const onPlayerEliminatedRef = useRef(onPlayerEliminated);
+  const onVoteSessionOpenedRef = useRef(onVoteSessionOpened);
+  const onBallotCastRef = useRef(onBallotCast);
+  const onVoteSessionClosedRef = useRef(onVoteSessionClosed);
 
   useEffect(() => {
     onUpdateRef.current = onUpdate;
@@ -70,7 +82,10 @@ export function useGameWebSocket({
     onPhaseChangedRef.current = onPhaseChanged;
     onVoteCastRef.current = onVoteCast;
     onPlayerEliminatedRef.current = onPlayerEliminated;
-  }, [onUpdate, onPlayerJoined, onPlayerLeft, onRolesSelected, onRolesDistributed, onGameDeleted, onPhaseChanged, onVoteCast, onPlayerEliminated]);
+    onVoteSessionOpenedRef.current = onVoteSessionOpened;
+    onBallotCastRef.current = onBallotCast;
+    onVoteSessionClosedRef.current = onVoteSessionClosed;
+  }, [onUpdate, onPlayerJoined, onPlayerLeft, onRolesSelected, onRolesDistributed, onGameDeleted, onPhaseChanged, onVoteCast, onPlayerEliminated, onVoteSessionOpened, onBallotCast, onVoteSessionClosed]);
 
   const connect = useCallback(() => {
     if (!enabled || !gameId) return;
@@ -127,6 +142,15 @@ export function useGameWebSocket({
                 update.payload?.player_name,
                 update.payload?.cause,
               );
+              break;
+            case 'vote_session_opened':
+              onVoteSessionOpenedRef.current?.(update.payload);
+              break;
+            case 'ballot_cast':
+              onBallotCastRef.current?.(update.payload);
+              break;
+            case 'vote_session_closed':
+              onVoteSessionClosedRef.current?.(update.payload);
               break;
           }
         } catch {

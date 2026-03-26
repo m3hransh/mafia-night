@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent/admin"
+	"github.com/mafia-night/backend/ent/ballot"
 	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
@@ -17,6 +18,7 @@ import (
 	"github.com/mafia-night/backend/ent/roletemplaterole"
 	"github.com/mafia-night/backend/ent/schema"
 	"github.com/mafia-night/backend/ent/vote"
+	"github.com/mafia-night/backend/ent/votesession"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -83,6 +85,16 @@ func init() {
 	adminDescID := adminFields[0].Descriptor()
 	// admin.DefaultID holds the default value on creation for the id field.
 	admin.DefaultID = adminDescID.Default.(func() uuid.UUID)
+	ballotFields := schema.Ballot{}.Fields()
+	_ = ballotFields
+	// ballotDescCreatedAt is the schema descriptor for created_at field.
+	ballotDescCreatedAt := ballotFields[4].Descriptor()
+	// ballot.DefaultCreatedAt holds the default value on creation for the created_at field.
+	ballot.DefaultCreatedAt = ballotDescCreatedAt.Default.(func() time.Time)
+	// ballotDescID is the schema descriptor for id field.
+	ballotDescID := ballotFields[0].Descriptor()
+	// ballot.DefaultID holds the default value on creation for the id field.
+	ballot.DefaultID = ballotDescID.Default.(func() uuid.UUID)
 	eliminationFields := schema.Elimination{}.Fields()
 	_ = eliminationFields
 	// eliminationDescGameID is the schema descriptor for game_id field.
@@ -351,4 +363,40 @@ func init() {
 	voteDescID := voteFields[0].Descriptor()
 	// vote.DefaultID holds the default value on creation for the id field.
 	vote.DefaultID = voteDescID.Default.(func() uuid.UUID)
+	votesessionFields := schema.VoteSession{}.Fields()
+	_ = votesessionFields
+	// votesessionDescGameID is the schema descriptor for game_id field.
+	votesessionDescGameID := votesessionFields[1].Descriptor()
+	// votesession.GameIDValidator is a validator for the "game_id" field. It is called by the builders before save.
+	votesession.GameIDValidator = func() func(string) error {
+		validators := votesessionDescGameID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(game string) error {
+			for _, fn := range fns {
+				if err := fn(game); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// votesessionDescAccusedPlayerName is the schema descriptor for accused_player_name field.
+	votesessionDescAccusedPlayerName := votesessionFields[3].Descriptor()
+	// votesession.AccusedPlayerNameValidator is a validator for the "accused_player_name" field. It is called by the builders before save.
+	votesession.AccusedPlayerNameValidator = votesessionDescAccusedPlayerName.Validators[0].(func(string) error)
+	// votesessionDescMessage is the schema descriptor for message field.
+	votesessionDescMessage := votesessionFields[4].Descriptor()
+	// votesession.DefaultMessage holds the default value on creation for the message field.
+	votesession.DefaultMessage = votesessionDescMessage.Default.(string)
+	// votesessionDescOpenedAt is the schema descriptor for opened_at field.
+	votesessionDescOpenedAt := votesessionFields[6].Descriptor()
+	// votesession.DefaultOpenedAt holds the default value on creation for the opened_at field.
+	votesession.DefaultOpenedAt = votesessionDescOpenedAt.Default.(func() time.Time)
+	// votesessionDescID is the schema descriptor for id field.
+	votesessionDescID := votesessionFields[0].Descriptor()
+	// votesession.DefaultID holds the default value on creation for the id field.
+	votesession.DefaultID = votesessionDescID.Default.(func() uuid.UUID)
 }

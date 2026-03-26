@@ -21,6 +21,18 @@ func (f AdminFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AdminMutation", m)
 }
 
+// The BallotFunc type is an adapter to allow the use of ordinary
+// function as Ballot mutator.
+type BallotFunc func(context.Context, *ent.BallotMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BallotFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BallotMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BallotMutation", m)
+}
+
 // The EliminationFunc type is an adapter to allow the use of ordinary
 // function as Elimination mutator.
 type EliminationFunc func(context.Context, *ent.EliminationMutation) (ent.Value, error)
@@ -127,6 +139,18 @@ func (f VoteFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VoteMutation", m)
+}
+
+// The VoteSessionFunc type is an adapter to allow the use of ordinary
+// function as VoteSession mutator.
+type VoteSessionFunc func(context.Context, *ent.VoteSessionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f VoteSessionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.VoteSessionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VoteSessionMutation", m)
 }
 
 // Condition is a hook condition function.

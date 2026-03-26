@@ -9,6 +9,9 @@ import (
 // Admin is the predicate function for admin builders.
 type Admin func(*sql.Selector)
 
+// Ballot is the predicate function for ballot builders.
+type Ballot func(*sql.Selector)
+
 // Elimination is the predicate function for elimination builders.
 type Elimination func(*sql.Selector)
 
@@ -35,3 +38,6 @@ type RoleTemplateRole func(*sql.Selector)
 
 // Vote is the predicate function for vote builders.
 type Vote func(*sql.Selector)
+
+// VoteSession is the predicate function for votesession builders.
+type VoteSession func(*sql.Selector)

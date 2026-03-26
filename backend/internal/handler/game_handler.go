@@ -723,3 +723,96 @@ func (h *GameHandler) EliminatePlayer(w http.ResponseWriter, r *http.Request) {
 		"eliminated_at": elim.EliminatedAt,
 	})
 }
+
+// ── Vote sessions ─────────────────────────────────────────────────────────────
+
+func (h *GameHandler) OpenVoteSession(w http.ResponseWriter, r *http.Request) {
+gameID := chi.URLParam(r, "id")
+moderatorID := r.Header.Get("X-Moderator-ID")
+if moderatorID == "" {
+ErrorResponse(w, http.StatusBadRequest, "X-Moderator-ID header is required")
+return
+}
+var req struct {
+AccusedPlayerID string `json:"accused_player_id"`
+Message         string `json:"message"`
+}
+if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.AccusedPlayerID == "" {
+ErrorResponse(w, http.StatusBadRequest, "accused_player_id is required")
+return
+}
+result, err := h.gameService.OpenVoteSession(r.Context(), gameID, moderatorID, req.AccusedPlayerID, req.Message)
+if err != nil {
+switch {
+case errors.Is(err, service.ErrNotAuthorized):
+ErrorResponse(w, http.StatusForbidden, err.Error())
+default:
+ErrorResponse(w, http.StatusInternalServerError, "failed to open vote session")
+}
+return
+}
+JSONResponse(w, http.StatusCreated, result)
+}
+
+func (h *GameHandler) CastBallot(w http.ResponseWriter, r *http.Request) {
+sessionID := chi.URLParam(r, "sessionId")
+var req struct {
+VoterID string `json:"voter_id"`
+Choice  string `json:"choice"`
+}
+if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.VoterID == "" || req.Choice == "" {
+ErrorResponse(w, http.StatusBadRequest, "voter_id and choice are required")
+return
+}
+if req.Choice != "yes" && req.Choice != "no" {
+ErrorResponse(w, http.StatusBadRequest, "choice must be 'yes' or 'no'")
+return
+}
+result, err := h.gameService.CastBallot(r.Context(), sessionID, req.VoterID, req.Choice)
+if err != nil {
+switch {
+case errors.Is(err, service.ErrVoteSessionNotFound):
+ErrorResponse(w, http.StatusNotFound, err.Error())
+case errors.Is(err, service.ErrVoteSessionClosed):
+ErrorResponse(w, http.StatusConflict, err.Error())
+default:
+ErrorResponse(w, http.StatusInternalServerError, "failed to cast ballot")
+}
+return
+}
+JSONResponse(w, http.StatusOK, result)
+}
+
+func (h *GameHandler) CloseVoteSession(w http.ResponseWriter, r *http.Request) {
+sessionID := chi.URLParam(r, "sessionId")
+moderatorID := r.Header.Get("X-Moderator-ID")
+if moderatorID == "" {
+ErrorResponse(w, http.StatusBadRequest, "X-Moderator-ID header is required")
+return
+}
+result, err := h.gameService.CloseVoteSession(r.Context(), sessionID, moderatorID)
+if err != nil {
+switch {
+case errors.Is(err, service.ErrNotAuthorized):
+ErrorResponse(w, http.StatusForbidden, err.Error())
+case errors.Is(err, service.ErrVoteSessionNotFound):
+ErrorResponse(w, http.StatusNotFound, err.Error())
+case errors.Is(err, service.ErrVoteSessionClosed):
+ErrorResponse(w, http.StatusConflict, err.Error())
+default:
+ErrorResponse(w, http.StatusInternalServerError, "failed to close vote session")
+}
+return
+}
+JSONResponse(w, http.StatusOK, result)
+}
+
+func (h *GameHandler) GetCurrentVoteSession(w http.ResponseWriter, r *http.Request) {
+gameID := chi.URLParam(r, "id")
+result, err := h.gameService.GetCurrentVoteSession(r.Context(), gameID)
+if err != nil {
+JSONResponse(w, http.StatusOK, nil)
+return
+}
+JSONResponse(w, http.StatusOK, result)
+}

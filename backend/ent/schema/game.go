@@ -51,6 +51,8 @@ func (Game) Edges() []ent.Edge {
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("eliminations", Elimination.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("vote_sessions", VoteSession.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("votes", Vote.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}

@@ -133,7 +133,14 @@ func main() {
 			r.Post("/{id}/votes", handler.NotifyVoteCast(gameHandler.CastVote, gameService, wsHandler))
 			r.Get("/{id}/votes", gameHandler.GetVoteTally)
 			r.Post("/{id}/eliminate", handler.NotifyElimination(gameHandler.EliminatePlayer, wsHandler))
+			r.Post("/{id}/vote-sessions", handler.NotifyVoteSessionOpened(gameHandler.OpenVoteSession, wsHandler))
+			r.Get("/{id}/vote-sessions/current", gameHandler.GetCurrentVoteSession)
 			r.Get("/{id}/ws", wsHandler.HandleGameWebSocket)
+		})
+
+		r.Route("/vote-sessions", func(r chi.Router) {
+			r.Post("/{sessionId}/vote", handler.NotifyBallotCast(gameHandler.CastBallot, wsHandler))
+			r.Post("/{sessionId}/close", handler.NotifyVoteSessionClosed(gameHandler.CloseVoteSession, wsHandler))
 		})
 
 		r.Route("/roles", func(r chi.Router) {

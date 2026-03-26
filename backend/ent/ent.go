@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/mafia-night/backend/ent/admin"
+	"github.com/mafia-night/backend/ent/ballot"
 	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
@@ -22,6 +23,7 @@ import (
 	"github.com/mafia-night/backend/ent/roletemplate"
 	"github.com/mafia-night/backend/ent/roletemplaterole"
 	"github.com/mafia-night/backend/ent/vote"
+	"github.com/mafia-night/backend/ent/votesession"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -83,6 +85,7 @@ func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			admin.Table:            admin.ValidColumn,
+			ballot.Table:           ballot.ValidColumn,
 			elimination.Table:      elimination.ValidColumn,
 			game.Table:             game.ValidColumn,
 			gamerole.Table:         gamerole.ValidColumn,
@@ -92,6 +95,7 @@ func checkColumn(t, c string) error {
 			roletemplate.Table:     roletemplate.ValidColumn,
 			roletemplaterole.Table: roletemplaterole.ValidColumn,
 			vote.Table:             vote.ValidColumn,
+			votesession.Table:      votesession.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

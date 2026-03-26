@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// Admin is the client for interacting with the Admin builders.
 	Admin *AdminClient
+	// Ballot is the client for interacting with the Ballot builders.
+	Ballot *BallotClient
 	// Elimination is the client for interacting with the Elimination builders.
 	Elimination *EliminationClient
 	// Game is the client for interacting with the Game builders.
@@ -32,6 +34,8 @@ type Tx struct {
 	RoleTemplateRole *RoleTemplateRoleClient
 	// Vote is the client for interacting with the Vote builders.
 	Vote *VoteClient
+	// VoteSession is the client for interacting with the VoteSession builders.
+	VoteSession *VoteSessionClient
 
 	// lazily loaded.
 	client     *Client
@@ -164,6 +168,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Admin = NewAdminClient(tx.config)
+	tx.Ballot = NewBallotClient(tx.config)
 	tx.Elimination = NewEliminationClient(tx.config)
 	tx.Game = NewGameClient(tx.config)
 	tx.GameRole = NewGameRoleClient(tx.config)
@@ -173,6 +178,7 @@ func (tx *Tx) init() {
 	tx.RoleTemplate = NewRoleTemplateClient(tx.config)
 	tx.RoleTemplateRole = NewRoleTemplateRoleClient(tx.config)
 	tx.Vote = NewVoteClient(tx.config)
+	tx.VoteSession = NewVoteSessionClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

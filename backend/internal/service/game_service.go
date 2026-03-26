@@ -11,12 +11,16 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent"
+	"github.com/mafia-night/backend/ent/ballot"
+	entBallot "github.com/mafia-night/backend/ent/ballot"
 	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gameround"
 	"github.com/mafia-night/backend/ent/gamerole"
 	"github.com/mafia-night/backend/ent/player"
 	entVote "github.com/mafia-night/backend/ent/vote"
+	"github.com/mafia-night/backend/ent/votesession"
+	entVoteSession "github.com/mafia-night/backend/ent/votesession"
 	"github.com/mafia-night/backend/pkg/gameid"
 )
 
@@ -904,4 +908,178 @@ func (s *GameService) EliminatePlayer(ctx context.Context, gameID, moderatorID, 
 		b = b.SetRoundID(*roundID)
 	}
 	return b.Save(ctx)
+}
+
+// ── Vote sessions ─────────────────────────────────────────────────────────────
+
+var (
+ErrVoteSessionNotFound = errors.New("vote session not found")
+ErrVoteSessionClosed   = errors.New("vote session is already closed")
+ErrNoOpenVoteSession   = errors.New("no open vote session")
+)
+
+type VoteSessionResult struct {
+SessionID         uuid.UUID `json:"session_id"`
+GameID            string    `json:"game_id"`
+AccusedPlayerID   uuid.UUID `json:"accused_player_id"`
+AccusedPlayerName string    `json:"accused_player_name"`
+Message           string    `json:"message"`
+Status            string    `json:"status"`
+YesCount          int       `json:"yes_count"`
+NoCount           int       `json:"no_count"`
+TotalVoters       int       `json:"total_voters"`
+}
+
+// OpenVoteSession opens a new vote session against a player. Moderator-only.
+func (s *GameService) OpenVoteSession(ctx context.Context, gameID, moderatorID, accusedPlayerID, message string) (*VoteSessionResult, error) {
+g, err := s.client.Game.Get(ctx, gameID)
+if err != nil {
+return nil, ErrGameNotFound
+}
+if g.ModeratorID != moderatorID {
+return nil, ErrNotAuthorized
+}
+
+accusedUUID, err := uuid.Parse(accusedPlayerID)
+if err != nil {
+return nil, errors.New("invalid accused player id")
+}
+accusedPlayer, err := s.client.Player.Get(ctx, accusedUUID)
+if err != nil {
+return nil, errors.New("accused player not found")
+}
+
+sess, err := s.client.VoteSession.Create().
+SetGameID(gameID).
+SetAccusedPlayerID(accusedUUID).
+SetAccusedPlayerName(accusedPlayer.Name).
+SetMessage(message).
+Save(ctx)
+if err != nil {
+return nil, err
+}
+
+alive, _ := s.GetAlivePlayers(ctx, gameID)
+return &VoteSessionResult{
+SessionID:         sess.ID,
+GameID:            gameID,
+AccusedPlayerID:   sess.AccusedPlayerID,
+AccusedPlayerName: sess.AccusedPlayerName,
+Message:           sess.Message,
+Status:            string(sess.Status),
+TotalVoters:       len(alive),
+}, nil
+}
+
+// CastBallot records a player's yes/no vote. Upserts so players can change their vote.
+func (s *GameService) CastBallot(ctx context.Context, sessionID, voterID, choice string) (*VoteSessionResult, error) {
+sessUUID, err := uuid.Parse(sessionID)
+if err != nil {
+return nil, ErrVoteSessionNotFound
+}
+voterUUID, err := uuid.Parse(voterID)
+if err != nil {
+return nil, errors.New("invalid voter id")
+}
+
+sess, err := s.client.VoteSession.Get(ctx, sessUUID)
+if err != nil {
+return nil, ErrVoteSessionNotFound
+}
+if sess.Status == votesession.StatusClosed {
+return nil, ErrVoteSessionClosed
+}
+
+c := ballot.Choice(choice)
+existing, err := s.client.Ballot.Query().
+Where(entBallot.SessionID(sessUUID), entBallot.VoterID(voterUUID)).
+Only(ctx)
+if err == nil {
+_, err = s.client.Ballot.UpdateOne(existing).SetChoice(c).Save(ctx)
+} else {
+_, err = s.client.Ballot.Create().
+SetSessionID(sessUUID).
+SetVoterID(voterUUID).
+SetChoice(c).
+Save(ctx)
+}
+if err != nil {
+return nil, err
+}
+return s.getVoteSessionResult(ctx, sess)
+}
+
+// CloseVoteSession closes the session. Moderator-only.
+func (s *GameService) CloseVoteSession(ctx context.Context, sessionID, moderatorID string) (*VoteSessionResult, error) {
+sessUUID, err := uuid.Parse(sessionID)
+if err != nil {
+return nil, ErrVoteSessionNotFound
+}
+sess, err := s.client.VoteSession.Get(ctx, sessUUID)
+if err != nil {
+return nil, ErrVoteSessionNotFound
+}
+
+g, err := s.client.Game.Get(ctx, sess.GameID)
+if err != nil {
+return nil, ErrGameNotFound
+}
+if g.ModeratorID != moderatorID {
+return nil, ErrNotAuthorized
+}
+if sess.Status == votesession.StatusClosed {
+return nil, ErrVoteSessionClosed
+}
+
+now := time.Now()
+sess, err = s.client.VoteSession.UpdateOne(sess).
+SetStatus(votesession.StatusClosed).
+SetClosedAt(now).
+Save(ctx)
+if err != nil {
+return nil, err
+}
+return s.getVoteSessionResult(ctx, sess)
+}
+
+// GetCurrentVoteSession returns the open session for a game, or ErrNoOpenVoteSession.
+func (s *GameService) GetCurrentVoteSession(ctx context.Context, gameID string) (*VoteSessionResult, error) {
+sess, err := s.client.VoteSession.Query().
+Where(entVoteSession.GameID(gameID), entVoteSession.StatusEQ(votesession.StatusOpen)).
+Only(ctx)
+if err != nil {
+return nil, ErrNoOpenVoteSession
+}
+return s.getVoteSessionResult(ctx, sess)
+}
+
+func (s *GameService) getVoteSessionResult(ctx context.Context, sess *ent.VoteSession) (*VoteSessionResult, error) {
+ballots, err := s.client.Ballot.Query().
+Where(entBallot.SessionID(sess.ID)).
+All(ctx)
+if err != nil {
+return nil, err
+}
+
+var yes, no int
+for _, b := range ballots {
+if b.Choice == ballot.ChoiceYes {
+yes++
+} else {
+no++
+}
+}
+
+alive, _ := s.GetAlivePlayers(ctx, sess.GameID)
+return &VoteSessionResult{
+SessionID:         sess.ID,
+GameID:            sess.GameID,
+AccusedPlayerID:   sess.AccusedPlayerID,
+AccusedPlayerName: sess.AccusedPlayerName,
+Message:           sess.Message,
+Status:            string(sess.Status),
+YesCount:          yes,
+NoCount:           no,
+TotalVoters:       len(alive),
+}, nil
 }

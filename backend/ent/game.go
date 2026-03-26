@@ -43,11 +43,13 @@ type GameEdges struct {
 	Rounds []*GameRound `json:"rounds,omitempty"`
 	// Eliminations holds the value of the eliminations edge.
 	Eliminations []*Elimination `json:"eliminations,omitempty"`
+	// VoteSessions holds the value of the vote_sessions edge.
+	VoteSessions []*VoteSession `json:"vote_sessions,omitempty"`
 	// Votes holds the value of the votes edge.
 	Votes []*Vote `json:"votes,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // PlayersOrErr returns the Players value or an error if the edge
@@ -86,10 +88,19 @@ func (e GameEdges) EliminationsOrErr() ([]*Elimination, error) {
 	return nil, &NotLoadedError{edge: "eliminations"}
 }
 
+// VoteSessionsOrErr returns the VoteSessions value or an error if the edge
+// was not loaded in eager-loading.
+func (e GameEdges) VoteSessionsOrErr() ([]*VoteSession, error) {
+	if e.loadedTypes[4] {
+		return e.VoteSessions, nil
+	}
+	return nil, &NotLoadedError{edge: "vote_sessions"}
+}
+
 // VotesOrErr returns the Votes value or an error if the edge
 // was not loaded in eager-loading.
 func (e GameEdges) VotesOrErr() ([]*Vote, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.Votes, nil
 	}
 	return nil, &NotLoadedError{edge: "votes"}
@@ -188,6 +199,11 @@ func (_m *Game) QueryRounds() *GameRoundQuery {
 // QueryEliminations queries the "eliminations" edge of the Game entity.
 func (_m *Game) QueryEliminations() *EliminationQuery {
 	return NewGameClient(_m.config).QueryEliminations(_m)
+}
+
+// QueryVoteSessions queries the "vote_sessions" edge of the Game entity.
+func (_m *Game) QueryVoteSessions() *VoteSessionQuery {
+	return NewGameClient(_m.config).QueryVoteSessions(_m)
 }
 
 // QueryVotes queries the "votes" edge of the Game entity.

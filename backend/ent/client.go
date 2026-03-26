@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/mafia-night/backend/ent/admin"
+	"github.com/mafia-night/backend/ent/ballot"
 	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
@@ -26,6 +27,7 @@ import (
 	"github.com/mafia-night/backend/ent/roletemplate"
 	"github.com/mafia-night/backend/ent/roletemplaterole"
 	"github.com/mafia-night/backend/ent/vote"
+	"github.com/mafia-night/backend/ent/votesession"
 )
 
 // Client is the client that holds all ent builders.
@@ -35,6 +37,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Admin is the client for interacting with the Admin builders.
 	Admin *AdminClient
+	// Ballot is the client for interacting with the Ballot builders.
+	Ballot *BallotClient
 	// Elimination is the client for interacting with the Elimination builders.
 	Elimination *EliminationClient
 	// Game is the client for interacting with the Game builders.
@@ -53,6 +57,8 @@ type Client struct {
 	RoleTemplateRole *RoleTemplateRoleClient
 	// Vote is the client for interacting with the Vote builders.
 	Vote *VoteClient
+	// VoteSession is the client for interacting with the VoteSession builders.
+	VoteSession *VoteSessionClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -65,6 +71,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Admin = NewAdminClient(c.config)
+	c.Ballot = NewBallotClient(c.config)
 	c.Elimination = NewEliminationClient(c.config)
 	c.Game = NewGameClient(c.config)
 	c.GameRole = NewGameRoleClient(c.config)
@@ -74,6 +81,7 @@ func (c *Client) init() {
 	c.RoleTemplate = NewRoleTemplateClient(c.config)
 	c.RoleTemplateRole = NewRoleTemplateRoleClient(c.config)
 	c.Vote = NewVoteClient(c.config)
+	c.VoteSession = NewVoteSessionClient(c.config)
 }
 
 type (
@@ -167,6 +175,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:              ctx,
 		config:           cfg,
 		Admin:            NewAdminClient(cfg),
+		Ballot:           NewBallotClient(cfg),
 		Elimination:      NewEliminationClient(cfg),
 		Game:             NewGameClient(cfg),
 		GameRole:         NewGameRoleClient(cfg),
@@ -176,6 +185,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		RoleTemplate:     NewRoleTemplateClient(cfg),
 		RoleTemplateRole: NewRoleTemplateRoleClient(cfg),
 		Vote:             NewVoteClient(cfg),
+		VoteSession:      NewVoteSessionClient(cfg),
 	}, nil
 }
 
@@ -196,6 +206,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:              ctx,
 		config:           cfg,
 		Admin:            NewAdminClient(cfg),
+		Ballot:           NewBallotClient(cfg),
 		Elimination:      NewEliminationClient(cfg),
 		Game:             NewGameClient(cfg),
 		GameRole:         NewGameRoleClient(cfg),
@@ -205,6 +216,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		RoleTemplate:     NewRoleTemplateClient(cfg),
 		RoleTemplateRole: NewRoleTemplateRoleClient(cfg),
 		Vote:             NewVoteClient(cfg),
+		VoteSession:      NewVoteSessionClient(cfg),
 	}, nil
 }
 
@@ -234,8 +246,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Admin, c.Elimination, c.Game, c.GameRole, c.GameRound, c.Player, c.Role,
-		c.RoleTemplate, c.RoleTemplateRole, c.Vote,
+		c.Admin, c.Ballot, c.Elimination, c.Game, c.GameRole, c.GameRound, c.Player,
+		c.Role, c.RoleTemplate, c.RoleTemplateRole, c.Vote, c.VoteSession,
 	} {
 		n.Use(hooks...)
 	}
@@ -245,8 +257,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Admin, c.Elimination, c.Game, c.GameRole, c.GameRound, c.Player, c.Role,
-		c.RoleTemplate, c.RoleTemplateRole, c.Vote,
+		c.Admin, c.Ballot, c.Elimination, c.Game, c.GameRole, c.GameRound, c.Player,
+		c.Role, c.RoleTemplate, c.RoleTemplateRole, c.Vote, c.VoteSession,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -257,6 +269,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *AdminMutation:
 		return c.Admin.mutate(ctx, m)
+	case *BallotMutation:
+		return c.Ballot.mutate(ctx, m)
 	case *EliminationMutation:
 		return c.Elimination.mutate(ctx, m)
 	case *GameMutation:
@@ -275,6 +289,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.RoleTemplateRole.mutate(ctx, m)
 	case *VoteMutation:
 		return c.Vote.mutate(ctx, m)
+	case *VoteSessionMutation:
+		return c.VoteSession.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -410,6 +426,155 @@ func (c *AdminClient) mutate(ctx context.Context, m *AdminMutation) (Value, erro
 		return (&AdminDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Admin mutation op: %q", m.Op())
+	}
+}
+
+// BallotClient is a client for the Ballot schema.
+type BallotClient struct {
+	config
+}
+
+// NewBallotClient returns a client for the Ballot from the given config.
+func NewBallotClient(c config) *BallotClient {
+	return &BallotClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `ballot.Hooks(f(g(h())))`.
+func (c *BallotClient) Use(hooks ...Hook) {
+	c.hooks.Ballot = append(c.hooks.Ballot, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `ballot.Intercept(f(g(h())))`.
+func (c *BallotClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Ballot = append(c.inters.Ballot, interceptors...)
+}
+
+// Create returns a builder for creating a Ballot entity.
+func (c *BallotClient) Create() *BallotCreate {
+	mutation := newBallotMutation(c.config, OpCreate)
+	return &BallotCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Ballot entities.
+func (c *BallotClient) CreateBulk(builders ...*BallotCreate) *BallotCreateBulk {
+	return &BallotCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BallotClient) MapCreateBulk(slice any, setFunc func(*BallotCreate, int)) *BallotCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BallotCreateBulk{err: fmt.Errorf("calling to BallotClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BallotCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BallotCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Ballot.
+func (c *BallotClient) Update() *BallotUpdate {
+	mutation := newBallotMutation(c.config, OpUpdate)
+	return &BallotUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BallotClient) UpdateOne(_m *Ballot) *BallotUpdateOne {
+	mutation := newBallotMutation(c.config, OpUpdateOne, withBallot(_m))
+	return &BallotUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BallotClient) UpdateOneID(id uuid.UUID) *BallotUpdateOne {
+	mutation := newBallotMutation(c.config, OpUpdateOne, withBallotID(id))
+	return &BallotUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Ballot.
+func (c *BallotClient) Delete() *BallotDelete {
+	mutation := newBallotMutation(c.config, OpDelete)
+	return &BallotDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BallotClient) DeleteOne(_m *Ballot) *BallotDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BallotClient) DeleteOneID(id uuid.UUID) *BallotDeleteOne {
+	builder := c.Delete().Where(ballot.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BallotDeleteOne{builder}
+}
+
+// Query returns a query builder for Ballot.
+func (c *BallotClient) Query() *BallotQuery {
+	return &BallotQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBallot},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Ballot entity by its id.
+func (c *BallotClient) Get(ctx context.Context, id uuid.UUID) (*Ballot, error) {
+	return c.Query().Where(ballot.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BallotClient) GetX(ctx context.Context, id uuid.UUID) *Ballot {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QuerySession queries the session edge of a Ballot.
+func (c *BallotClient) QuerySession(_m *Ballot) *VoteSessionQuery {
+	query := (&VoteSessionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(ballot.Table, ballot.FieldID, id),
+			sqlgraph.To(votesession.Table, votesession.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ballot.SessionTable, ballot.SessionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BallotClient) Hooks() []Hook {
+	return c.hooks.Ballot
+}
+
+// Interceptors returns the client interceptors.
+func (c *BallotClient) Interceptors() []Interceptor {
+	return c.inters.Ballot
+}
+
+func (c *BallotClient) mutate(ctx context.Context, m *BallotMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BallotCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BallotUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BallotUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BallotDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Ballot mutation op: %q", m.Op())
 	}
 }
 
@@ -759,6 +924,22 @@ func (c *GameClient) QueryEliminations(_m *Game) *EliminationQuery {
 			sqlgraph.From(game.Table, game.FieldID, id),
 			sqlgraph.To(elimination.Table, elimination.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, game.EliminationsTable, game.EliminationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVoteSessions queries the vote_sessions edge of a Game.
+func (c *GameClient) QueryVoteSessions(_m *Game) *VoteSessionQuery {
+	query := (&VoteSessionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, id),
+			sqlgraph.To(votesession.Table, votesession.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.VoteSessionsTable, game.VoteSessionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2058,14 +2239,179 @@ func (c *VoteClient) mutate(ctx context.Context, m *VoteMutation) (Value, error)
 	}
 }
 
+// VoteSessionClient is a client for the VoteSession schema.
+type VoteSessionClient struct {
+	config
+}
+
+// NewVoteSessionClient returns a client for the VoteSession from the given config.
+func NewVoteSessionClient(c config) *VoteSessionClient {
+	return &VoteSessionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `votesession.Hooks(f(g(h())))`.
+func (c *VoteSessionClient) Use(hooks ...Hook) {
+	c.hooks.VoteSession = append(c.hooks.VoteSession, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `votesession.Intercept(f(g(h())))`.
+func (c *VoteSessionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.VoteSession = append(c.inters.VoteSession, interceptors...)
+}
+
+// Create returns a builder for creating a VoteSession entity.
+func (c *VoteSessionClient) Create() *VoteSessionCreate {
+	mutation := newVoteSessionMutation(c.config, OpCreate)
+	return &VoteSessionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of VoteSession entities.
+func (c *VoteSessionClient) CreateBulk(builders ...*VoteSessionCreate) *VoteSessionCreateBulk {
+	return &VoteSessionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *VoteSessionClient) MapCreateBulk(slice any, setFunc func(*VoteSessionCreate, int)) *VoteSessionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &VoteSessionCreateBulk{err: fmt.Errorf("calling to VoteSessionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*VoteSessionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &VoteSessionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for VoteSession.
+func (c *VoteSessionClient) Update() *VoteSessionUpdate {
+	mutation := newVoteSessionMutation(c.config, OpUpdate)
+	return &VoteSessionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VoteSessionClient) UpdateOne(_m *VoteSession) *VoteSessionUpdateOne {
+	mutation := newVoteSessionMutation(c.config, OpUpdateOne, withVoteSession(_m))
+	return &VoteSessionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VoteSessionClient) UpdateOneID(id uuid.UUID) *VoteSessionUpdateOne {
+	mutation := newVoteSessionMutation(c.config, OpUpdateOne, withVoteSessionID(id))
+	return &VoteSessionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for VoteSession.
+func (c *VoteSessionClient) Delete() *VoteSessionDelete {
+	mutation := newVoteSessionMutation(c.config, OpDelete)
+	return &VoteSessionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *VoteSessionClient) DeleteOne(_m *VoteSession) *VoteSessionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *VoteSessionClient) DeleteOneID(id uuid.UUID) *VoteSessionDeleteOne {
+	builder := c.Delete().Where(votesession.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VoteSessionDeleteOne{builder}
+}
+
+// Query returns a query builder for VoteSession.
+func (c *VoteSessionClient) Query() *VoteSessionQuery {
+	return &VoteSessionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeVoteSession},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a VoteSession entity by its id.
+func (c *VoteSessionClient) Get(ctx context.Context, id uuid.UUID) (*VoteSession, error) {
+	return c.Query().Where(votesession.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VoteSessionClient) GetX(ctx context.Context, id uuid.UUID) *VoteSession {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGame queries the game edge of a VoteSession.
+func (c *VoteSessionClient) QueryGame(_m *VoteSession) *GameQuery {
+	query := (&GameClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(votesession.Table, votesession.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, votesession.GameTable, votesession.GameColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBallots queries the ballots edge of a VoteSession.
+func (c *VoteSessionClient) QueryBallots(_m *VoteSession) *BallotQuery {
+	query := (&BallotClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(votesession.Table, votesession.FieldID, id),
+			sqlgraph.To(ballot.Table, ballot.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, votesession.BallotsTable, votesession.BallotsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *VoteSessionClient) Hooks() []Hook {
+	return c.hooks.VoteSession
+}
+
+// Interceptors returns the client interceptors.
+func (c *VoteSessionClient) Interceptors() []Interceptor {
+	return c.inters.VoteSession
+}
+
+func (c *VoteSessionClient) mutate(ctx context.Context, m *VoteSessionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&VoteSessionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&VoteSessionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&VoteSessionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&VoteSessionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown VoteSession mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Admin, Elimination, Game, GameRole, GameRound, Player, Role, RoleTemplate,
-		RoleTemplateRole, Vote []ent.Hook
+		Admin, Ballot, Elimination, Game, GameRole, GameRound, Player, Role,
+		RoleTemplate, RoleTemplateRole, Vote, VoteSession []ent.Hook
 	}
 	inters struct {
-		Admin, Elimination, Game, GameRole, GameRound, Player, Role, RoleTemplate,
-		RoleTemplateRole, Vote []ent.Interceptor
+		Admin, Ballot, Elimination, Game, GameRole, GameRound, Player, Role,
+		RoleTemplate, RoleTemplateRole, Vote, VoteSession []ent.Interceptor
 	}
 )

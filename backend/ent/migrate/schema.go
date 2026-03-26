@@ -37,6 +37,35 @@ var (
 			},
 		},
 	}
+	// BallotsColumns holds the columns for the "ballots" table.
+	BallotsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "voter_id", Type: field.TypeUUID},
+		{Name: "choice", Type: field.TypeEnum, Enums: []string{"yes", "no"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "session_id", Type: field.TypeUUID},
+	}
+	// BallotsTable holds the schema information for the "ballots" table.
+	BallotsTable = &schema.Table{
+		Name:       "ballots",
+		Columns:    BallotsColumns,
+		PrimaryKey: []*schema.Column{BallotsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ballots_vote_sessions_ballots",
+				Columns:    []*schema.Column{BallotsColumns[4]},
+				RefColumns: []*schema.Column{VoteSessionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "ballot_session_id_voter_id",
+				Unique:  true,
+				Columns: []*schema.Column{BallotsColumns[4], BallotsColumns[1]},
+			},
+		},
+	}
 	// EliminationsColumns holds the columns for the "eliminations" table.
 	EliminationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -353,9 +382,42 @@ var (
 			},
 		},
 	}
+	// VoteSessionsColumns holds the columns for the "vote_sessions" table.
+	VoteSessionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "accused_player_id", Type: field.TypeUUID},
+		{Name: "accused_player_name", Type: field.TypeString},
+		{Name: "message", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"open", "closed"}, Default: "open"},
+		{Name: "opened_at", Type: field.TypeTime},
+		{Name: "closed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "game_id", Type: field.TypeString, Size: 12},
+	}
+	// VoteSessionsTable holds the schema information for the "vote_sessions" table.
+	VoteSessionsTable = &schema.Table{
+		Name:       "vote_sessions",
+		Columns:    VoteSessionsColumns,
+		PrimaryKey: []*schema.Column{VoteSessionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "vote_sessions_games_vote_sessions",
+				Columns:    []*schema.Column{VoteSessionsColumns[7]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "votesession_game_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{VoteSessionsColumns[7], VoteSessionsColumns[4]},
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AdminsTable,
+		BallotsTable,
 		EliminationsTable,
 		GamesTable,
 		GameRolesTable,
@@ -365,10 +427,12 @@ var (
 		RoleTemplatesTable,
 		RoleTemplateRolesTable,
 		VotesTable,
+		VoteSessionsTable,
 	}
 )
 
 func init() {
+	BallotsTable.ForeignKeys[0].RefTable = VoteSessionsTable
 	EliminationsTable.ForeignKeys[0].RefTable = GamesTable
 	EliminationsTable.ForeignKeys[1].RefTable = GameRoundsTable
 	EliminationsTable.ForeignKeys[2].RefTable = PlayersTable
@@ -383,4 +447,5 @@ func init() {
 	VotesTable.ForeignKeys[1].RefTable = GameRoundsTable
 	VotesTable.ForeignKeys[2].RefTable = PlayersTable
 	VotesTable.ForeignKeys[3].RefTable = PlayersTable
+	VoteSessionsTable.ForeignKeys[0].RefTable = GamesTable
 }

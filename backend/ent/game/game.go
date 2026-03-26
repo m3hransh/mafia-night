@@ -33,6 +33,8 @@ const (
 	EdgeRounds = "rounds"
 	// EdgeEliminations holds the string denoting the eliminations edge name in mutations.
 	EdgeEliminations = "eliminations"
+	// EdgeVoteSessions holds the string denoting the vote_sessions edge name in mutations.
+	EdgeVoteSessions = "vote_sessions"
 	// EdgeVotes holds the string denoting the votes edge name in mutations.
 	EdgeVotes = "votes"
 	// Table holds the table name of the game in the database.
@@ -65,6 +67,13 @@ const (
 	EliminationsInverseTable = "eliminations"
 	// EliminationsColumn is the table column denoting the eliminations relation/edge.
 	EliminationsColumn = "game_id"
+	// VoteSessionsTable is the table that holds the vote_sessions relation/edge.
+	VoteSessionsTable = "vote_sessions"
+	// VoteSessionsInverseTable is the table name for the VoteSession entity.
+	// It exists in this package in order to avoid circular dependency with the "votesession" package.
+	VoteSessionsInverseTable = "vote_sessions"
+	// VoteSessionsColumn is the table column denoting the vote_sessions relation/edge.
+	VoteSessionsColumn = "game_id"
 	// VotesTable is the table that holds the votes relation/edge.
 	VotesTable = "votes"
 	// VotesInverseTable is the table name for the Vote entity.
@@ -251,6 +260,20 @@ func ByEliminations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByVoteSessionsCount orders the results by vote_sessions count.
+func ByVoteSessionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVoteSessionsStep(), opts...)
+	}
+}
+
+// ByVoteSessions orders the results by vote_sessions terms.
+func ByVoteSessions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVoteSessionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByVotesCount orders the results by votes count.
 func ByVotesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -290,6 +313,13 @@ func newEliminationsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EliminationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, EliminationsTable, EliminationsColumn),
+	)
+}
+func newVoteSessionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VoteSessionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VoteSessionsTable, VoteSessionsColumn),
 	)
 }
 func newVotesStep() *sqlgraph.Step {

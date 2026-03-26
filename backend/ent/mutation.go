@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/mafia-night/backend/ent/admin"
+	"github.com/mafia-night/backend/ent/ballot"
 	"github.com/mafia-night/backend/ent/elimination"
 	"github.com/mafia-night/backend/ent/game"
 	"github.com/mafia-night/backend/ent/gamerole"
@@ -23,6 +24,7 @@ import (
 	"github.com/mafia-night/backend/ent/roletemplate"
 	"github.com/mafia-night/backend/ent/roletemplaterole"
 	"github.com/mafia-night/backend/ent/vote"
+	"github.com/mafia-night/backend/ent/votesession"
 )
 
 const (
@@ -35,6 +37,7 @@ const (
 
 	// Node types.
 	TypeAdmin            = "Admin"
+	TypeBallot           = "Ballot"
 	TypeElimination      = "Elimination"
 	TypeGame             = "Game"
 	TypeGameRole         = "GameRole"
@@ -44,6 +47,7 @@ const (
 	TypeRoleTemplate     = "RoleTemplate"
 	TypeRoleTemplateRole = "RoleTemplateRole"
 	TypeVote             = "Vote"
+	TypeVoteSession      = "VoteSession"
 )
 
 // AdminMutation represents an operation that mutates the Admin nodes in the graph.
@@ -722,6 +726,554 @@ func (m *AdminMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *AdminMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Admin edge %s", name)
+}
+
+// BallotMutation represents an operation that mutates the Ballot nodes in the graph.
+type BallotMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *uuid.UUID
+	voter_id       *uuid.UUID
+	choice         *ballot.Choice
+	created_at     *time.Time
+	clearedFields  map[string]struct{}
+	session        *uuid.UUID
+	clearedsession bool
+	done           bool
+	oldValue       func(context.Context) (*Ballot, error)
+	predicates     []predicate.Ballot
+}
+
+var _ ent.Mutation = (*BallotMutation)(nil)
+
+// ballotOption allows management of the mutation configuration using functional options.
+type ballotOption func(*BallotMutation)
+
+// newBallotMutation creates new mutation for the Ballot entity.
+func newBallotMutation(c config, op Op, opts ...ballotOption) *BallotMutation {
+	m := &BallotMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeBallot,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withBallotID sets the ID field of the mutation.
+func withBallotID(id uuid.UUID) ballotOption {
+	return func(m *BallotMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Ballot
+		)
+		m.oldValue = func(ctx context.Context) (*Ballot, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Ballot.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withBallot sets the old Ballot of the mutation.
+func withBallot(node *Ballot) ballotOption {
+	return func(m *BallotMutation) {
+		m.oldValue = func(context.Context) (*Ballot, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m BallotMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m BallotMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Ballot entities.
+func (m *BallotMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *BallotMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *BallotMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Ballot.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetSessionID sets the "session_id" field.
+func (m *BallotMutation) SetSessionID(u uuid.UUID) {
+	m.session = &u
+}
+
+// SessionID returns the value of the "session_id" field in the mutation.
+func (m *BallotMutation) SessionID() (r uuid.UUID, exists bool) {
+	v := m.session
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSessionID returns the old "session_id" field's value of the Ballot entity.
+// If the Ballot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BallotMutation) OldSessionID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSessionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSessionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSessionID: %w", err)
+	}
+	return oldValue.SessionID, nil
+}
+
+// ResetSessionID resets all changes to the "session_id" field.
+func (m *BallotMutation) ResetSessionID() {
+	m.session = nil
+}
+
+// SetVoterID sets the "voter_id" field.
+func (m *BallotMutation) SetVoterID(u uuid.UUID) {
+	m.voter_id = &u
+}
+
+// VoterID returns the value of the "voter_id" field in the mutation.
+func (m *BallotMutation) VoterID() (r uuid.UUID, exists bool) {
+	v := m.voter_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVoterID returns the old "voter_id" field's value of the Ballot entity.
+// If the Ballot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BallotMutation) OldVoterID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVoterID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVoterID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVoterID: %w", err)
+	}
+	return oldValue.VoterID, nil
+}
+
+// ResetVoterID resets all changes to the "voter_id" field.
+func (m *BallotMutation) ResetVoterID() {
+	m.voter_id = nil
+}
+
+// SetChoice sets the "choice" field.
+func (m *BallotMutation) SetChoice(b ballot.Choice) {
+	m.choice = &b
+}
+
+// Choice returns the value of the "choice" field in the mutation.
+func (m *BallotMutation) Choice() (r ballot.Choice, exists bool) {
+	v := m.choice
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChoice returns the old "choice" field's value of the Ballot entity.
+// If the Ballot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BallotMutation) OldChoice(ctx context.Context) (v ballot.Choice, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChoice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChoice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChoice: %w", err)
+	}
+	return oldValue.Choice, nil
+}
+
+// ResetChoice resets all changes to the "choice" field.
+func (m *BallotMutation) ResetChoice() {
+	m.choice = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *BallotMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *BallotMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Ballot entity.
+// If the Ballot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BallotMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *BallotMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// ClearSession clears the "session" edge to the VoteSession entity.
+func (m *BallotMutation) ClearSession() {
+	m.clearedsession = true
+	m.clearedFields[ballot.FieldSessionID] = struct{}{}
+}
+
+// SessionCleared reports if the "session" edge to the VoteSession entity was cleared.
+func (m *BallotMutation) SessionCleared() bool {
+	return m.clearedsession
+}
+
+// SessionIDs returns the "session" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SessionID instead. It exists only for internal usage by the builders.
+func (m *BallotMutation) SessionIDs() (ids []uuid.UUID) {
+	if id := m.session; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSession resets all changes to the "session" edge.
+func (m *BallotMutation) ResetSession() {
+	m.session = nil
+	m.clearedsession = false
+}
+
+// Where appends a list predicates to the BallotMutation builder.
+func (m *BallotMutation) Where(ps ...predicate.Ballot) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the BallotMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *BallotMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Ballot, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *BallotMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *BallotMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Ballot).
+func (m *BallotMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *BallotMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.session != nil {
+		fields = append(fields, ballot.FieldSessionID)
+	}
+	if m.voter_id != nil {
+		fields = append(fields, ballot.FieldVoterID)
+	}
+	if m.choice != nil {
+		fields = append(fields, ballot.FieldChoice)
+	}
+	if m.created_at != nil {
+		fields = append(fields, ballot.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *BallotMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case ballot.FieldSessionID:
+		return m.SessionID()
+	case ballot.FieldVoterID:
+		return m.VoterID()
+	case ballot.FieldChoice:
+		return m.Choice()
+	case ballot.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *BallotMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case ballot.FieldSessionID:
+		return m.OldSessionID(ctx)
+	case ballot.FieldVoterID:
+		return m.OldVoterID(ctx)
+	case ballot.FieldChoice:
+		return m.OldChoice(ctx)
+	case ballot.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown Ballot field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BallotMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case ballot.FieldSessionID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSessionID(v)
+		return nil
+	case ballot.FieldVoterID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVoterID(v)
+		return nil
+	case ballot.FieldChoice:
+		v, ok := value.(ballot.Choice)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChoice(v)
+		return nil
+	case ballot.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Ballot field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *BallotMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *BallotMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BallotMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Ballot numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *BallotMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *BallotMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *BallotMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Ballot nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *BallotMutation) ResetField(name string) error {
+	switch name {
+	case ballot.FieldSessionID:
+		m.ResetSessionID()
+		return nil
+	case ballot.FieldVoterID:
+		m.ResetVoterID()
+		return nil
+	case ballot.FieldChoice:
+		m.ResetChoice()
+		return nil
+	case ballot.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Ballot field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *BallotMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.session != nil {
+		edges = append(edges, ballot.EdgeSession)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *BallotMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case ballot.EdgeSession:
+		if id := m.session; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *BallotMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *BallotMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *BallotMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedsession {
+		edges = append(edges, ballot.EdgeSession)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *BallotMutation) EdgeCleared(name string) bool {
+	switch name {
+	case ballot.EdgeSession:
+		return m.clearedsession
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *BallotMutation) ClearEdge(name string) error {
+	switch name {
+	case ballot.EdgeSession:
+		m.ClearSession()
+		return nil
+	}
+	return fmt.Errorf("unknown Ballot unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *BallotMutation) ResetEdge(name string) error {
+	switch name {
+	case ballot.EdgeSession:
+		m.ResetSession()
+		return nil
+	}
+	return fmt.Errorf("unknown Ballot edge %s", name)
 }
 
 // EliminationMutation represents an operation that mutates the Elimination nodes in the graph.
@@ -1443,34 +1995,37 @@ func (m *EliminationMutation) ResetEdge(name string) error {
 // GameMutation represents an operation that mutates the Game nodes in the graph.
 type GameMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *string
-	status              *game.Status
-	phase               *game.Phase
-	round_number        *int
-	addround_number     *int
-	moderator_id        *string
-	created_at          *time.Time
-	clearedFields       map[string]struct{}
-	players             map[uuid.UUID]struct{}
-	removedplayers      map[uuid.UUID]struct{}
-	clearedplayers      bool
-	game_roles          map[int]struct{}
-	removedgame_roles   map[int]struct{}
-	clearedgame_roles   bool
-	rounds              map[uuid.UUID]struct{}
-	removedrounds       map[uuid.UUID]struct{}
-	clearedrounds       bool
-	eliminations        map[uuid.UUID]struct{}
-	removedeliminations map[uuid.UUID]struct{}
-	clearedeliminations bool
-	votes               map[uuid.UUID]struct{}
-	removedvotes        map[uuid.UUID]struct{}
-	clearedvotes        bool
-	done                bool
-	oldValue            func(context.Context) (*Game, error)
-	predicates          []predicate.Game
+	op                   Op
+	typ                  string
+	id                   *string
+	status               *game.Status
+	phase                *game.Phase
+	round_number         *int
+	addround_number      *int
+	moderator_id         *string
+	created_at           *time.Time
+	clearedFields        map[string]struct{}
+	players              map[uuid.UUID]struct{}
+	removedplayers       map[uuid.UUID]struct{}
+	clearedplayers       bool
+	game_roles           map[int]struct{}
+	removedgame_roles    map[int]struct{}
+	clearedgame_roles    bool
+	rounds               map[uuid.UUID]struct{}
+	removedrounds        map[uuid.UUID]struct{}
+	clearedrounds        bool
+	eliminations         map[uuid.UUID]struct{}
+	removedeliminations  map[uuid.UUID]struct{}
+	clearedeliminations  bool
+	vote_sessions        map[uuid.UUID]struct{}
+	removedvote_sessions map[uuid.UUID]struct{}
+	clearedvote_sessions bool
+	votes                map[uuid.UUID]struct{}
+	removedvotes         map[uuid.UUID]struct{}
+	clearedvotes         bool
+	done                 bool
+	oldValue             func(context.Context) (*Game, error)
+	predicates           []predicate.Game
 }
 
 var _ ent.Mutation = (*GameMutation)(nil)
@@ -1993,6 +2548,60 @@ func (m *GameMutation) ResetEliminations() {
 	m.removedeliminations = nil
 }
 
+// AddVoteSessionIDs adds the "vote_sessions" edge to the VoteSession entity by ids.
+func (m *GameMutation) AddVoteSessionIDs(ids ...uuid.UUID) {
+	if m.vote_sessions == nil {
+		m.vote_sessions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.vote_sessions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearVoteSessions clears the "vote_sessions" edge to the VoteSession entity.
+func (m *GameMutation) ClearVoteSessions() {
+	m.clearedvote_sessions = true
+}
+
+// VoteSessionsCleared reports if the "vote_sessions" edge to the VoteSession entity was cleared.
+func (m *GameMutation) VoteSessionsCleared() bool {
+	return m.clearedvote_sessions
+}
+
+// RemoveVoteSessionIDs removes the "vote_sessions" edge to the VoteSession entity by IDs.
+func (m *GameMutation) RemoveVoteSessionIDs(ids ...uuid.UUID) {
+	if m.removedvote_sessions == nil {
+		m.removedvote_sessions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.vote_sessions, ids[i])
+		m.removedvote_sessions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedVoteSessions returns the removed IDs of the "vote_sessions" edge to the VoteSession entity.
+func (m *GameMutation) RemovedVoteSessionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedvote_sessions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// VoteSessionsIDs returns the "vote_sessions" edge IDs in the mutation.
+func (m *GameMutation) VoteSessionsIDs() (ids []uuid.UUID) {
+	for id := range m.vote_sessions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetVoteSessions resets all changes to the "vote_sessions" edge.
+func (m *GameMutation) ResetVoteSessions() {
+	m.vote_sessions = nil
+	m.clearedvote_sessions = false
+	m.removedvote_sessions = nil
+}
+
 // AddVoteIDs adds the "votes" edge to the Vote entity by ids.
 func (m *GameMutation) AddVoteIDs(ids ...uuid.UUID) {
 	if m.votes == nil {
@@ -2263,7 +2872,7 @@ func (m *GameMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GameMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.players != nil {
 		edges = append(edges, game.EdgePlayers)
 	}
@@ -2275,6 +2884,9 @@ func (m *GameMutation) AddedEdges() []string {
 	}
 	if m.eliminations != nil {
 		edges = append(edges, game.EdgeEliminations)
+	}
+	if m.vote_sessions != nil {
+		edges = append(edges, game.EdgeVoteSessions)
 	}
 	if m.votes != nil {
 		edges = append(edges, game.EdgeVotes)
@@ -2310,6 +2922,12 @@ func (m *GameMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case game.EdgeVoteSessions:
+		ids := make([]ent.Value, 0, len(m.vote_sessions))
+		for id := range m.vote_sessions {
+			ids = append(ids, id)
+		}
+		return ids
 	case game.EdgeVotes:
 		ids := make([]ent.Value, 0, len(m.votes))
 		for id := range m.votes {
@@ -2322,7 +2940,7 @@ func (m *GameMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GameMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedplayers != nil {
 		edges = append(edges, game.EdgePlayers)
 	}
@@ -2334,6 +2952,9 @@ func (m *GameMutation) RemovedEdges() []string {
 	}
 	if m.removedeliminations != nil {
 		edges = append(edges, game.EdgeEliminations)
+	}
+	if m.removedvote_sessions != nil {
+		edges = append(edges, game.EdgeVoteSessions)
 	}
 	if m.removedvotes != nil {
 		edges = append(edges, game.EdgeVotes)
@@ -2369,6 +2990,12 @@ func (m *GameMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case game.EdgeVoteSessions:
+		ids := make([]ent.Value, 0, len(m.removedvote_sessions))
+		for id := range m.removedvote_sessions {
+			ids = append(ids, id)
+		}
+		return ids
 	case game.EdgeVotes:
 		ids := make([]ent.Value, 0, len(m.removedvotes))
 		for id := range m.removedvotes {
@@ -2381,7 +3008,7 @@ func (m *GameMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GameMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedplayers {
 		edges = append(edges, game.EdgePlayers)
 	}
@@ -2393,6 +3020,9 @@ func (m *GameMutation) ClearedEdges() []string {
 	}
 	if m.clearedeliminations {
 		edges = append(edges, game.EdgeEliminations)
+	}
+	if m.clearedvote_sessions {
+		edges = append(edges, game.EdgeVoteSessions)
 	}
 	if m.clearedvotes {
 		edges = append(edges, game.EdgeVotes)
@@ -2412,6 +3042,8 @@ func (m *GameMutation) EdgeCleared(name string) bool {
 		return m.clearedrounds
 	case game.EdgeEliminations:
 		return m.clearedeliminations
+	case game.EdgeVoteSessions:
+		return m.clearedvote_sessions
 	case game.EdgeVotes:
 		return m.clearedvotes
 	}
@@ -2441,6 +3073,9 @@ func (m *GameMutation) ResetEdge(name string) error {
 		return nil
 	case game.EdgeEliminations:
 		m.ResetEliminations()
+		return nil
+	case game.EdgeVoteSessions:
+		m.ResetVoteSessions()
 		return nil
 	case game.EdgeVotes:
 		m.ResetVotes()
@@ -7610,4 +8245,840 @@ func (m *VoteMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Vote edge %s", name)
+}
+
+// VoteSessionMutation represents an operation that mutates the VoteSession nodes in the graph.
+type VoteSessionMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	accused_player_id   *uuid.UUID
+	accused_player_name *string
+	message             *string
+	status              *votesession.Status
+	opened_at           *time.Time
+	closed_at           *time.Time
+	clearedFields       map[string]struct{}
+	game                *string
+	clearedgame         bool
+	ballots             map[uuid.UUID]struct{}
+	removedballots      map[uuid.UUID]struct{}
+	clearedballots      bool
+	done                bool
+	oldValue            func(context.Context) (*VoteSession, error)
+	predicates          []predicate.VoteSession
+}
+
+var _ ent.Mutation = (*VoteSessionMutation)(nil)
+
+// votesessionOption allows management of the mutation configuration using functional options.
+type votesessionOption func(*VoteSessionMutation)
+
+// newVoteSessionMutation creates new mutation for the VoteSession entity.
+func newVoteSessionMutation(c config, op Op, opts ...votesessionOption) *VoteSessionMutation {
+	m := &VoteSessionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeVoteSession,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withVoteSessionID sets the ID field of the mutation.
+func withVoteSessionID(id uuid.UUID) votesessionOption {
+	return func(m *VoteSessionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *VoteSession
+		)
+		m.oldValue = func(ctx context.Context) (*VoteSession, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().VoteSession.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withVoteSession sets the old VoteSession of the mutation.
+func withVoteSession(node *VoteSession) votesessionOption {
+	return func(m *VoteSessionMutation) {
+		m.oldValue = func(context.Context) (*VoteSession, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m VoteSessionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m VoteSessionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of VoteSession entities.
+func (m *VoteSessionMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *VoteSessionMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *VoteSessionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().VoteSession.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetGameID sets the "game_id" field.
+func (m *VoteSessionMutation) SetGameID(s string) {
+	m.game = &s
+}
+
+// GameID returns the value of the "game_id" field in the mutation.
+func (m *VoteSessionMutation) GameID() (r string, exists bool) {
+	v := m.game
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGameID returns the old "game_id" field's value of the VoteSession entity.
+// If the VoteSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoteSessionMutation) OldGameID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGameID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGameID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGameID: %w", err)
+	}
+	return oldValue.GameID, nil
+}
+
+// ResetGameID resets all changes to the "game_id" field.
+func (m *VoteSessionMutation) ResetGameID() {
+	m.game = nil
+}
+
+// SetAccusedPlayerID sets the "accused_player_id" field.
+func (m *VoteSessionMutation) SetAccusedPlayerID(u uuid.UUID) {
+	m.accused_player_id = &u
+}
+
+// AccusedPlayerID returns the value of the "accused_player_id" field in the mutation.
+func (m *VoteSessionMutation) AccusedPlayerID() (r uuid.UUID, exists bool) {
+	v := m.accused_player_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccusedPlayerID returns the old "accused_player_id" field's value of the VoteSession entity.
+// If the VoteSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoteSessionMutation) OldAccusedPlayerID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccusedPlayerID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccusedPlayerID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccusedPlayerID: %w", err)
+	}
+	return oldValue.AccusedPlayerID, nil
+}
+
+// ResetAccusedPlayerID resets all changes to the "accused_player_id" field.
+func (m *VoteSessionMutation) ResetAccusedPlayerID() {
+	m.accused_player_id = nil
+}
+
+// SetAccusedPlayerName sets the "accused_player_name" field.
+func (m *VoteSessionMutation) SetAccusedPlayerName(s string) {
+	m.accused_player_name = &s
+}
+
+// AccusedPlayerName returns the value of the "accused_player_name" field in the mutation.
+func (m *VoteSessionMutation) AccusedPlayerName() (r string, exists bool) {
+	v := m.accused_player_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccusedPlayerName returns the old "accused_player_name" field's value of the VoteSession entity.
+// If the VoteSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoteSessionMutation) OldAccusedPlayerName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccusedPlayerName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccusedPlayerName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccusedPlayerName: %w", err)
+	}
+	return oldValue.AccusedPlayerName, nil
+}
+
+// ResetAccusedPlayerName resets all changes to the "accused_player_name" field.
+func (m *VoteSessionMutation) ResetAccusedPlayerName() {
+	m.accused_player_name = nil
+}
+
+// SetMessage sets the "message" field.
+func (m *VoteSessionMutation) SetMessage(s string) {
+	m.message = &s
+}
+
+// Message returns the value of the "message" field in the mutation.
+func (m *VoteSessionMutation) Message() (r string, exists bool) {
+	v := m.message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMessage returns the old "message" field's value of the VoteSession entity.
+// If the VoteSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoteSessionMutation) OldMessage(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMessage: %w", err)
+	}
+	return oldValue.Message, nil
+}
+
+// ClearMessage clears the value of the "message" field.
+func (m *VoteSessionMutation) ClearMessage() {
+	m.message = nil
+	m.clearedFields[votesession.FieldMessage] = struct{}{}
+}
+
+// MessageCleared returns if the "message" field was cleared in this mutation.
+func (m *VoteSessionMutation) MessageCleared() bool {
+	_, ok := m.clearedFields[votesession.FieldMessage]
+	return ok
+}
+
+// ResetMessage resets all changes to the "message" field.
+func (m *VoteSessionMutation) ResetMessage() {
+	m.message = nil
+	delete(m.clearedFields, votesession.FieldMessage)
+}
+
+// SetStatus sets the "status" field.
+func (m *VoteSessionMutation) SetStatus(v votesession.Status) {
+	m.status = &v
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *VoteSessionMutation) Status() (r votesession.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the VoteSession entity.
+// If the VoteSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoteSessionMutation) OldStatus(ctx context.Context) (v votesession.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *VoteSessionMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetOpenedAt sets the "opened_at" field.
+func (m *VoteSessionMutation) SetOpenedAt(t time.Time) {
+	m.opened_at = &t
+}
+
+// OpenedAt returns the value of the "opened_at" field in the mutation.
+func (m *VoteSessionMutation) OpenedAt() (r time.Time, exists bool) {
+	v := m.opened_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOpenedAt returns the old "opened_at" field's value of the VoteSession entity.
+// If the VoteSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoteSessionMutation) OldOpenedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOpenedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOpenedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOpenedAt: %w", err)
+	}
+	return oldValue.OpenedAt, nil
+}
+
+// ResetOpenedAt resets all changes to the "opened_at" field.
+func (m *VoteSessionMutation) ResetOpenedAt() {
+	m.opened_at = nil
+}
+
+// SetClosedAt sets the "closed_at" field.
+func (m *VoteSessionMutation) SetClosedAt(t time.Time) {
+	m.closed_at = &t
+}
+
+// ClosedAt returns the value of the "closed_at" field in the mutation.
+func (m *VoteSessionMutation) ClosedAt() (r time.Time, exists bool) {
+	v := m.closed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClosedAt returns the old "closed_at" field's value of the VoteSession entity.
+// If the VoteSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoteSessionMutation) OldClosedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClosedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClosedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClosedAt: %w", err)
+	}
+	return oldValue.ClosedAt, nil
+}
+
+// ClearClosedAt clears the value of the "closed_at" field.
+func (m *VoteSessionMutation) ClearClosedAt() {
+	m.closed_at = nil
+	m.clearedFields[votesession.FieldClosedAt] = struct{}{}
+}
+
+// ClosedAtCleared returns if the "closed_at" field was cleared in this mutation.
+func (m *VoteSessionMutation) ClosedAtCleared() bool {
+	_, ok := m.clearedFields[votesession.FieldClosedAt]
+	return ok
+}
+
+// ResetClosedAt resets all changes to the "closed_at" field.
+func (m *VoteSessionMutation) ResetClosedAt() {
+	m.closed_at = nil
+	delete(m.clearedFields, votesession.FieldClosedAt)
+}
+
+// ClearGame clears the "game" edge to the Game entity.
+func (m *VoteSessionMutation) ClearGame() {
+	m.clearedgame = true
+	m.clearedFields[votesession.FieldGameID] = struct{}{}
+}
+
+// GameCleared reports if the "game" edge to the Game entity was cleared.
+func (m *VoteSessionMutation) GameCleared() bool {
+	return m.clearedgame
+}
+
+// GameIDs returns the "game" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GameID instead. It exists only for internal usage by the builders.
+func (m *VoteSessionMutation) GameIDs() (ids []string) {
+	if id := m.game; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGame resets all changes to the "game" edge.
+func (m *VoteSessionMutation) ResetGame() {
+	m.game = nil
+	m.clearedgame = false
+}
+
+// AddBallotIDs adds the "ballots" edge to the Ballot entity by ids.
+func (m *VoteSessionMutation) AddBallotIDs(ids ...uuid.UUID) {
+	if m.ballots == nil {
+		m.ballots = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.ballots[ids[i]] = struct{}{}
+	}
+}
+
+// ClearBallots clears the "ballots" edge to the Ballot entity.
+func (m *VoteSessionMutation) ClearBallots() {
+	m.clearedballots = true
+}
+
+// BallotsCleared reports if the "ballots" edge to the Ballot entity was cleared.
+func (m *VoteSessionMutation) BallotsCleared() bool {
+	return m.clearedballots
+}
+
+// RemoveBallotIDs removes the "ballots" edge to the Ballot entity by IDs.
+func (m *VoteSessionMutation) RemoveBallotIDs(ids ...uuid.UUID) {
+	if m.removedballots == nil {
+		m.removedballots = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.ballots, ids[i])
+		m.removedballots[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBallots returns the removed IDs of the "ballots" edge to the Ballot entity.
+func (m *VoteSessionMutation) RemovedBallotsIDs() (ids []uuid.UUID) {
+	for id := range m.removedballots {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// BallotsIDs returns the "ballots" edge IDs in the mutation.
+func (m *VoteSessionMutation) BallotsIDs() (ids []uuid.UUID) {
+	for id := range m.ballots {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetBallots resets all changes to the "ballots" edge.
+func (m *VoteSessionMutation) ResetBallots() {
+	m.ballots = nil
+	m.clearedballots = false
+	m.removedballots = nil
+}
+
+// Where appends a list predicates to the VoteSessionMutation builder.
+func (m *VoteSessionMutation) Where(ps ...predicate.VoteSession) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the VoteSessionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *VoteSessionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.VoteSession, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *VoteSessionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *VoteSessionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (VoteSession).
+func (m *VoteSessionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *VoteSessionMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.game != nil {
+		fields = append(fields, votesession.FieldGameID)
+	}
+	if m.accused_player_id != nil {
+		fields = append(fields, votesession.FieldAccusedPlayerID)
+	}
+	if m.accused_player_name != nil {
+		fields = append(fields, votesession.FieldAccusedPlayerName)
+	}
+	if m.message != nil {
+		fields = append(fields, votesession.FieldMessage)
+	}
+	if m.status != nil {
+		fields = append(fields, votesession.FieldStatus)
+	}
+	if m.opened_at != nil {
+		fields = append(fields, votesession.FieldOpenedAt)
+	}
+	if m.closed_at != nil {
+		fields = append(fields, votesession.FieldClosedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *VoteSessionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case votesession.FieldGameID:
+		return m.GameID()
+	case votesession.FieldAccusedPlayerID:
+		return m.AccusedPlayerID()
+	case votesession.FieldAccusedPlayerName:
+		return m.AccusedPlayerName()
+	case votesession.FieldMessage:
+		return m.Message()
+	case votesession.FieldStatus:
+		return m.Status()
+	case votesession.FieldOpenedAt:
+		return m.OpenedAt()
+	case votesession.FieldClosedAt:
+		return m.ClosedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *VoteSessionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case votesession.FieldGameID:
+		return m.OldGameID(ctx)
+	case votesession.FieldAccusedPlayerID:
+		return m.OldAccusedPlayerID(ctx)
+	case votesession.FieldAccusedPlayerName:
+		return m.OldAccusedPlayerName(ctx)
+	case votesession.FieldMessage:
+		return m.OldMessage(ctx)
+	case votesession.FieldStatus:
+		return m.OldStatus(ctx)
+	case votesession.FieldOpenedAt:
+		return m.OldOpenedAt(ctx)
+	case votesession.FieldClosedAt:
+		return m.OldClosedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown VoteSession field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *VoteSessionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case votesession.FieldGameID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGameID(v)
+		return nil
+	case votesession.FieldAccusedPlayerID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccusedPlayerID(v)
+		return nil
+	case votesession.FieldAccusedPlayerName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccusedPlayerName(v)
+		return nil
+	case votesession.FieldMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMessage(v)
+		return nil
+	case votesession.FieldStatus:
+		v, ok := value.(votesession.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case votesession.FieldOpenedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOpenedAt(v)
+		return nil
+	case votesession.FieldClosedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClosedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown VoteSession field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *VoteSessionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *VoteSessionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *VoteSessionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown VoteSession numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *VoteSessionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(votesession.FieldMessage) {
+		fields = append(fields, votesession.FieldMessage)
+	}
+	if m.FieldCleared(votesession.FieldClosedAt) {
+		fields = append(fields, votesession.FieldClosedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *VoteSessionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *VoteSessionMutation) ClearField(name string) error {
+	switch name {
+	case votesession.FieldMessage:
+		m.ClearMessage()
+		return nil
+	case votesession.FieldClosedAt:
+		m.ClearClosedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown VoteSession nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *VoteSessionMutation) ResetField(name string) error {
+	switch name {
+	case votesession.FieldGameID:
+		m.ResetGameID()
+		return nil
+	case votesession.FieldAccusedPlayerID:
+		m.ResetAccusedPlayerID()
+		return nil
+	case votesession.FieldAccusedPlayerName:
+		m.ResetAccusedPlayerName()
+		return nil
+	case votesession.FieldMessage:
+		m.ResetMessage()
+		return nil
+	case votesession.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case votesession.FieldOpenedAt:
+		m.ResetOpenedAt()
+		return nil
+	case votesession.FieldClosedAt:
+		m.ResetClosedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown VoteSession field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *VoteSessionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.game != nil {
+		edges = append(edges, votesession.EdgeGame)
+	}
+	if m.ballots != nil {
+		edges = append(edges, votesession.EdgeBallots)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *VoteSessionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case votesession.EdgeGame:
+		if id := m.game; id != nil {
+			return []ent.Value{*id}
+		}
+	case votesession.EdgeBallots:
+		ids := make([]ent.Value, 0, len(m.ballots))
+		for id := range m.ballots {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *VoteSessionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedballots != nil {
+		edges = append(edges, votesession.EdgeBallots)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *VoteSessionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case votesession.EdgeBallots:
+		ids := make([]ent.Value, 0, len(m.removedballots))
+		for id := range m.removedballots {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *VoteSessionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedgame {
+		edges = append(edges, votesession.EdgeGame)
+	}
+	if m.clearedballots {
+		edges = append(edges, votesession.EdgeBallots)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *VoteSessionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case votesession.EdgeGame:
+		return m.clearedgame
+	case votesession.EdgeBallots:
+		return m.clearedballots
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *VoteSessionMutation) ClearEdge(name string) error {
+	switch name {
+	case votesession.EdgeGame:
+		m.ClearGame()
+		return nil
+	}
+	return fmt.Errorf("unknown VoteSession unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *VoteSessionMutation) ResetEdge(name string) error {
+	switch name {
+	case votesession.EdgeGame:
+		m.ResetGame()
+		return nil
+	case votesession.EdgeBallots:
+		m.ResetBallots()
+		return nil
+	}
+	return fmt.Errorf("unknown VoteSession edge %s", name)
 }

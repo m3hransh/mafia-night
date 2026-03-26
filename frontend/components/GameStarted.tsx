@@ -10,8 +10,8 @@ const PHASE_LABELS: Record<string, { icon: string; label: string; desc: string }
 };
 
 export function GameStarted() {
-  const { state, closeGame, handleStartDay, handleStartNight, handleEndGame, handleCastVote, handleEliminate, handleVoteStageChange } = useCreateGameContext();
-  const { roleAssignments, error, closing, dayNightPhase, roundNumber, players, voteTally, voteStage, eliminatingPlayerId, eliminatedPlayerIds } = state;
+  const { state, closeGame, handleStartDay, handleStartNight, handleEndGame, handleOpenVoteSession, handleCloseVoteSession, handleClearVoteSession, handleEliminate } = useCreateGameContext();
+  const { roleAssignments, error, closing, dayNightPhase, roundNumber, players, activeVoteSession, openingVoteFor, eliminatingPlayerId, eliminatedPlayerIds } = state;
 
   const alivePlayers = players.filter(p => !eliminatedPlayerIds.has(p.id));
   const alive = alivePlayers.length;
@@ -75,13 +75,12 @@ export function GameStarted() {
       {/* Voting panel - only shown during day phase */}
       {dayNightPhase === 'day' && (
         <VotingPanel
-          gameId={state.game?.id ?? ''}
-          moderatorId={state.moderatorId}
           alivePlayers={alivePlayers}
-          tally={voteTally}
-          currentStage={voteStage}
-          onStageChange={handleVoteStageChange}
-          onCastVote={handleCastVote}
+          activeSession={activeVoteSession}
+          openingFor={openingVoteFor}
+          onOpenSession={handleOpenVoteSession}
+          onCloseSession={handleCloseVoteSession}
+          onClearSession={handleClearVoteSession}
           onEliminate={handleEliminate}
           eliminatingId={eliminatingPlayerId}
         />

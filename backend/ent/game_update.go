@@ -18,6 +18,7 @@ import (
 	"github.com/mafia-night/backend/ent/player"
 	"github.com/mafia-night/backend/ent/predicate"
 	"github.com/mafia-night/backend/ent/vote"
+	"github.com/mafia-night/backend/ent/votesession"
 )
 
 // GameUpdate is the builder for updating Game entities.
@@ -156,6 +157,21 @@ func (_u *GameUpdate) AddEliminations(v ...*Elimination) *GameUpdate {
 	return _u.AddEliminationIDs(ids...)
 }
 
+// AddVoteSessionIDs adds the "vote_sessions" edge to the VoteSession entity by IDs.
+func (_u *GameUpdate) AddVoteSessionIDs(ids ...uuid.UUID) *GameUpdate {
+	_u.mutation.AddVoteSessionIDs(ids...)
+	return _u
+}
+
+// AddVoteSessions adds the "vote_sessions" edges to the VoteSession entity.
+func (_u *GameUpdate) AddVoteSessions(v ...*VoteSession) *GameUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVoteSessionIDs(ids...)
+}
+
 // AddVoteIDs adds the "votes" edge to the Vote entity by IDs.
 func (_u *GameUpdate) AddVoteIDs(ids ...uuid.UUID) *GameUpdate {
 	_u.mutation.AddVoteIDs(ids...)
@@ -258,6 +274,27 @@ func (_u *GameUpdate) RemoveEliminations(v ...*Elimination) *GameUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEliminationIDs(ids...)
+}
+
+// ClearVoteSessions clears all "vote_sessions" edges to the VoteSession entity.
+func (_u *GameUpdate) ClearVoteSessions() *GameUpdate {
+	_u.mutation.ClearVoteSessions()
+	return _u
+}
+
+// RemoveVoteSessionIDs removes the "vote_sessions" edge to VoteSession entities by IDs.
+func (_u *GameUpdate) RemoveVoteSessionIDs(ids ...uuid.UUID) *GameUpdate {
+	_u.mutation.RemoveVoteSessionIDs(ids...)
+	return _u
+}
+
+// RemoveVoteSessions removes "vote_sessions" edges to VoteSession entities.
+func (_u *GameUpdate) RemoveVoteSessions(v ...*VoteSession) *GameUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVoteSessionIDs(ids...)
 }
 
 // ClearVotes clears all "votes" edges to the Vote entity.
@@ -540,6 +577,51 @@ func (_u *GameUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.VoteSessionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.VoteSessionsTable,
+			Columns: []string{game.VoteSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(votesession.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVoteSessionsIDs(); len(nodes) > 0 && !_u.mutation.VoteSessionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.VoteSessionsTable,
+			Columns: []string{game.VoteSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(votesession.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VoteSessionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.VoteSessionsTable,
+			Columns: []string{game.VoteSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(votesession.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.VotesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -728,6 +810,21 @@ func (_u *GameUpdateOne) AddEliminations(v ...*Elimination) *GameUpdateOne {
 	return _u.AddEliminationIDs(ids...)
 }
 
+// AddVoteSessionIDs adds the "vote_sessions" edge to the VoteSession entity by IDs.
+func (_u *GameUpdateOne) AddVoteSessionIDs(ids ...uuid.UUID) *GameUpdateOne {
+	_u.mutation.AddVoteSessionIDs(ids...)
+	return _u
+}
+
+// AddVoteSessions adds the "vote_sessions" edges to the VoteSession entity.
+func (_u *GameUpdateOne) AddVoteSessions(v ...*VoteSession) *GameUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVoteSessionIDs(ids...)
+}
+
 // AddVoteIDs adds the "votes" edge to the Vote entity by IDs.
 func (_u *GameUpdateOne) AddVoteIDs(ids ...uuid.UUID) *GameUpdateOne {
 	_u.mutation.AddVoteIDs(ids...)
@@ -830,6 +927,27 @@ func (_u *GameUpdateOne) RemoveEliminations(v ...*Elimination) *GameUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEliminationIDs(ids...)
+}
+
+// ClearVoteSessions clears all "vote_sessions" edges to the VoteSession entity.
+func (_u *GameUpdateOne) ClearVoteSessions() *GameUpdateOne {
+	_u.mutation.ClearVoteSessions()
+	return _u
+}
+
+// RemoveVoteSessionIDs removes the "vote_sessions" edge to VoteSession entities by IDs.
+func (_u *GameUpdateOne) RemoveVoteSessionIDs(ids ...uuid.UUID) *GameUpdateOne {
+	_u.mutation.RemoveVoteSessionIDs(ids...)
+	return _u
+}
+
+// RemoveVoteSessions removes "vote_sessions" edges to VoteSession entities.
+func (_u *GameUpdateOne) RemoveVoteSessions(v ...*VoteSession) *GameUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVoteSessionIDs(ids...)
 }
 
 // ClearVotes clears all "votes" edges to the Vote entity.
@@ -1135,6 +1253,51 @@ func (_u *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(elimination.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.VoteSessionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.VoteSessionsTable,
+			Columns: []string{game.VoteSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(votesession.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVoteSessionsIDs(); len(nodes) > 0 && !_u.mutation.VoteSessionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.VoteSessionsTable,
+			Columns: []string{game.VoteSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(votesession.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VoteSessionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.VoteSessionsTable,
+			Columns: []string{game.VoteSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(votesession.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
