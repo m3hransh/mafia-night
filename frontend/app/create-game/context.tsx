@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { apiClient } from '@/lib/api-client';
 import type { Role } from '@/lib/types';
 import { saveModeratorGame, clearModeratorGame, validateModeratorGameState } from '@/lib/gameStorage';
-import { deleteGame, removePlayer, distributeRoles, selectRoles, getSelectedRoles, getGameRoles, PlayerRoleAssignment, startDay, startNight, endGame, PhaseResult, eliminatePlayer, VoteTally } from '@/lib/api';
+import { deleteGame, removePlayer, distributeRoles, selectRoles, getSelectedRoles, getGameRoles, PlayerRoleAssignment, startDay, startNight, endGame, PhaseResult, castVote, eliminatePlayer, VoteTally } from '@/lib/api';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -209,6 +209,7 @@ type CreateGameContextValue = {
   handleStartDay: () => Promise<void>;
   handleStartNight: () => Promise<void>;
   handleEndGame: () => Promise<void>;
+  handleCastVote: (voterId: string, targetId: string) => Promise<void>;
   handleEliminate: (playerId: string) => Promise<void>;
   handleVoteStageChange: (stage: 'nomination' | 'final') => void;
 };
@@ -470,6 +471,16 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const handleCastVote = async (voterId: string, targetId: string) => {
+    if (!game) return;
+    const { voteStage } = state;
+    try {
+      await castVote(game.id, voterId, targetId, voteStage);
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', error: err instanceof Error ? err.message : 'Failed to cast vote' });
+    }
+  };
+
   const handleEliminate = async (playerId: string) => {
     if (!game) return;
     dispatch({ type: 'ELIMINATING_PLAYER', playerId });
@@ -501,6 +512,7 @@ export function CreateGameProvider({ children }: { children: ReactNode }) {
     handleStartDay,
     handleStartNight,
     handleEndGame,
+    handleCastVote,
     handleEliminate,
     handleVoteStageChange,
   // eslint-disable-next-line react-hooks/exhaustive-deps

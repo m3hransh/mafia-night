@@ -10,7 +10,7 @@ const PHASE_LABELS: Record<string, { icon: string; label: string; desc: string }
 };
 
 export function GameStarted() {
-  const { state, closeGame, handleStartDay, handleStartNight, handleEndGame, handleEliminate, handleVoteStageChange } = useCreateGameContext();
+  const { state, closeGame, handleStartDay, handleStartNight, handleEndGame, handleCastVote, handleEliminate, handleVoteStageChange } = useCreateGameContext();
   const { roleAssignments, error, closing, dayNightPhase, roundNumber, players, voteTally, voteStage, eliminatingPlayerId, eliminatedPlayerIds } = state;
 
   const alivePlayers = players.filter(p => !eliminatedPlayerIds.has(p.id));
@@ -81,6 +81,7 @@ export function GameStarted() {
           tally={voteTally}
           currentStage={voteStage}
           onStageChange={handleVoteStageChange}
+          onCastVote={handleCastVote}
           onEliminate={handleEliminate}
           eliminatingId={eliminatingPlayerId}
         />
