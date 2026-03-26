@@ -1,7 +1,10 @@
-import { Player } from "@/lib/api";
+import { Player, Role } from "@/lib/api";
 import type { SelectedRoleEntry } from '@/lib/api';
 import { Button } from './Button';
 import { SelectedRolesDisplay } from './SelectedRolesDisplay';
+import { Phase } from "@/app/join-game/page";
+import { useState, useEffect } from "react";
+import { AssignedRole } from "./AssignedRole";
 
 interface JoinLobbyProps {
     playerName: string;
@@ -9,15 +12,40 @@ interface JoinLobbyProps {
     onLeaveGame: () => void;
     leaving: boolean;
     selectedRoles?: SelectedRoleEntry[];
+    assignedRole?: Role| null;
+    phase: Phase;
 }
 
-export function JoinLobby({ playerName, players, onLeaveGame, leaving, selectedRoles = [] }: JoinLobbyProps) {
+export function JoinLobby({ playerName, players, assignedRole, onLeaveGame, leaving, selectedRoles = [], phase }: JoinLobbyProps) {
+  const [showAssignedRole, setShowAssignedRole] = useState(false);
+  const handleShowRoleClick = () => {
+    setShowAssignedRole(true);
+  }
+  const handleBackToLobbyClick = () => {
+    setShowAssignedRole(false);
+  }  
   const handleLeaveClick = () => {
     onLeaveGame();
   }
   return (
     <>
       {/* Success Message */}
+
+      {showAssignedRole && assignedRole ? (
+        <AssignedRole assignedRole={assignedRole} playerName={playerName} onBack={handleBackToLobbyClick} />
+      ) : (
+      <>
+      { phase === 'role-assigned' && assignedRole ? (
+      <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-green-500/30 text-center">
+        {/* Show assigned role message with "Show Role" button */}
+        <p className="text-xl text-purple-300">
+          Your role has been assigned
+        </p>
+        <Button onClick={handleShowRoleClick} variant="primary" className="mt-4">
+          Show Role
+        </Button>
+      </div>
+      ) : (
       <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-green-500/30 text-center">
         <div className="text-5xl  text-green-500 mb-2">✓</div>
         <h2 className="text-2xl font-bold text-white mb-2">You're In!</h2>
@@ -25,6 +53,7 @@ export function JoinLobby({ playerName, players, onLeaveGame, leaving, selectedR
           Welcome to the game, <span className="text-white font-semibold">{playerName}</span>
         </p>
       </div>
+      )}
 
       {/* Players List */}
       <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
@@ -62,10 +91,14 @@ export function JoinLobby({ playerName, players, onLeaveGame, leaving, selectedR
 
       {/* Selected Roles (shown once moderator has selected them) */}
       {selectedRoles.length > 0 && (
-        <SelectedRolesDisplay roles={selectedRoles} />
+        <SelectedRolesDisplay roles={selectedRoles} footer={(phase === 'waiting') && (
+          <p className="text-purple-300 mb-6">Waiting for the game to start...</p>
+        )} />
       )}
 
       <div className="text-center">
+      { (phase === 'waiting') && (
+        <>
         <p className="text-purple-300 mb-6">Waiting for the game to start...</p>
         <div className="mb-6">
           <div className="animate-pulse inline-block w-3 h-3 bg-purple-500 rounded-full mx-1"></div>
@@ -76,6 +109,8 @@ export function JoinLobby({ playerName, players, onLeaveGame, leaving, selectedR
             animationDelay: '0.4s'
           }}></div>
         </div>
+        </>
+      )}
 
         {/* Leave Game Button */}
         <Button
@@ -87,6 +122,8 @@ export function JoinLobby({ playerName, players, onLeaveGame, leaving, selectedR
           {leaving ? 'Leaving...' : 'Leave Game'}
         </Button>
       </div>
+      </>
+      )}
     </>
   )
 }

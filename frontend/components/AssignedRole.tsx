@@ -12,14 +12,13 @@ const CardScene = dynamic(() => import('./CardScene').then(mod => ({ default: mo
 interface AssignedRoleProps {
   assignedRole: Role;
   playerName: string;
-  onLeaveGame: () => void;
-  leaving: boolean;
+  onBack: () => void;
 }
 
 
-export function AssignedRole({ assignedRole, playerName, leaving, onLeaveGame }: AssignedRoleProps) {
+export function AssignedRole({ assignedRole, playerName, onBack }: AssignedRoleProps) {
   const handleLeaveClick = () => {
-    onLeaveGame();
+    onBack();
   };
   return (
     // Display assigned role
@@ -49,13 +48,12 @@ export function AssignedRole({ assignedRole, playerName, leaving, onLeaveGame }:
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
         <Button
           onClick={handleLeaveClick}
-          disabled={leaving}
           variant="danger"
           size="lg"
           scaleOnHover
           className="backdrop-blur-sm border border-red-400/30 hover:shadow-lg hover:shadow-red-500/50 active:scale-95"
         >
-          {leaving ? 'Leaving...' : 'Leave Game'}
+          Back to Lobby
         </Button>
       </div>
     </>

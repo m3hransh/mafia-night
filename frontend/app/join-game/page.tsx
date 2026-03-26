@@ -4,15 +4,14 @@ import { useReducer, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { savePlayerGame, clearPlayerGame, validatePlayerGameState } from '@/lib/gameStorage';
-import { getPlayerRole, getSelectedRoles, Role, Player, SelectedRoleEntry } from '@/lib/api';
+import { getPlayerRole, getSelectedRoles, fetchPlayers, Role, Player, SelectedRoleEntry } from '@/lib/api';
 import { JoinLobby } from '@/components/JoinLobby';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
-import { AssignedRole } from '@/components/AssignedRole';
 import { JoinGameForm } from '@/components/JoinGameForm';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-type Phase = 'loading' | 'not-joined' | 'waiting' | 'role-assigned';
+export type Phase = 'loading' | 'not-joined' | 'waiting' | 'role-assigned';
 
 type State = {
   phase: Phase;
@@ -157,9 +156,12 @@ function JoinGameContent() {
     }
   }, [searchParams, phase]);
 
-  // Fetch selected roles whenever we're in the waiting phase
+  // Fetch players and selected roles whenever we're in the lobby (waiting or role-assigned)
   useEffect(() => {
-    if (phase !== 'waiting' || !gameCode) return;
+    if ((phase !== 'waiting' && phase !== 'role-assigned') || !gameCode) return;
+    fetchPlayers(gameCode).then(players => {
+      dispatch({ type: 'PLAYERS_LOADED', players });
+    }).catch(() => {});
     getSelectedRoles(gameCode).then(roles => {
       if (roles.length > 0) dispatch({ type: 'SELECTED_ROLES_LOADED', roles });
     }).catch(() => {});
@@ -239,9 +241,6 @@ function JoinGameContent() {
         <span className="text-white font-semibold">Home</span>
       </Link>
 
-      {phase === 'role-assigned' && assignedRole ? (
-        <AssignedRole assignedRole={assignedRole} playerName={playerName} leaving={leaving} onLeaveGame={leaveGameHandler} />
-      ) : (
         <div className="text-center mb-12 space-y-6 p-4">
           <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-2xl">Join Game</h1>
           <p className="text-xl text-purple-300 mb-4">Enter the game code to join</p>
@@ -250,14 +249,15 @@ function JoinGameContent() {
           ) : (
             <JoinLobby
               players={players}
+              assignedRole={assignedRole}
               playerName={playerName}
               leaving={leaving}
               onLeaveGame={leaveGameHandler}
               selectedRoles={selectedRoles}
+              phase={phase}
             />
           )}
         </div>
-      )}
     </div>
   );
 }

@@ -419,7 +419,7 @@ type SelectedRoleEntry struct {
 	Count  int    `json:"count"`
 }
 
-// GetSelectedRoles returns the roles the moderator has selected but not yet distributed.
+// GetSelectedRoles returns all roles the moderator has selected for the game, including already-distributed ones.
 func (s *GameService) GetSelectedRoles(ctx context.Context, gameID string) ([]SelectedRoleEntry, error) {
 	if gameID == "" {
 		return nil, ErrEmptyGameID
@@ -432,7 +432,7 @@ func (s *GameService) GetSelectedRoles(ctx context.Context, gameID string) ([]Se
 
 	gameRoles, err := s.client.GameRole.
 		Query().
-		Where(gamerole.GameID(gameID), gamerole.PlayerIDIsNil()).
+		Where(gamerole.GameID(gameID)).
 		WithRole().
 		All(ctx)
 	if err != nil {
