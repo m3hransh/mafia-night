@@ -33,7 +33,7 @@ export function VoteOverlay({ session, existingChoice, onVote, onDismiss }: Vote
 
   return (
     <div className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-      <div className="w-full max-w-sm bg-gray-950 rounded-3xl border border-amber-500/30 p-8 space-y-6 shadow-2xl">
+      <div data-testid="vote-overlay" className="w-full max-w-sm bg-gray-950 rounded-3xl border border-amber-500/30 p-8 space-y-6 shadow-2xl">
 
         {/* Header */}
         <div className="text-center space-y-1">
@@ -44,7 +44,7 @@ export function VoteOverlay({ session, existingChoice, onVote, onDismiss }: Vote
               🗳️ Vote now
             </p>
           )}
-          <h2 className="text-3xl font-extrabold text-white">{session.accused_player_name}</h2>
+          <h2 data-testid="overlay-accused-name" className="text-3xl font-extrabold text-white">{session.accused_player_name}</h2>
           {session.message && (
             <p className="text-white/40 text-sm italic mt-1">"{session.message}"</p>
           )}
@@ -82,7 +82,7 @@ export function VoteOverlay({ session, existingChoice, onVote, onDismiss }: Vote
 
             {/* Final outcome */}
             {isClosed && (
-              <div className={`mt-3 text-center font-bold py-2.5 rounded-xl
+              <div data-testid="overlay-outcome" className={`mt-3 text-center font-bold py-2.5 rounded-xl
                 ${yesWins ? 'text-red-300 bg-red-900/20' : 'text-green-300 bg-green-900/20'}`}>
                 {yesWins
                   ? `☠️ ${session.accused_player_name} will be eliminated`
@@ -96,6 +96,7 @@ export function VoteOverlay({ session, existingChoice, onVote, onDismiss }: Vote
         {!isClosed && (
           <div className="grid grid-cols-2 gap-3">
             <button
+              data-testid="vote-yes-btn"
               onClick={() => handleVote('yes')}
               disabled={voting}
               className={`py-4 rounded-2xl font-bold text-lg transition-all
@@ -107,6 +108,7 @@ export function VoteOverlay({ session, existingChoice, onVote, onDismiss }: Vote
               ✓ Yes
             </button>
             <button
+              data-testid="vote-no-btn"
               onClick={() => handleVote('no')}
               disabled={voting}
               className={`py-4 rounded-2xl font-bold text-lg transition-all
@@ -136,6 +138,7 @@ export function VoteOverlay({ session, existingChoice, onVote, onDismiss }: Vote
 
         {isClosed && (
           <button
+            data-testid="dismiss-overlay-btn"
             onClick={onDismiss}
             className="w-full py-2.5 rounded-xl text-sm font-semibold text-white/50 bg-white/5
               border border-white/10 hover:bg-white/10 hover:text-white/80 transition-all"

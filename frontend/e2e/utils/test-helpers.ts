@@ -372,6 +372,122 @@ export async function takeScreenshot(
   });
 }
 
+// ── Vote Session Helpers ──────────────────────────────────────────────────────
+
+/**
+ * Open a vote session from the moderator's VotingPanel for a given player name.
+ * The moderator page must already be in the day phase showing the voting panel.
+ */
+export async function openVoteSessionFor(page: Page, playerName: string, message = '', timeout = 15000) {
+  const panel = page.getByTestId('voting-panel-select');
+  await panel.waitFor({ state: 'visible', timeout });
+
+  if (message) {
+    await page.getByTestId('vote-message-input').fill(message);
+  }
+
+  const btn = page.getByTestId(`vote-player-btn-${playerName}`);
+  await btn.waitFor({ state: 'visible', timeout });
+  await btn.click();
+
+  // Wait for the active vote panel to appear
+  await page.getByTestId('voting-panel-active').waitFor({ state: 'visible', timeout });
+}
+
+/**
+ * Wait for the VoteOverlay to appear on a player page.
+ */
+export async function waitForVoteOverlay(page: Page, accusedName?: string, timeout = 15000) {
+  const overlay = page.getByTestId('vote-overlay');
+  await overlay.waitFor({ state: 'visible', timeout });
+  if (accusedName) {
+    await expect(page.getByTestId('overlay-accused-name')).toContainText(accusedName, { timeout });
+  }
+  return overlay;
+}
+
+/**
+ * Cast a ballot (yes or no) on the player's VoteOverlay.
+ */
+export async function castBallotOnOverlay(page: Page, choice: 'yes' | 'no') {
+  const btn = page.getByTestId(choice === 'yes' ? 'vote-yes-btn' : 'vote-no-btn');
+  await btn.waitFor({ state: 'visible', timeout: 10000 });
+  await btn.click();
+}
+
+/**
+ * Close the vote session from the moderator panel.
+ */
+export async function closeVoteFromPanel(page: Page, timeout = 10000) {
+  const btn = page.getByTestId('close-vote-btn');
+  await btn.waitFor({ state: 'visible', timeout });
+  await btn.click();
+  // Wait for the outcome banner to appear
+  await page.getByTestId('vote-outcome-banner').waitFor({ state: 'visible', timeout });
+}
+
+/**
+ * Click "Start New Vote" button on the moderator panel to reset after close.
+ */
+export async function startNewVoteFromPanel(page: Page, timeout = 10000) {
+  const btn = page.getByTestId('start-new-vote-btn');
+  await btn.waitFor({ state: 'visible', timeout });
+  await btn.click();
+  // Wait for the player-select panel to re-appear
+  await page.getByTestId('voting-panel-select').waitFor({ state: 'visible', timeout });
+}
+
+/**
+ * Wait for the moderator phase label to show a specific string.
+ */
+export async function waitForModeratorPhaseLabel(page: Page, label: string, timeout = 10000) {
+  const el = page.getByTestId('moderator-phase-label');
+  await el.waitFor({ state: 'visible', timeout });
+  await expect(el).toContainText(label, { timeout });
+  return el;
+}
+
+/**
+ * Wait for the moderator round number to appear.
+ */
+export async function waitForModeratorRound(page: Page, round: number, timeout = 10000) {
+  const el = page.getByTestId('moderator-round-number');
+  await el.waitFor({ state: 'visible', timeout });
+  await expect(el).toContainText(String(round), { timeout });
+  return el;
+}
+
+/**
+ * Helper to set up a full game ready for phase switching:
+ * Creates game, joins N players with given names, selects N roles, distributes.
+ * Returns { moderatorPage, playerPages, cleanup }
+ */
+export async function setupGameInProgress(browser: Browser, playerNames: string[]) {
+  const game = await createGameSession(browser);
+  const players = await Promise.all(
+    playerNames.map(name => joinGameAsPlayer(browser, game.gameCode, name))
+  );
+
+  for (const name of playerNames) {
+    await waitForPlayerInList(game.moderatorPage, name);
+  }
+
+  const selectRolesButton = game.moderatorPage.locator('button:has-text("Select Roles")');
+  await expect(selectRolesButton).toBeEnabled();
+  await selectRolesButton.click();
+  await selectRoles(game.moderatorPage, playerNames.length);
+  await confirmRoleDistribution(game.moderatorPage);
+
+  return {
+    game,
+    players,
+    cleanup: async () => {
+      await Promise.all(players.map(p => p.cleanup()));
+      await game.cleanup();
+    },
+  };
+}
+
 /**
  * Common role data for tests
  */

@@ -55,17 +55,17 @@ export function VotingPanel({
     const voted  = activeSession.yes_count + activeSession.no_count;
 
     return (
-      <div className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-amber-500/30 space-y-5">
+      <div data-testid="voting-panel-active" className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-amber-500/30 space-y-5">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-amber-300">🗳️ Vote in Progress</h3>
-          <span className="text-xs text-white/40 bg-amber-500/10 px-2 py-1 rounded-full">
+          <span data-testid="vote-count" className="text-xs text-white/40 bg-amber-500/10 px-2 py-1 rounded-full">
             {voted}/{total} voted
           </span>
         </div>
 
         <div className="text-center py-4 bg-red-900/20 rounded-xl border border-red-500/20">
           <p className="text-white/50 text-sm mb-1">Accused player</p>
-          <p className="text-2xl font-bold text-red-300">{activeSession.accused_player_name}</p>
+          <p data-testid="accused-player-name" className="text-2xl font-bold text-red-300">{activeSession.accused_player_name}</p>
           {activeSession.message && (
             <p className="text-white/40 text-sm mt-2 italic">&ldquo;{activeSession.message}&rdquo;</p>
           )}
@@ -75,7 +75,7 @@ export function VotingPanel({
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
               <span className="text-green-400 font-semibold">✓ Yes — eliminate</span>
-              <span className="text-white/50">{activeSession.yes_count} ({yesPct}%)</span>
+              <span data-testid="yes-count" className="text-white/50">{activeSession.yes_count} ({yesPct}%)</span>
             </div>
             <div className="h-3 bg-white/10 rounded-full overflow-hidden">
               <div className="h-full bg-green-500/70 rounded-full transition-all duration-500"
@@ -85,7 +85,7 @@ export function VotingPanel({
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
               <span className="text-blue-400 font-semibold">✗ No — spare</span>
-              <span className="text-white/50">{activeSession.no_count} ({noPct}%)</span>
+              <span data-testid="no-count" className="text-white/50">{activeSession.no_count} ({noPct}%)</span>
             </div>
             <div className="h-3 bg-white/10 rounded-full overflow-hidden">
               <div className="h-full bg-blue-500/70 rounded-full transition-all duration-500"
@@ -97,6 +97,7 @@ export function VotingPanel({
 
         {activeSession.status === 'open' && (
           <button
+            data-testid="close-vote-btn"
             onClick={handleClose}
             disabled={closing}
             className="w-full py-3 rounded-xl font-bold text-white bg-white/10 border border-white/20
@@ -108,7 +109,7 @@ export function VotingPanel({
 
         {activeSession.status === 'closed' && (
           <div className="space-y-3">
-            <div className={`text-center py-3 rounded-xl font-bold
+            <div data-testid="vote-outcome-banner" className={`text-center py-3 rounded-xl font-bold
               ${yesWins ? 'bg-red-900/30 text-red-300 border border-red-500/30' : 'bg-green-900/20 text-green-300 border border-green-500/20'}`}>
               {yesWins
                 ? `☠️ Majority reached — ${activeSession.accused_player_name} eliminated`
@@ -117,6 +118,7 @@ export function VotingPanel({
 
             {yesWins && accusedPlayer && (
               <button
+                data-testid="confirm-eliminate-btn"
                 onClick={() => onEliminate(accusedPlayer.id)}
                 disabled={eliminatingId === accusedPlayer.id}
                 className="w-full py-3 rounded-xl font-bold text-white bg-red-500/20 border border-red-500/50
@@ -129,6 +131,7 @@ export function VotingPanel({
             )}
 
             <button
+              data-testid="start-new-vote-btn"
               onClick={onClearSession}
               className="w-full py-2.5 rounded-xl font-semibold text-white/60 bg-white/5 border border-white/10
                 hover:bg-white/10 hover:text-white transition-all text-sm"
@@ -142,11 +145,12 @@ export function VotingPanel({
   }
 
   return (
-    <div className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-amber-500/30 space-y-5">
+    <div data-testid="voting-panel-select" className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-amber-500/30 space-y-5">
       <h3 className="text-xl font-bold text-amber-300">☀️ Day Voting</h3>
       <p className="text-white/40 text-sm">Select a player to put to a vote</p>
 
       <input
+        data-testid="vote-message-input"
         type="text"
         placeholder="Message to players (optional)"
         value={message}
@@ -159,6 +163,7 @@ export function VotingPanel({
         {alivePlayers.map(player => (
           <button
             key={player.id}
+            data-testid={`vote-player-btn-${player.name}`}
             onClick={() => onOpenSession(player.id, message)}
             disabled={openingFor === player.id}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl

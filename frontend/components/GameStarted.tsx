@@ -25,13 +25,13 @@ export function GameStarted() {
         <div className="flex items-center gap-3">
           <span className="text-3xl">{PHASE_LABELS[dayNightPhase]?.icon}</span>
           <div>
-            <div className="text-white font-bold text-lg">{PHASE_LABELS[dayNightPhase]?.label}</div>
+            <div data-testid="moderator-phase-label" className="text-white font-bold text-lg">{PHASE_LABELS[dayNightPhase]?.label}</div>
             <div className="text-purple-300 text-sm">{PHASE_LABELS[dayNightPhase]?.desc}</div>
           </div>
         </div>
         <div className="text-right">
           {roundNumber > 0 && (
-            <div className="text-white/70 text-sm">Round <span className="text-white font-bold">{roundNumber}</span></div>
+            <div data-testid="moderator-round-number" className="text-white/70 text-sm">Round <span className="text-white font-bold">{roundNumber}</span></div>
           )}
           <div className="text-white/70 text-sm">{alive} player{alive !== 1 ? 's' : ''} alive</div>
         </div>
