@@ -3,7 +3,7 @@
 import { useReducer, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { savePlayerGame, clearPlayerGame, validatePlayerGameState } from '@/lib/gameStorage';
+import { savePlayerGame, clearPlayerGame, validatePlayerGameState, setPlayerRoleSeen } from '@/lib/gameStorage';
 import { getPlayerRole, getSelectedRoles, fetchPlayers, Role, Player, SelectedRoleEntry } from '@/lib/api';
 import { JoinLobby } from '@/components/JoinLobby';
 import { useGameWebSocket } from '@/hooks/useGameWebSocket';
@@ -25,6 +25,7 @@ type State = {
   leaving: boolean;
   dayNightPhase: DayNightPhase;
   roundNumber: number;
+  roleSeen: boolean;
 };
 
 const initialState: State = {
@@ -38,13 +39,14 @@ const initialState: State = {
   leaving: false,
   dayNightPhase: 'waiting',
   roundNumber: 0,
+  roleSeen: false,
 };
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 type Action =
   | { type: 'INIT'; gameCode?: string }
-  | { type: 'RESTORE'; gameCode: string; playerName: string; playerId: string; assignedRole: Role | null }
+  | { type: 'RESTORE'; gameCode: string; playerName: string; playerId: string; assignedRole: Role | null; roleSeen: boolean }
   | { type: 'SET_GAME_CODE'; code: string }
   | { type: 'JOINED'; gameCode: string; playerId: string; playerName: string }
   | { type: 'PLAYER_JOINED'; player: Player }
@@ -53,7 +55,8 @@ type Action =
   | { type: 'ROLE_ASSIGNED'; role: Role }
   | { type: 'SELECTED_ROLES_LOADED'; roles: SelectedRoleEntry[] }
   | { type: 'LEAVING' }
-  | { type: 'PHASE_CHANGED'; dayNightPhase: DayNightPhase; roundNumber: number };
+  | { type: 'PHASE_CHANGED'; dayNightPhase: DayNightPhase; roundNumber: number }
+  | { type: 'ROLE_SEEN' };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -68,6 +71,7 @@ function reducer(state: State, action: Action): State {
         playerName: action.playerName,
         playerId: action.playerId,
         assignedRole: action.assignedRole,
+        roleSeen: action.roleSeen,
       };
 
     case 'SET_GAME_CODE':
@@ -104,6 +108,9 @@ function reducer(state: State, action: Action): State {
     case 'PHASE_CHANGED':
       return { ...state, dayNightPhase: action.dayNightPhase, roundNumber: action.roundNumber };
 
+    case 'ROLE_SEEN':
+      return { ...state, roleSeen: true };
+
     default:
       return state;
   }
@@ -113,7 +120,7 @@ function reducer(state: State, action: Action): State {
 
 function JoinGameContent() {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { phase, gameCode, playerName, playerId, players, assignedRole, selectedRoles, leaving, dayNightPhase, roundNumber } = state;
+  const { phase, gameCode, playerName, playerId, players, assignedRole, selectedRoles, leaving, dayNightPhase, roundNumber, roleSeen } = state;
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -141,6 +148,7 @@ function JoinGameContent() {
               playerName: validatedState.playerName,
               playerId: validatedState.playerId,
               assignedRole: role,
+              roleSeen: validatedState.roleSeen ?? false,
             });
           }
         } else {
@@ -279,6 +287,11 @@ function JoinGameContent() {
                 phase={phase}
                 dayNightPhase={dayNightPhase}
                 roundNumber={roundNumber}
+                roleSeen={roleSeen}
+                onRoleSeen={() => {
+                  dispatch({ type: 'ROLE_SEEN' });
+                  setPlayerRoleSeen();
+                }}
               />
             </>
           )}

@@ -14,6 +14,7 @@ interface PlayerGameState {
   playerId: string;
   playerName: string;
   timestamp: number;
+  roleSeen?: boolean;
 }
 
 const MODERATOR_KEY = 'mafia_night_moderator';
@@ -108,6 +109,21 @@ export function getPlayerGame(): PlayerGameState | null {
   } catch (error) {
     console.error('Failed to get player game:', error);
     return null;
+  }
+}
+
+/**
+ * Mark that the player has seen their assigned role
+ */
+export function setPlayerRoleSeen() {
+  try {
+    const stored = localStorage.getItem(PLAYER_KEY);
+    if (!stored) return;
+    const state: PlayerGameState = JSON.parse(stored);
+    state.roleSeen = true;
+    localStorage.setItem(PLAYER_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.error('Failed to mark role as seen:', error);
   }
 }
 

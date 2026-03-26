@@ -18,6 +18,8 @@ interface JoinLobbyProps {
   phase: Phase;
   dayNightPhase?: DayNightPhase;
   roundNumber?: number;
+  roleSeen?: boolean;
+  onRoleSeen?: () => void;
 }
 
 // ── Phase theme config ────────────────────────────────────────────────────────
@@ -172,10 +174,11 @@ export function JoinLobby({
   phase,
   dayNightPhase = 'waiting',
   roundNumber = 0,
+  roleSeen = false,
+  onRoleSeen,
 }: JoinLobbyProps) {
   const [showAssignedRole, setShowAssignedRole] = useState(false);
   const [revealed, setRevealed] = useState(false);
-  const [roleSeen, setRoleSeen] = useState(false);
 
   const theme = PHASE_THEME[dayNightPhase];
 
@@ -188,7 +191,7 @@ export function JoinLobby({
 
   const handleBackFromRole = () => {
     setShowAssignedRole(false);
-    setRoleSeen(true);
+    if (!roleSeen) onRoleSeen?.();
   };
 
   if (showAssignedRole && assignedRole) {
