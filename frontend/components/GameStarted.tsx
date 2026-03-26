@@ -39,6 +39,7 @@ export function GameStarted() {
       {dayNightPhase !== 'ended' && (
         <div className="flex gap-3 justify-center flex-wrap">
           <button
+            data-testid="start-day-btn"
             onClick={handleStartDay}
             disabled={dayNightPhase === 'day'}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all
@@ -48,6 +49,7 @@ export function GameStarted() {
             ☀️ Start Day
           </button>
           <button
+            data-testid="start-night-btn"
             onClick={handleStartNight}
             disabled={dayNightPhase === 'night'}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all
@@ -57,6 +59,7 @@ export function GameStarted() {
             🌙 Start Night
           </button>
           <button
+            data-testid="end-game-btn"
             onClick={handleEndGame}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all
               bg-red-500/20 border border-red-500/40 text-red-300

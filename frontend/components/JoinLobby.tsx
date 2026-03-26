@@ -84,6 +84,7 @@ function PhaseNotificationBanner({ phase, roundNumber }: { phase: DayNightPhase;
 
   return (
     <div
+      data-testid="phase-notification-banner"
       className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-8 py-4 rounded-2xl border
         backdrop-blur-xl shadow-2xl text-center
         transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}
@@ -111,7 +112,10 @@ function PhaseStatusBadge({ phase, roundNumber }: { phase: DayNightPhase; roundN
   if (phase === 'waiting') return null;
   const theme = PHASE_THEME[phase];
   return (
-    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold ${theme.badge}`}>
+    <div
+      data-testid="phase-status-badge"
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold ${theme.badge}`}
+    >
       <span>{theme.icon}</span>
       <span>{theme.label}</span>
       {roundNumber > 0 && <span className="opacity-70">· Round {roundNumber}</span>}
@@ -216,6 +220,7 @@ export function JoinLobby({
       {phase === 'role-assigned' && assignedRole && (
         roleSeen ? (
           <button
+            data-testid="role-seen-badge"
             onClick={() => setShowAssignedRole(true)}
             className={`w-full flex items-center justify-between px-5 py-3 rounded-xl border backdrop-blur-md bg-black/30 hover:bg-black/50 transition-all ${theme.border}`}
           >

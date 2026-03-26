@@ -249,11 +249,49 @@ export async function confirmRoleDistribution(page: Page) {
   await startButton.waitFor({ state: 'visible', timeout: 10000 });
   await startButton.click();
 
-  // Wait for success message
-  await expect(page.getByText('Roles Distributed!')).toBeVisible({ timeout: 10000 });
+  // Wait for game-started view ("Game in Progress" heading)
+  await expect(page.getByText('Game in Progress')).toBeVisible({ timeout: 10000 });
 
   // Brief pause to allow WebSocket broadcasts to reach player pages
   await page.waitForTimeout(500);
+}
+
+/**
+ * Start the day phase from the moderator's game view
+ */
+export async function startDayPhase(page: Page) {
+  const btn = page.getByTestId('start-day-btn');
+  await btn.waitFor({ state: 'visible', timeout: 10000 });
+  await btn.click();
+}
+
+/**
+ * Start the night phase from the moderator's game view
+ */
+export async function startNightPhase(page: Page) {
+  const btn = page.getByTestId('start-night-btn');
+  await btn.waitFor({ state: 'visible', timeout: 10000 });
+  await btn.click();
+}
+
+/**
+ * Wait for a specific phase badge to appear on a player page
+ */
+export async function waitForPhaseBadge(page: Page, phaseLabel: string, timeout = 10000) {
+  const badge = page.getByTestId('phase-status-badge');
+  await badge.waitFor({ state: 'visible', timeout });
+  await expect(badge).toContainText(phaseLabel, { timeout });
+  return badge;
+}
+
+/**
+ * Wait for the phase notification banner to appear on a player page
+ */
+export async function waitForPhaseNotification(page: Page, partialText: string, timeout = 10000) {
+  const banner = page.getByTestId('phase-notification-banner');
+  await banner.waitFor({ state: 'visible', timeout });
+  await expect(banner).toContainText(partialText, { timeout });
+  return banner;
 }
 
 /**
